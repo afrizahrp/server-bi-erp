@@ -9,6 +9,7 @@ import { CreateUserDto } from 'src/user/dto/createUser.dto';
 import { LoginDto } from './dto/login.dto';
 import { hash, verify } from 'argon2';
 import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from 'src/prisma.service';
 
 import { ConfigType } from '@nestjs/config';
 import refreshConfig from './config/refresh.config';
@@ -18,6 +19,8 @@ export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
+    private prisma: PrismaService,
+
     @Inject(refreshConfig.KEY)
     private refreshTokenConfig: ConfigType<typeof refreshConfig>,
   ) {}
@@ -61,6 +64,13 @@ export class AuthService {
     email: string,
     image: string,
   ) {
+    const role = await this.prisma.sys_Roles.findUnique({
+      where: { id: role_id },
+    });
+
+    if (!role) {
+      throw new UnauthorizedException('Role not found');
+    }
     const { accessToken, refreshToken } = await this.generateTokens(id);
     return {
       user: {
@@ -68,6 +78,7 @@ export class AuthService {
         name,
         company_id,
         role_id,
+        role_name: role.name,
         email,
         image,
       },
