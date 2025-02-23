@@ -1,8 +1,19 @@
-import { Controller, Get, Post, Body, Param, Put, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { UpdateCategoryDto } from './dto/updateCategory.dto';
 import { CreateCategoryDto } from './dto/category.dto';
 import { ResponseCategorytDto } from './dto/responseCategory.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth/jwt-auth.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 
 @Controller('categories')
 export class CategoriesController {
@@ -15,6 +26,8 @@ export class CategoriesController {
     return this.categoryService.create(createCategoryDto);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Roles('ADMIN', 'EDITOR')
   @Get()
   async findAll(
     @Query('company_id') company_id: string,

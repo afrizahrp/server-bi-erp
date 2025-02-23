@@ -9,7 +9,6 @@ import { CreateUserDto } from 'src/user/dto/createUser.dto';
 import { LoginDto } from './dto/login.dto';
 import { hash, verify } from 'argon2';
 import { JwtService } from '@nestjs/jwt';
-import * as jwt from 'jsonwebtoken';
 
 import { ConfigType } from '@nestjs/config';
 import refreshConfig from './config/refresh.config';
@@ -60,7 +59,10 @@ export class AuthService {
     role_id: string,
     image: string,
   ) {
-    const { accessToken, refreshToken } = await this.generateTokens(id);
+    const { accessToken, refreshToken } = await this.generateTokens(
+      id,
+      role_id,
+    );
     return {
       user: {
         id,
@@ -74,8 +76,8 @@ export class AuthService {
     };
   }
 
-  async generateTokens(id: number) {
-    const payload: AuthJwtPayload = { sub: id };
+  async generateTokens(id: number, role_id: string) {
+    const payload: AuthJwtPayload = { sub: id, role_id: role_id };
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload),
       this.jwtService.signAsync(payload, this.refreshTokenConfig),
@@ -139,8 +141,11 @@ export class AuthService {
     return currentUser;
   }
 
-  async refreshToken(id: number, name: string) {
-    const { accessToken, refreshToken } = await this.generateTokens(id);
+  async refreshToken(id: number, name: string, role_id: string) {
+    const { accessToken, refreshToken } = await this.generateTokens(
+      id,
+      role_id,
+    );
     const hashedRT = await hash(refreshToken);
     await this.userService.updateHashedRefreshToken(id, hashedRT);
     return {

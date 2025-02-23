@@ -16,9 +16,10 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
   @UseGuards(JwtAuthGuard)
   @Roles('ADMIN', 'EDITOR')
-  @Get('profile')
+  @Get(':id')
   async getUserProfile(@Param('id') id: number) {
     return await this.userService.findById(id);
   }
