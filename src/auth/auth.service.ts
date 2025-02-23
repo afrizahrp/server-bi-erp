@@ -87,6 +87,32 @@ export class AuthService {
     };
   }
 
+  // async generateJWT(id: number) {
+  //   const accessToken = jwt.sign(
+  //     {
+  //       id,
+  //     },
+  //     process.env.JWT_SECRET || 'default_secret',
+  //     {
+  //       expiresIn: 3600,
+  //     },
+  //   );
+  //   const refreshToken = jwt.sign(
+  //     {
+  //       id,
+  //     },
+  //     process.env.REFRESH_JWT_SECRET || 'defas32432aault',
+  //     {
+  //       expiresIn: 86400,
+  //     },
+  //   );
+
+  //   return {
+  //     accessToken,
+  //     refreshToken,
+  //   };
+  // }
+
   async validateJwtUser(id: number) {
     const user = await this.userService.findOne(id);
     if (!user) throw new UnauthorizedException('User not found!');
@@ -128,20 +154,4 @@ export class AuthService {
   async signOut(id: number) {
     return await this.userService.updateHashedRefreshToken(id, null);
   }
-
-  // async generateJWT(id: number) {
-  //   const accessToken = jwt.sign(
-  //     {
-  //       id,
-  //     },
-  //     process.env.JWT_SECRET || 'default_secret',
-  //     {
-  //       expiresIn: 3600,
-  //     },
-  //   );
-
-  //   return {
-  //     accessToken,
-  //   };
-  // }
 }
