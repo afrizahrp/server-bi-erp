@@ -35,6 +35,7 @@ export class AuthController {
       req.user.name,
       req.user.company_id,
       req.user.role_id,
+      req.user.email,
       req.user.image,
     );
   }
@@ -52,11 +53,7 @@ export class AuthController {
   @UseGuards(RefreshAuthGuard)
   @Post('refresh')
   refreshTokens(@Request() req) {
-    return this.authService.refreshToken(
-      req.user.id,
-      req.user.role_id,
-      req.user.name,
-    );
+    return this.authService.refreshToken(req.user.id, req.user.name);
   }
 
   // @UseGuards(RefreshAuthGuard)

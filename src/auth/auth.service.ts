@@ -48,6 +48,7 @@ export class AuthService {
       name: user.name,
       company_id: user.company_id,
       role_id: user.role_id,
+      email: user.email,
       image: user.image,
     };
   }
@@ -57,6 +58,7 @@ export class AuthService {
     name: string,
     company_id: string,
     role_id: string,
+    email: string,
     image: string,
   ) {
     const { accessToken, refreshToken } = await this.generateTokens(
@@ -69,6 +71,7 @@ export class AuthService {
         name,
         company_id,
         role_id,
+        email,
         image,
       },
       accessToken,
@@ -141,11 +144,8 @@ export class AuthService {
     return currentUser;
   }
 
-  async refreshToken(id: number, name: string, role_id: string) {
-    const { accessToken, refreshToken } = await this.generateTokens(
-      id,
-      role_id,
-    );
+  async refreshToken(id: number, name: string) {
+    const { accessToken, refreshToken } = await this.generateTokens(id, name);
     const hashedRT = await hash(refreshToken);
     await this.userService.updateHashedRefreshToken(id, hashedRT);
     return {
