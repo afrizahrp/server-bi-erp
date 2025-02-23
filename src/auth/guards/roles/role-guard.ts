@@ -1,28 +1,23 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ROLES_KEY } from '../../decorators/roles.decorator';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Role } from '@prisma/client';
+import { Observable } from 'rxjs';
+import { ROLES_KEY } from 'src/auth/decorators/roles.decorator';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
-
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredRoles = this.reflector.getAllAndOverride<string[]>(
-      ROLES_KEY,
-      [context.getHandler(), context.getClass()],
-    );
-    if (!requiredRoles) {
-      return true;
-    }
-    const { user } = context.switchToHttp().getRequest();
-    const userRole = await prisma.sys_Roles.findUnique({
-      where: { id: user.role_id },
-    });
-
-    console.log('userRoles', userRole);
-    return userRole?.id ? requiredRoles.includes(userRole.id) : false;
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (!requiredRoles) return true;
+    const user = context.switchToHttp().getRequest().sys_User;
+    console.log(user);
+    const hasRequiredRole = requiredRoles.some((role) => user.role === role);
+    return hasRequiredRole;
   }
 }

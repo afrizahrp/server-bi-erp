@@ -79,27 +79,34 @@ model sys_TrxTableStatus {
   branch_id  String   @db.Char(10)
 }
 
-model sys_Roles {
-  id       String     @id @db.Char(20)
-  name     String     @db.VarChar(20)
-  iStatus  Int        @db.SmallInt
-  remarks  String?    @db.VarChar(255)
-  sys_User sys_User[]
+// model sys_Roles {
+//   id       String     @id @db.Char(20)
+//   name     String     @db.VarChar(20)
+//   iStatus  Int        @db.SmallInt
+//   remarks  String?    @db.VarChar(255)
+//   sys_User sys_User[]
+// }
+
+enum Role {
+  ADMIN
+  EDITOR
+  USER
+  GUEST
 }
 
 model sys_User {
-  id                 Int       @id @default(autoincrement()) @db.SmallInt
-  iStatus            Int       @db.SmallInt
-  isAuthorized       Boolean?  @default(false)
-  role_id            String    @default("GUEST") @db.Char(20)
-  name               String    @unique @db.VarChar(50)
-  email              String    @db.VarChar(100)
-  image              String?   @db.VarChar(255)
-  password           String    @db.VarChar(255)
-  hashedRefreshToken String?   @db.VarChar(255)
-  company_id         String    @db.Char(5)
+  id                 Int      @id @default(autoincrement()) @db.SmallInt
+  iStatus            Int      @db.SmallInt
+  isAuthorized       Boolean? @default(false)
+  role_id            String   @default("GUEST") @db.Char(20)
+  name               String   @unique @db.VarChar(50)
+  email              String   @db.VarChar(100)
+  image              String?  @db.VarChar(255)
+  password           String   @db.VarChar(255)
+  hashedRefreshToken String?  @db.VarChar(255)
+  company_id         String   @db.Char(5)
   // branch_id          String?   @db.Char(5)
-  userRole           sys_Roles @relation(fields: [role_id], references: [id])
+  role               Role[]
 }
 
 model sys_Migration_log {
