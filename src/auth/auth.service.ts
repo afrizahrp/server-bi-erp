@@ -57,14 +57,11 @@ export class AuthService {
     id: number,
     name: string,
     company_id: string,
-    role_id: string,
+    role_id: number,
     email: string,
     image: string,
   ) {
-    const { accessToken, refreshToken } = await this.generateTokens(
-      id,
-      role_id,
-    );
+    const { accessToken, refreshToken } = await this.generateTokens(id);
     return {
       user: {
         id,
@@ -79,8 +76,8 @@ export class AuthService {
     };
   }
 
-  async generateTokens(id: number, role_id: string) {
-    const payload: AuthJwtPayload = { sub: id, role_id: role_id };
+  async generateTokens(id: number) {
+    const payload: AuthJwtPayload = { sub: id };
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload),
       this.jwtService.signAsync(payload, this.refreshTokenConfig),
@@ -144,8 +141,8 @@ export class AuthService {
     return currentUser;
   }
 
-  async refreshToken(id: number, name: string) {
-    const { accessToken, refreshToken } = await this.generateTokens(id, name);
+  async refreshToken(id: number) {
+    const { accessToken, refreshToken } = await this.generateTokens(id);
     const hashedRT = await hash(refreshToken);
     await this.userService.updateHashedRefreshToken(id, hashedRT);
     return {

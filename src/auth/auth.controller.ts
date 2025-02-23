@@ -39,9 +39,7 @@ export class AuthController {
     );
   }
 
-  @Roles('ADMIN')
-  @UseGuards(RolesGuard)
-  @UseGuards(JwtAuthGuard)
+  @Roles(1)
   @Get('protected')
   getAll(@Request() req): string {
     console.log(req.user);
@@ -52,7 +50,7 @@ export class AuthController {
   @UseGuards(RefreshAuthGuard)
   @Post('refresh')
   refreshTokens(@Request() req) {
-    return this.authService.refreshToken(req.user.id, req.user.name);
+    return this.authService.refreshToken(req.user.id);
   }
 
   @Post('logout')

@@ -18,7 +18,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Roles('ADMIN', 'EDITOR')
+  @Roles(1, 3)
   @Get(':id')
   async getUserProfile(@Param('id') id: number) {
     return await this.userService.findById(id);

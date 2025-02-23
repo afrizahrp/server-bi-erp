@@ -80,7 +80,7 @@ model sys_TrxTableStatus {
 }
 
 model sys_Roles {
-  id       String     @id @db.Char(20)
+  id       Int        @id @default(autoincrement()) @db.SmallInt
   name     String     @db.VarChar(20)
   iStatus  Int        @db.SmallInt
   remarks  String?    @db.VarChar(255)
@@ -98,7 +98,7 @@ model sys_User {
   id                 Int       @id @default(autoincrement()) @db.SmallInt
   iStatus            Int       @db.SmallInt
   isAuthorized       Boolean?  @default(false)
-  role_id            String    @default("GUEST") @db.Char(20)
+  role_id            Int       @db.SmallInt
   name               String    @unique @db.VarChar(50)
   email              String    @db.VarChar(100)
   image              String?   @db.VarChar(255)

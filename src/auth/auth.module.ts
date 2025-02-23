@@ -14,6 +14,7 @@ import jwtConfig from './config/jwt.config';
 import refreshConfig from './config/refresh.config';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { RolesGuard } from './guards/roles/role-guard';
 dotenv.config();
 
 @Module({
@@ -33,6 +34,10 @@ dotenv.config();
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard, //@UseGuard(Roles)
     },
   ],
 })

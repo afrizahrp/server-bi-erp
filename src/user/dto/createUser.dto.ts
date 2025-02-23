@@ -17,7 +17,7 @@ export class CreateUserDto {
   password: string;
 
   @IsOptional()
-  @IsString()
+  @IsNumber()
   role_id: string;
 
   @IsString()
