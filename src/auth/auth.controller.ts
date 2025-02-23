@@ -5,7 +5,6 @@ import {
   Post,
   Req,
   Request,
-  SetMetadata,
   UseGuards,
 } from '@nestjs/common';
 import { CreateUserDto } from 'src/user/dto/createUser.dto';
@@ -56,34 +55,8 @@ export class AuthController {
     return this.authService.refreshToken(req.user.id, req.user.name);
   }
 
-  // @UseGuards(RefreshAuthGuard)
-  // @Post('refresh')
-  // async refreshToken(@Request() req) {
-  //   return await this.authService.refreshToken(req.user);
-  // }
-
   @Post('logout')
   signOut(@Request() req) {
     return this.authService.signOut(req.user.id);
   }
-
-  // @Post('login')
-  // async loginUser(@Body() dto: LoginDto) {
-  //   return await this.authService.login(dto.name, dto.password, dto.company_id);
-  // }
-
-  // @UseGuards(LocalAuthGuard)
-  // @Post('login')
-  // async login(@Body() loginDto: LoginDto) {
-  //   const user = await this.authService.validateLocalUser(
-  //     loginDto.name,
-  //     loginDto.password,
-  //   );
-  //   return this.authService.login(
-  //     user.id,
-  //     user.name,
-  //     user.company_id,
-  //     user.role_id,
-  //   );
-  // }
 }
