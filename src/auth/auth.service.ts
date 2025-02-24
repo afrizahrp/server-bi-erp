@@ -80,7 +80,6 @@ export class AuthService {
     return {
       id: user.id,
       name: user.name,
-      role_id: user.role_id,
       email: user.email,
       image: user.image,
     };
@@ -164,7 +163,7 @@ export class AuthService {
   async validateJwtUser(id: number) {
     const user = await this.userService.findOne(id);
     if (!user) throw new UnauthorizedException('User not found!');
-    const currentUser = { id: user.id, role_id: user.role_id };
+    const currentUser = { id: user.id };
     return currentUser;
   }
 
