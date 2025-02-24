@@ -55,34 +55,75 @@ export class AuthService {
     };
   }
 
-  async login(
-    id: number,
-    name: string,
-    company_id: string,
-    role_id: number,
-    email: string,
-    image: string,
-  ) {
-    const role = await this.prisma.sys_Roles.findUnique({
-      where: { id: role_id },
+  // async login(
+  //   id: number,
+  //   name: string,
+  //   company_id: string,
+  //   role_id: number,
+  //   email: string,
+  //   image: string,
+  // ) {
+  //   const role = await this.prisma.sys_Roles.findUnique({
+  //     where: { id: role_id },
+  //   });
+
+  //   if (!role) {
+  //     throw new UnauthorizedException('Role not found');
+  //   }
+  //   const { accessToken, refreshToken } = await this.generateTokens(id);
+  //   return {
+  //     user: {
+  //       id,
+  //       name,
+  //       company_id,
+  //       role_id,
+  //       role_name: role.name,
+  //       email,
+  //       image,
+  //     },
+  //     accessToken,
+  //     refreshToken,
+  //   };
+  // }
+
+  async login(name: string, password: string) {
+    const user = await this.prisma.sys_User.findUnique({
+      where: { name },
     });
 
-    if (!role) {
-      throw new UnauthorizedException('Role not found');
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
     }
-    const { accessToken, refreshToken } = await this.generateTokens(id);
+
+    const passwordMatches = await bcrypt.compare(password, user.password);
+    if (!passwordMatches) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Ambil daftar company & branch yang bisa diakses user
+    const userCompanies = await this.prisma.sys_UserCompanies.findMany({
+      where: { user_id: user.id },
+      include: { role: true },
+    });
+
+    if (userCompanies.length === 0) {
+      throw new UnauthorizedException('User has no company access');
+    }
+
     return {
       user: {
-        id,
-        name,
-        company_id,
-        role_id,
-        role_name: role.name,
-        email,
-        image,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+        companies: userCompanies.map((c) => ({
+          company_id: c.company_id,
+          branch_id: c.branch_id, // Tambahkan ini!
+          role_id: c.role_id,
+          role_name: c.role.name,
+        })),
       },
-      accessToken,
-      refreshToken,
+      message: 'Please select a company and branch to continue',
     };
   }
 
