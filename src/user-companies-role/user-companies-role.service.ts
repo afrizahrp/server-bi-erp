@@ -11,7 +11,7 @@ export class UserCompaniesRoleService {
     branch_id: string,
     role_id: number,
   ) {
-    return await this.prisma.sys_UserCompanies.create({
+    return await this.prisma.sys_UserCompaniesRole.create({
       data: {
         user_id: userId,
         company_id,
@@ -22,9 +22,9 @@ export class UserCompaniesRoleService {
   }
 
   async getUserCompanies(userId: number) {
-    return await this.prisma.sys_UserCompanies.findMany({
+    return await this.prisma.sys_UserCompaniesRole.findMany({
       where: { user_id: userId },
-      include: { role: true },
+      include: { role: true, user: true },
     });
   }
 
@@ -34,7 +34,7 @@ export class UserCompaniesRoleService {
     branch_id: string,
     role_id: number,
   ) {
-    return await this.prisma.sys_UserCompanies.updateMany({
+    return await this.prisma.sys_UserCompaniesRole.updateMany({
       where: { user_id: userId, company_id, branch_id },
       data: { role_id },
     });
@@ -45,7 +45,7 @@ export class UserCompaniesRoleService {
     company_id: string,
     branch_id: string,
   ) {
-    return await this.prisma.sys_UserCompanies.deleteMany({
+    return await this.prisma.sys_UserCompaniesRole.deleteMany({
       where: { user_id: userId, company_id, branch_id },
     });
   }

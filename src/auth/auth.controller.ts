@@ -5,6 +5,7 @@ import {
   Post,
   Req,
   Request,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { CreateUserDto } from 'src/user/dto/createUser.dto';
@@ -25,18 +26,31 @@ export class AuthController {
     return await this.authService.registerUser(createUserDto);
   }
 
+  // @Public()
+  // @UseGuards(LocalAuthGuard)
+  // @Post('login')
+  // async login(@Request() req) {
+  //   return this.authService.login(
+  //     req.user.id,
+  //     req.user.name,
+  //     req.user.company_id,
+  //     req.user.role_id,
+  //     req.user.email,
+  //     req.user.image,
+  //   );
+  // }
   @Public()
-  @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req) {
-    return this.authService.login(
-      req.user.id,
-      req.user.name,
-      req.user.company_id,
-      req.user.role_id,
-      req.user.email,
-      req.user.image,
-    );
+  async login(
+    @Body() body: { name: string; password: string; company_id?: string },
+  ) {
+    const { name, password, company_id } = body;
+
+    if (!name || !password) {
+      throw new UnauthorizedException('Name and password are required');
+    }
+
+    return this.authService.login(name, password, company_id);
   }
 
   @Roles(1)

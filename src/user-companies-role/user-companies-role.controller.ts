@@ -32,6 +32,7 @@ export class UserCompaniesRoleController {
     );
   }
 
+  @Roles(1, 3)
   @Get(':user_id')
   async getUserCompanies(@Param('user_id') user_id: number) {
     return this.userCompaniesRoleService.getUserCompanies(user_id);

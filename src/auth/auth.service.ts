@@ -33,28 +33,6 @@ export class AuthService {
     return this.userService.create(CreateUserDto);
   }
 
-  async validateLocalUser(name: string, password: string) {
-    const user = await this.userService.findByName(name);
-
-    if (!user) {
-      throw new UnauthorizedException('User has not been registered');
-    }
-
-    const isPasswordMatch = await verify(user.password, password);
-
-    if (!isPasswordMatch) {
-      throw new UnauthorizedException('Password is incorrect');
-    }
-
-    return {
-      id: user.id,
-      name: user.name,
-      role_id: user.role_id,
-      email: user.email,
-      image: user.image,
-    };
-  }
-
   // async login(
   //   id: number,
   //   name: string,
@@ -86,23 +64,33 @@ export class AuthService {
   //   };
   // }
 
-  async login(name: string, password: string) {
-    const user = await this.prisma.sys_User.findUnique({
-      where: { name },
-    });
+  async validateLocalUser(name: string, password: string) {
+    const user = await this.userService.findByName(name);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('User has not been registered');
     }
 
-    const passwordMatches = await bcrypt.compare(password, user.password);
-    if (!passwordMatches) {
-      throw new UnauthorizedException('Invalid credentials');
+    const isPasswordMatch = await verify(user.password, password);
+
+    if (!isPasswordMatch) {
+      throw new UnauthorizedException('Password is incorrect');
     }
 
-    // Ambil daftar company & branch yang bisa diakses user
-    const userCompanies = await this.prisma.sys_UserCompanies.findMany({
-      where: { user_id: user.id },
+    return {
+      id: user.id,
+      name: user.name,
+      role_id: user.role_id,
+      email: user.email,
+      image: user.image,
+    };
+  }
+
+  async login(name: string, password: string, company_id?: string) {
+    const validatedUser = await this.validateLocalUser(name, password);
+
+    const userCompanies = await this.prisma.sys_UserCompaniesRole.findMany({
+      where: { user_id: validatedUser.id },
       include: { role: true },
     });
 
@@ -110,20 +98,53 @@ export class AuthService {
       throw new UnauthorizedException('User has no company access');
     }
 
+    // Jika company_id dikirim saat login, validasi apakah user memiliki akses ke company tersebut
+    let selectedCompany: (typeof userCompanies)[0] | undefined = undefined;
+    if (company_id) {
+      selectedCompany = userCompanies.find(
+        (c) => c.company_id.trim() === company_id,
+      );
+      if (!selectedCompany) {
+        throw new UnauthorizedException(
+          'User does not have access to the selected company',
+        );
+      }
+    }
+
+    // Jika user sudah memilih company, buat token
+    let tokens: { accessToken: string; refreshToken: string } | null = null;
+    if (selectedCompany) {
+      tokens = await this.generateTokens(validatedUser.id);
+    }
+
     return {
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        image: user.image,
-        companies: userCompanies.map((c) => ({
-          company_id: c.company_id,
-          branch_id: c.branch_id, // Tambahkan ini!
-          role_id: c.role_id,
-          role_name: c.role.name,
-        })),
+        id: validatedUser.id,
+        name: validatedUser.name,
+        email: validatedUser.email,
+        image: validatedUser.image,
+        company: selectedCompany
+          ? {
+              company_id: selectedCompany.company_id.trim(),
+              branch_id: selectedCompany.branch_id.trim(),
+              role_id: selectedCompany.role_id,
+              role_name: selectedCompany.role.name,
+            }
+          : null,
+        companies: !selectedCompany
+          ? userCompanies.map((c) => ({
+              company_id: c.company_id.trim(),
+              branch_id: c.branch_id.trim(),
+              role_id: c.role_id,
+              role_name: c.role.name,
+            }))
+          : undefined,
       },
-      message: 'Please select a company and branch to continue',
+      accessToken: tokens?.accessToken || null,
+      refreshToken: tokens?.refreshToken || null,
+      message: selectedCompany
+        ? 'Login successful'
+        : 'Please select a company and branch to continue',
     };
   }
 
