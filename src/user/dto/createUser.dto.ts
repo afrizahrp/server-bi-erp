@@ -34,12 +34,4 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   hashedRefreshToken?: string;
-
-  @IsOptional()
-  @IsString()
-  company_id: string;
-
-  // @IsOptional()
-  // @IsString()
-  // branch_id: string;
 }

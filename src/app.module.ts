@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { PrismaService } from './prisma.service';
 import { ProductsModule } from './im_products/products.module';
 import { CategoriesModule } from './im_categories/categories.module';
+import { UserCompaniesRoleModule } from './user-companies-role/user-companies-role.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { CategoriesModule } from './im_categories/categories.module';
     AuthModule,
     ProductsModule,
     CategoriesModule,
+    UserCompaniesRoleModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

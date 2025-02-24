@@ -49,7 +49,6 @@ export class AuthService {
     return {
       id: user.id,
       name: user.name,
-      company_id: user.company_id,
       role_id: user.role_id,
       email: user.email,
       image: user.image,
@@ -99,32 +98,6 @@ export class AuthService {
       refreshToken,
     };
   }
-
-  // async generateJWT(id: number) {
-  //   const accessToken = jwt.sign(
-  //     {
-  //       id,
-  //     },
-  //     process.env.JWT_SECRET || 'default_secret',
-  //     {
-  //       expiresIn: 3600,
-  //     },
-  //   );
-  //   const refreshToken = jwt.sign(
-  //     {
-  //       id,
-  //     },
-  //     process.env.REFRESH_JWT_SECRET || 'defas32432aault',
-  //     {
-  //       expiresIn: 86400,
-  //     },
-  //   );
-
-  //   return {
-  //     accessToken,
-  //     refreshToken,
-  //   };
-  // }
 
   async validateJwtUser(id: number) {
     const user = await this.userService.findOne(id);

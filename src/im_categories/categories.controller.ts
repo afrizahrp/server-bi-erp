@@ -12,9 +12,7 @@ import { CategoriesService } from './categories.service';
 import { UpdateCategoryDto } from './dto/updateCategory.dto';
 import { CreateCategoryDto } from './dto/category.dto';
 import { ResponseCategorytDto } from './dto/responseCategory.dto';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth/jwt-auth.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
-import { RolesGuard } from 'src/auth/guards/roles/role-guard';
 
 @Controller('categories')
 export class CategoriesController {
