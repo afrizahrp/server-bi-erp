@@ -33,8 +33,8 @@ export class CreateProductDto {
   @IsString()
   brand_id: string;
 
-  @IsInt()
-  iStatus: number;
+  @IsString()
+  iStatus: string;
 
   @IsString()
   @IsOptional()
@@ -51,8 +51,8 @@ export class CreateProductDto {
   @IsBoolean()
   isAccessories?: boolean;
 
-  @IsBoolean()
-  iShowedStatus?: boolean;
+  @IsString()
+  iShowedStatus?: string;
 
   @IsString()
   @IsOptional()

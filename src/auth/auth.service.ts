@@ -6,21 +6,19 @@ import {
 } from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
 import { CreateUserDto } from 'src/user/dto/createUser.dto';
-import { LoginDto } from './dto/login.dto';
 import { hash, verify } from 'argon2';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma.service';
-
 import { ConfigType } from '@nestjs/config';
 import refreshConfig from './config/refresh.config';
 import { AuthJwtPayload } from './types/auth-jwtPayload';
+
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private prisma: PrismaService,
-
     @Inject(refreshConfig.KEY)
     private refreshTokenConfig: ConfigType<typeof refreshConfig>,
   ) {}
@@ -32,37 +30,6 @@ export class AuthService {
     }
     return this.userService.create(CreateUserDto);
   }
-
-  // async login(
-  //   id: number,
-  //   name: string,
-  //   company_id: string,
-  //   role_id: number,
-  //   email: string,
-  //   image: string,
-  // ) {
-  //   const role = await this.prisma.sys_Roles.findUnique({
-  //     where: { id: role_id },
-  //   });
-
-  //   if (!role) {
-  //     throw new UnauthorizedException('Role not found');
-  //   }
-  //   const { accessToken, refreshToken } = await this.generateTokens(id);
-  //   return {
-  //     user: {
-  //       id,
-  //       name,
-  //       company_id,
-  //       role_id,
-  //       role_name: role.name,
-  //       email,
-  //       image,
-  //     },
-  //     accessToken,
-  //     refreshToken,
-  //   };
-  // }
 
   async validateLocalUser(name: string, password: string) {
     const user = await this.userService.findByName(name);
@@ -113,7 +80,10 @@ export class AuthService {
     // Jika user sudah memilih company, buat token
     let tokens: { accessToken: string; refreshToken: string } | null = null;
     if (selectedCompany) {
-      tokens = await this.generateTokens(validatedUser.id);
+      tokens = await this.generateTokens(
+        validatedUser.id,
+        selectedCompany.role_id,
+      );
     }
 
     return {
@@ -147,8 +117,8 @@ export class AuthService {
     };
   }
 
-  async generateTokens(id: number) {
-    const payload: AuthJwtPayload = { sub: id };
+  async generateTokens(id: number, role_id: number) {
+    const payload: AuthJwtPayload = { sub: id, role_id };
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload),
       this.jwtService.signAsync(payload, this.refreshTokenConfig),
@@ -163,7 +133,19 @@ export class AuthService {
   async validateJwtUser(id: number) {
     const user = await this.userService.findOne(id);
     if (!user) throw new UnauthorizedException('User not found!');
-    const currentUser = { id: user.id };
+
+    const userCompaniesRole = await this.prisma.sys_UserCompaniesRole.findFirst(
+      {
+        where: { user_id: user.id },
+        include: { role: true },
+      },
+    );
+
+    if (!userCompaniesRole) {
+      throw new UnauthorizedException('User role not found!');
+    }
+
+    const currentUser = { id: user.id, role_id: userCompaniesRole.role_id };
     return currentUser;
   }
 
@@ -182,17 +164,31 @@ export class AuthService {
 
     if (!refreshTokenMatched)
       throw new UnauthorizedException('Invalid Refresh Token!');
-    const currentUser = { id: user.id };
+
+    const userCompaniesRole = await this.prisma.sys_UserCompaniesRole.findFirst(
+      {
+        where: { user_id: user.id },
+        include: { role: true },
+      },
+    );
+
+    if (!userCompaniesRole) {
+      throw new UnauthorizedException('User role not found!');
+    }
+
+    const currentUser = { id: user.id, role_id: userCompaniesRole.role_id };
     return currentUser;
   }
 
-  async refreshToken(id: number) {
-    const { accessToken, refreshToken } = await this.generateTokens(id);
+  async refreshToken(id: number, role_id: number) {
+    const { accessToken, refreshToken } = await this.generateTokens(
+      id,
+      role_id,
+    );
     const hashedRT = await hash(refreshToken);
     await this.userService.updateHashedRefreshToken(id, hashedRT);
     return {
       id: id,
-      name: name,
       accessToken,
       refreshToken,
     };

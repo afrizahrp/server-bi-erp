@@ -7,13 +7,13 @@ export class ResponseProductDto {
   category_id: string;
   subCategory_id: string;
   brand_id: string;
-  iStatus: number;
+  iStatus: string;
   slug?: string;
   isMaterial: boolean;
   isService: boolean;
   isFinishing: boolean;
   isAccessories: boolean;
-  iShowedStatus: boolean;
+  iShowedStatus: string;
   uom_id?: string;
   createdBy?: string;
   createdAt: Date;

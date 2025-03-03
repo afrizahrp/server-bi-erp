@@ -14,7 +14,10 @@ export class ProductsService {
     const product = await this.prisma.im_Products.create({
       data: createProductDto,
     });
-    return product as ResponseProductDto;
+    return {
+      ...product,
+      iShowedStatus: product.iShowedStatus === 'HIDDEN' ? 'HIDDEN' : 'VISIBLE',
+    } as ResponseProductDto;
   }
 
   async findAll(

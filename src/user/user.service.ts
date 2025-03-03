@@ -26,9 +26,7 @@ export class UserService {
         name,
         email,
         password: hashedPassword,
-        role_id: Number(role_id),
         image,
-        iStatus,
         isAuthorized,
         hashedRefreshToken,
       },
@@ -58,17 +56,6 @@ export class UserService {
       },
     });
   }
-
-  // async updateIsLoggedIn(userId: number, isLoggedIn: boolean) {
-  //   return await this.prisma.sys_User.update({
-  //     where: {
-  //       id: userId,
-  //     },
-  //     data: {
-  //       isLoggedIn: isLoggedIn,
-  //     },
-  //   });
-  // }
 
   async updateHashedRefreshToken(userId: number, hashedRT: string | null) {
     return await this.prisma.sys_User.update({

@@ -32,9 +32,9 @@ export class UpdateProductDto {
   @IsOptional()
   brand_id?: string;
 
-  @IsInt()
+  @IsString()
   @IsOptional()
-  iStatus?: number;
+  iStatus?: string;
 
   @IsString()
   @IsOptional()
@@ -56,9 +56,9 @@ export class UpdateProductDto {
   @IsOptional()
   isAccessories?: boolean;
 
-  @IsBoolean()
   @IsOptional()
-  iShowedStatus?: boolean;
+  @IsString()
+  iShowedStatus?: string;
 
   @IsString()
   @IsOptional()

@@ -11,7 +11,7 @@ export class RolesGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredRoles = this.reflector.getAllAndOverride<string[]>(
+    const requiredRoles = this.reflector.getAllAndOverride<number[]>(
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
     );
@@ -25,27 +25,22 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
-    const userRole = await this.prisma.sys_Roles.findUnique({
-      where: { id: user.role_id }, // Trim the role_id to remove extra spaces
-    });
+    const userCompaniesRole = await this.prisma.sys_UserCompaniesRole.findFirst(
+      {
+        where: { user_id: user.id },
+        include: { role: true },
+      },
+    );
 
-    if (!userRole) {
+    if (!userCompaniesRole) {
       console.log('Role not found for user');
       return false;
     }
 
     console.log('User:', user);
-    console.log('User Role:', userRole);
+    console.log('User Role:', userCompaniesRole.role);
 
-    // const hasRequiredRole = requiredRoles.includes(userRole.name.trim());
-    const hasRequiredRole = requiredRoles.includes(user.role_id);
-
-    // const hasRequiredRole = requiredRoles.some(
-    //   (role) => role === userRole.name,
-    // );
-
-    // const hasRequiredRole = requiredRoles.some((role) => user.role === role);
-
+    const hasRequiredRole = requiredRoles.includes(userCompaniesRole.role.id);
     console.log('Has required role:', hasRequiredRole);
     return hasRequiredRole;
   }
