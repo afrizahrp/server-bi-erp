@@ -7,7 +7,10 @@ import {
   IsDate,
   IsNumber,
   isString,
+  IsEnum,
 } from 'class-validator';
+
+import { MasterRecordStatusEnum, WebsiteDisplayStatus } from '@prisma/client';
 
 export class CreateCategoryDto {
   @IsNumber()
@@ -19,11 +22,11 @@ export class CreateCategoryDto {
   @IsString()
   name: string;
 
-  @IsNumber()
-  iStatus: number;
+  @IsEnum(MasterRecordStatusEnum)
+  iStatus: MasterRecordStatusEnum;
 
-  @IsBoolean()
-  iShowedStatus?: boolean;
+  @IsEnum(WebsiteDisplayStatus)
+  iShowedStatus?: WebsiteDisplayStatus;
 
   @IsString()
   @IsOptional()

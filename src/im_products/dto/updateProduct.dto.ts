@@ -5,7 +5,10 @@ import {
   IsInt,
   IsBoolean,
   IsDate,
+  IsEnum,
 } from 'class-validator';
+
+import { MasterRecordStatusEnum, WebsiteDisplayStatus } from '@prisma/client';
 
 export class UpdateProductDto {
   @IsString()
@@ -32,9 +35,9 @@ export class UpdateProductDto {
   @IsOptional()
   brand_id?: string;
 
-  @IsString()
+  @IsEnum(MasterRecordStatusEnum)
   @IsOptional()
-  iStatus?: string;
+  iStatus?: MasterRecordStatusEnum;
 
   @IsString()
   @IsOptional()
@@ -56,9 +59,9 @@ export class UpdateProductDto {
   @IsOptional()
   isAccessories?: boolean;
 
+  @IsEnum(WebsiteDisplayStatus)
   @IsOptional()
-  @IsString()
-  iShowedStatus?: string;
+  iShowedStatus?: WebsiteDisplayStatus;
 
   @IsString()
   @IsOptional()

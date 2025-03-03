@@ -6,7 +6,9 @@ import {
   IsBoolean,
   IsDate,
   IsNumber,
+  IsEnum,
 } from 'class-validator';
+import { MasterRecordStatusEnum, WebsiteDisplayStatus } from '@prisma/client';
 
 export class UpdateCategoryDto {
   @IsString()
@@ -16,12 +18,13 @@ export class UpdateCategoryDto {
   @IsNumber()
   type: number;
 
-  @IsNumber()
-  iStatus: number;
-
-  @IsBoolean()
   @IsOptional()
-  iShowedStatus?: boolean;
+  @IsEnum(MasterRecordStatusEnum)
+  iStatus: MasterRecordStatusEnum;
+
+  @IsOptional()
+  @IsEnum(WebsiteDisplayStatus)
+  iShowedStatus?: WebsiteDisplayStatus;
 
   @IsString()
   @IsOptional()

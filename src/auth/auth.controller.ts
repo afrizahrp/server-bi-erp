@@ -64,7 +64,7 @@ export class AuthController {
   @UseGuards(RefreshAuthGuard)
   @Post('refresh')
   refreshTokens(@Request() req) {
-    return this.authService.refreshToken(req.user.id);
+    return this.authService.refreshToken(req.user.id, req.user.role_id);
   }
 
   @Post('logout')

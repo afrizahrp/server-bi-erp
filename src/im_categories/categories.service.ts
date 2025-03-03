@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { CreateCategoryDto } from './dto/category.dto';
+import { CreateCategoryDto } from './dto/createCategory.dto';
 import { UpdateCategoryDto } from './dto/updateCategory.dto';
 import { ResponseCategorytDto } from './dto/responseCategory.dto';
 
@@ -52,16 +52,8 @@ export class CategoriesService {
       where: { company_id },
       skip,
       take: limit,
-      select: {
-        id: true,
-        name: true,
-        categoryType: {
-          select: { name: true },
-        },
-        status: {
-          select: { name: true },
-        },
-        remarks: true,
+      include: {
+        categoryType: true,
       },
     });
 
@@ -70,7 +62,7 @@ export class CategoriesService {
       id: category.id,
       name: category.name,
       categoryType: category.categoryType?.name,
-      status: category.status?.name,
+      status: category.iStatus,
       remarks: category.remarks,
     }));
 
@@ -80,16 +72,8 @@ export class CategoriesService {
   async findOne(company_id: string, id: string): Promise<ResponseCategorytDto> {
     const category = await this.prisma.im_Categories.findUnique({
       where: { company_id_id: { company_id, id } },
-      select: {
-        id: true,
-        name: true,
-        categoryType: {
-          select: { name: true },
-        },
-        status: {
-          select: { name: true },
-        },
-        remarks: true,
+      include: {
+        categoryType: true,
       },
     });
     if (!category) {
@@ -99,7 +83,7 @@ export class CategoriesService {
       id: category.id,
       name: category.name,
       categoryType: category.categoryType?.name,
-      status: category.status?.name,
+      iStatus: category.iStatus,
       remarks: category.remarks,
     } as ResponseCategorytDto;
   }
@@ -111,6 +95,9 @@ export class CategoriesService {
   ): Promise<ResponseCategorytDto> {
     const category = await this.prisma.im_Categories.findUnique({
       where: { company_id_id: { id, company_id } },
+      include: {
+        categoryType: true,
+      },
     });
     if (!category) {
       throw new NotFoundException(`Category with ID ${id} not found`);
@@ -118,23 +105,15 @@ export class CategoriesService {
     const updatedCategory = await this.prisma.im_Categories.update({
       where: { company_id_id: { id, company_id } },
       data: updateCategoryDto,
-      select: {
-        id: true,
-        name: true,
-        categoryType: {
-          select: { name: true },
-        },
-        status: {
-          select: { name: true },
-        },
-        remarks: true,
+      include: {
+        categoryType: true,
       },
     });
     return {
       id: updatedCategory.id,
       name: updatedCategory.name,
       categoryType: updatedCategory.categoryType?.name,
-      status: updatedCategory.status?.name,
+      iStatus: updatedCategory.iStatus,
       remarks: updatedCategory.remarks,
     } as ResponseCategorytDto;
   }
