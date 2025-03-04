@@ -13,6 +13,7 @@ import { UpdateCategoryDto } from './dto/updateCategory.dto';
 import { CreateCategoryDto } from './dto/createCategory.dto';
 import { ResponseCategorytDto } from './dto/responseCategory.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
+import { Public } from 'src/auth/decorators/public.decorator';
 
 @Controller('categories')
 export class CategoriesController {
@@ -25,7 +26,8 @@ export class CategoriesController {
     return this.categoryService.create(createCategoryDto);
   }
 
-  @Roles(1, 3)
+  // @Roles(1, 3)
+  @Public()
   @Get()
   async findAll(
     @Query('company_id') company_id: string,
