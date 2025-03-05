@@ -6,7 +6,7 @@ import {
 import { PrismaService } from 'src/prisma.service';
 import { CreateCategoryDto } from './dto/createCategory.dto';
 import { UpdateCategoryDto } from './dto/updateCategory.dto';
-import { ResponseCategorytDto } from './dto/responseCategory.dto';
+import { ResponseCategoryDto } from './dto/responseCategory.dto';
 
 @Injectable()
 export class CategoriesService {
@@ -14,7 +14,7 @@ export class CategoriesService {
 
   async create(
     createCategoryDto: CreateCategoryDto,
-  ): Promise<ResponseCategorytDto> {
+  ): Promise<ResponseCategoryDto> {
     const category = await this.prisma.im_Categories.create({
       data: createCategoryDto,
     });
@@ -24,14 +24,14 @@ export class CategoriesService {
       // categoryType: category.categoryType?.name,
       // status: category.status?.name,
       remarks: category.remarks,
-    } as ResponseCategorytDto;
+    } as ResponseCategoryDto;
   }
 
   async findAll(
     company_id: string,
     page: number = 1,
     limit: number = 100,
-  ): Promise<{ data: ResponseCategorytDto[]; total: number }> {
+  ): Promise<{ data: ResponseCategoryDto[]; total: number }> {
     // Validasi parameter pagination
     if (page < 1) {
       page = 1;
@@ -57,7 +57,7 @@ export class CategoriesService {
       },
     });
 
-    // Map hasil untuk menyesuaikan format ResponseCategorytDto
+    // Map hasil untuk menyesuaikan format ResponseCategoryDto
     const formattedCategories = categories.map((category) => ({
       id: category.id,
       name: category.name,
@@ -66,10 +66,10 @@ export class CategoriesService {
       remarks: category.remarks,
     }));
 
-    return { data: formattedCategories as ResponseCategorytDto[], total };
+    return { data: formattedCategories as ResponseCategoryDto[], total };
   }
 
-  async findOne(company_id: string, id: string): Promise<ResponseCategorytDto> {
+  async findOne(company_id: string, id: string): Promise<ResponseCategoryDto> {
     const category = await this.prisma.im_Categories.findUnique({
       where: { company_id_id: { company_id, id } },
       include: {
@@ -85,14 +85,14 @@ export class CategoriesService {
       categoryType: category.categoryType?.name,
       iStatus: category.iStatus,
       remarks: category.remarks,
-    } as ResponseCategorytDto;
+    } as ResponseCategoryDto;
   }
 
   async update(
     id: string,
     company_id: string,
     updateCategoryDto: UpdateCategoryDto,
-  ): Promise<ResponseCategorytDto> {
+  ): Promise<ResponseCategoryDto> {
     const category = await this.prisma.im_Categories.findUnique({
       where: { company_id_id: { id, company_id } },
       include: {
@@ -115,6 +115,6 @@ export class CategoriesService {
       categoryType: updatedCategory.categoryType?.name,
       iStatus: updatedCategory.iStatus,
       remarks: updatedCategory.remarks,
-    } as ResponseCategorytDto;
+    } as ResponseCategoryDto;
   }
 }

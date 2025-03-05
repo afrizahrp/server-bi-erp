@@ -11,7 +11,7 @@ import {
 import { CategoriesService } from './categories.service';
 import { UpdateCategoryDto } from './dto/updateCategory.dto';
 import { CreateCategoryDto } from './dto/createCategory.dto';
-import { ResponseCategorytDto } from './dto/responseCategory.dto';
+import { ResponseCategoryDto } from './dto/responseCategory.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Public } from 'src/auth/decorators/public.decorator';
 
@@ -22,7 +22,7 @@ export class CategoriesController {
   @Post()
   create(
     @Body() createCategoryDto: CreateCategoryDto,
-  ): Promise<ResponseCategorytDto> {
+  ): Promise<ResponseCategoryDto> {
     return this.categoryService.create(createCategoryDto);
   }
 
@@ -33,7 +33,7 @@ export class CategoriesController {
     @Query('company_id') company_id: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
-  ): Promise<{ data: ResponseCategorytDto[]; total: number }> {
+  ): Promise<{ data: ResponseCategoryDto[]; total: number }> {
     const pageNumber = parseInt(page, 10);
     const limitNumber = parseInt(limit, 10);
     return this.categoryService.findAll(company_id, pageNumber, limitNumber);
@@ -43,7 +43,7 @@ export class CategoriesController {
   async findOne(
     @Param('company_id') company_id: string,
     @Param('id') id: string,
-  ): Promise<ResponseCategorytDto> {
+  ): Promise<ResponseCategoryDto> {
     return this.categoryService.findOne(company_id, id);
   }
 
@@ -52,7 +52,7 @@ export class CategoriesController {
     @Param('company_id') company_id: string,
     @Param('id') id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
-  ): Promise<ResponseCategorytDto> {
+  ): Promise<ResponseCategoryDto> {
     return this.categoryService.update(id, company_id, updateCategoryDto);
   }
 }
