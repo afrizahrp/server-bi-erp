@@ -27,7 +27,7 @@ export class ProductsService {
   ): Promise<ResponseProductDto[]> {
     const skip = (page - 1) * limit;
     const products = await this.prisma.im_Products.findMany({
-      where: { company_id },
+      where: { company_id, iShowedStatus: 'SHOW' },
       skip,
       take: limit,
       include: {

@@ -44,12 +44,12 @@ export class CategoriesService {
 
     // Hitung jumlah total data
     const total = await this.prisma.im_Categories.count({
-      where: { company_id },
+      where: { company_id, iShowedStatus: 'SHOW' },
     });
 
     // Ambil data dengan paginasi dan pilih kolom yang diinginkan
     const categories = await this.prisma.im_Categories.findMany({
-      where: { company_id },
+      where: { company_id, iShowedStatus: 'SHOW' },
       skip,
       take: limit,
       include: {
