@@ -4,8 +4,9 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/createProduct.dto';
 import { UpdateProductDto } from './dto/updateProduct.dto';
 import { ResponseProductDto } from './dto/responseProduct.dto';
+import { Public } from 'src/auth/decorators/public.decorator';
 
-@Controller('/cms/products')
+@Controller('cms/products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
@@ -17,6 +18,7 @@ export class ProductsController {
   }
 
   @Get()
+  @Public()
   async findAll(
     @Query('company_id') company_id: string,
     @Query('page') page: number = 1,
