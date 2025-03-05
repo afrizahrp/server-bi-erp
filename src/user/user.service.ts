@@ -12,10 +12,9 @@ export class UserService {
       name,
       email,
       password,
-      role_id = 1,
       image,
-      iStatus = 1,
-      isAuthorized = false,
+      iStatus = 'ACTIVE',
+      isAdmin = false,
       hashedRefreshToken = null,
     } = createUserDto;
 
@@ -27,7 +26,8 @@ export class UserService {
         email,
         password: hashedPassword,
         image,
-        isAuthorized,
+        iStatus: 'ACTIVE',
+        isAdmin,
         hashedRefreshToken,
       },
     });

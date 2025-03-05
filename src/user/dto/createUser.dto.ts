@@ -4,7 +4,9 @@ import {
   IsBoolean,
   IsOptional,
   IsNumber,
+  IsEnum,
 } from 'class-validator';
+import { MasterRecordStatusEnum } from '@prisma/client';
 
 export class CreateUserDto {
   @IsString()
@@ -16,20 +18,16 @@ export class CreateUserDto {
   @IsString()
   password: string;
 
-  @IsOptional()
-  @IsNumber()
-  role_id: string;
-
   @IsString()
   @IsOptional()
   image?: string;
 
-  @IsNumber()
-  iStatus: number = 1;
+  @IsEnum(MasterRecordStatusEnum)
+  iStatus: MasterRecordStatusEnum;
 
   @IsBoolean()
   @IsOptional()
-  isAuthorized?: boolean;
+  isAdmin: boolean;
 
   @IsString()
   @IsOptional()
