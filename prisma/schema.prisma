@@ -65,7 +65,7 @@ model sys_User {
   id                 Int                     @id @default(autoincrement()) @db.SmallInt
   name               String                  @unique @db.VarChar(50)
   email              String                  @db.VarChar(100)
-  isAuthorized       Boolean?                @default(false)
+  isAdmin            Boolean                 @default(false)
   iStatus            MasterRecordStatusEnum  @default(ACTIVE)
   image              String?                 @db.VarChar(255)
   password           String                  @db.VarChar(255)
