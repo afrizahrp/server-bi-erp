@@ -5,8 +5,8 @@ import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { PrismaService } from './prisma.service';
-import { ProductsModule } from './im_products/products.module';
-import { CategoriesModule } from './im_categories/categories.module';
+import { ProductsModule } from './cms/im_products/products.module';
+import { CategoriesModule } from './cms/im_categories/categories.module';
 import { UserCompaniesRoleModule } from './user-companies-role/user-companies-role.module';
 
 @Module({

@@ -15,7 +15,7 @@ import { ResponseCategoryDto } from './dto/responseCategory.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Public } from 'src/auth/decorators/public.decorator';
 
-@Controller('categories')
+@Controller('/im/categories')
 export class CategoriesController {
   constructor(private readonly categoryService: CategoriesService) {}
 
