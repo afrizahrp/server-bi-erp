@@ -366,7 +366,7 @@ model im_ProductStock {
   branch_id          String                 @db.Char(10)
   products           im_Products            @relation(fields: [id, company_id], references: [id, company_id], onUpdate: NoAction)
 
-  @@id([company_id, warehouse_id, id, floor_id, shelf_id, row_id, mExpired_dt, yExpired_dt])
+  @@id([id, floor_id, shelf_id, row_id, mExpired_dt, yExpired_dt, warehouse_id, company_id])
 }
 
 model im_ProductStockCard {
@@ -409,6 +409,7 @@ model im_ProductStockCard {
   updatedAt               DateTime
   company_id              String                 @db.Char(5)
   branch_id               String                 @db.Char(10)
+  // @@id([product_id, floor_id, shelf_id, row_id, mExpired_dt, yExpired_dt, srn_seq, company_id, warehouse_id, doc_id, mutation_id])
 
-  @@id([product_id, floor_id, shelf_id, row_id, mExpired_dt, yExpired_dt, srn_seq, company_id, warehouse_id, doc_id, mutation_id])
+  @@id([product_id, floor_id, shelf_id, row_id, mExpired_dt, yExpired_dt, doc_id, mutation_id, srn_seq, warehouse_id, company_id])
 }
