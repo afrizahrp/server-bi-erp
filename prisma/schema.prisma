@@ -326,7 +326,7 @@ model im_Products {
   category       im_Categories          @relation(fields: [company_id, category_id], references: [company_id, id], onUpdate: NoAction)
   subCategory    im_SubCategories       @relation(fields: [company_id, category_id, subCategory_id], references: [company_id, category_id, id], onUpdate: NoAction)
   uom            im_Uoms                @relation(fields: [company_id, uom_id], references: [company_id, id], onUpdate: NoAction)
-  descs          im_ProductDescs[]
+  descriptions   im_ProductDescs[]
   images         im_ProductImages[]
 
   @@id([company_id, id], map: "pk_im_Products")

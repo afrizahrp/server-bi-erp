@@ -29,20 +29,20 @@ export class ProductsController {
 
   @Get(':company_id/:id')
   @Public()
-  async findBySlug(
-    @Param('company_id') company_id: string,
-    @Param('slug') slug: string,
-  ): Promise<ResponseProductDto> {
-    return this.productsService.findBySlug(company_id, slug);
-  }
-
-  @Get(':company_id/:id')
-  @Public()
   async findOne(
     @Param('company_id') company_id: string,
     @Param('id') id: string,
   ): Promise<ResponseProductDto> {
     return this.productsService.findOne(company_id, id);
+  }
+
+  @Get(':company_id/slug/:slug')
+  @Public()
+  async findBySlug(
+    @Param('company_id') company_id: string,
+    @Param('slug') slug: string,
+  ): Promise<any> {
+    return this.productsService.findBySlug(company_id, slug);
   }
 
   @Put(':company_id/:id')

@@ -30,6 +30,9 @@ export class ProductsService {
         images: {
           select: { imageURL: true, isPrimary: true },
         },
+        descriptions: {
+          select: { descriptions: true },
+        },
       },
     });
 
@@ -48,14 +51,34 @@ export class ProductsService {
     // return products as ResponseProductDto[];
   }
 
-  async findOne(company_id: string, id: string): Promise<ResponseProductDto> {
+  async findOne(company_id: string, id: string): Promise<any> {
     const product = await this.prisma.im_Products.findUnique({
       where: { company_id_id: { company_id, id } },
+      include: {
+        category: {
+          select: { name: true },
+        },
+        images: {
+          select: { imageURL: true, isPrimary: true },
+        },
+        descriptions: {
+          select: { descriptions: true },
+        },
+      },
     });
+
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
-    return product as ResponseProductDto;
+
+    const primaryImages = product.images.filter((image) => image.isPrimary);
+    const primaryImageURL =
+      primaryImages.length > 0 ? primaryImages[0].imageURL : null;
+
+    return {
+      ...product,
+      primaryImageURL,
+    };
   }
 
   async findBySlug(company_id: string, slug: string): Promise<any> {
@@ -67,6 +90,9 @@ export class ProductsService {
         },
         images: {
           select: { imageURL: true, isPrimary: true },
+        },
+        descriptions: {
+          select: { descriptions: true },
         },
       },
     });
