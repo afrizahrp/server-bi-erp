@@ -24,10 +24,20 @@ export class ProductsController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
   ): Promise<ResponseProductDto[]> {
-    return this.productsService.findAll(company_id, page, limit);
+    return this.productsService.findAll(company_id);
   }
 
   @Get(':company_id/:id')
+  @Public()
+  async findBySlug(
+    @Param('company_id') company_id: string,
+    @Param('slug') slug: string,
+  ): Promise<ResponseProductDto> {
+    return this.productsService.findBySlug(company_id, slug);
+  }
+
+  @Get(':company_id/:id')
+  @Public()
   async findOne(
     @Param('company_id') company_id: string,
     @Param('id') id: string,

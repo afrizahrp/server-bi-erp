@@ -243,6 +243,7 @@ model im_Categories {
   remarks       String?                @db.VarChar(250)
   iStatus       MasterRecordStatusEnum @default(ACTIVE)
   iShowedStatus WebsiteDisplayStatus   @default(HIDDEN)
+  imageURL      String?                @db.VarChar(250)
   createdBy     String?                @db.Char(10)
   createdAt     DateTime               @default(now())
   updatedBy     String?                @db.Char(10)
@@ -325,6 +326,8 @@ model im_Products {
   category       im_Categories          @relation(fields: [company_id, category_id], references: [company_id, id], onUpdate: NoAction)
   subCategory    im_SubCategories       @relation(fields: [company_id, category_id, subCategory_id], references: [company_id, category_id, id], onUpdate: NoAction)
   uom            im_Uoms                @relation(fields: [company_id, uom_id], references: [company_id, id], onUpdate: NoAction)
+  descs          im_ProductDescs[]
+  images         im_ProductImages[]
 
   @@id([company_id, id], map: "pk_im_Products")
   @@unique([company_id, id], map: "unique_company_id_id")
@@ -412,4 +415,37 @@ model im_ProductStockCard {
   // @@id([product_id, floor_id, shelf_id, row_id, mExpired_dt, yExpired_dt, srn_seq, company_id, warehouse_id, doc_id, mutation_id])
 
   @@id([product_id, floor_id, shelf_id, row_id, mExpired_dt, yExpired_dt, doc_id, mutation_id, srn_seq, warehouse_id, company_id])
+}
+
+model im_ProductDescs {
+  id           String                 @db.Char(20)
+  descriptions String?                @db.Text
+  benefits     String?                @db.Text
+  iStatus      MasterRecordStatusEnum @default(ACTIVE)
+  createdBy    String?                @db.Char(10)
+  createdAt    DateTime               @default(now())
+  updatedBy    String?                @db.Char(10)
+  updatedAt    DateTime
+  company_id   String                 @db.Char(5)
+  branch_id    String                 @db.Char(10)
+  products     im_Products            @relation(fields: [id, company_id], references: [id, company_id], onUpdate: NoAction)
+
+  @@id([id, company_id])
+}
+
+model im_ProductImages {
+  id         String                 @db.Char(25)
+  product_id String                 @db.Char(20)
+  imageURL   String                 @db.VarChar(250)
+  isPrimary  Boolean
+  iStatus    MasterRecordStatusEnum @default(ACTIVE)
+  createdBy  String?                @db.Char(10)
+  createdAt  DateTime               @default(now())
+  updatedBy  String                 @db.Char(10)
+  updatedAt  DateTime
+  company_id String                 @db.Char(5)
+  branch_id  String                 @db.Char(10)
+  products   im_Products            @relation(fields: [product_id, company_id], references: [id, company_id], onUpdate: NoAction)
+
+  @@id([product_id, company_id, id], map: "pk_im_ProductImages")
 }

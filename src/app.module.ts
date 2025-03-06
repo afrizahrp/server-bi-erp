@@ -8,6 +8,7 @@ import { PrismaService } from './prisma.service';
 import { ProductsModule } from './cms/im_products/products.module';
 import { CategoriesModule } from './cms/im_categories/categories.module';
 import { UserCompaniesRoleModule } from './user-companies-role/user-companies-role.module';
+import { ProductDescsModule } from './im_productdescs/product-descs.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { UserCompaniesRoleModule } from './user-companies-role/user-companies-ro
     ProductsModule,
     CategoriesModule,
     UserCompaniesRoleModule,
+    ProductDescsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

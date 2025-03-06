@@ -20,23 +20,32 @@ export class ProductsService {
     } as ResponseProductDto;
   }
 
-  async findAll(
-    company_id: string,
-    page: number = 1,
-    limit: number = 10,
-  ): Promise<ResponseProductDto[]> {
-    const skip = (page - 1) * limit;
+  async findAll(company_id: string): Promise<any[]> {
     const products = await this.prisma.im_Products.findMany({
       where: { company_id, iShowedStatus: 'SHOW' },
-      skip,
-      take: limit,
       include: {
         category: {
           select: { name: true },
         },
+        images: {
+          select: { imageURL: true, isPrimary: true },
+        },
       },
     });
-    return products as ResponseProductDto[];
+
+    const productsWithPrimaryImage = products.map((product) => {
+      const primaryImages = product.images.filter((image) => image.isPrimary);
+      const primaryImageURL =
+        primaryImages.length > 0 ? primaryImages[0].imageURL : null;
+      return {
+        ...product,
+        primaryImageURL,
+      };
+    });
+
+    return productsWithPrimaryImage;
+
+    // return products as ResponseProductDto[];
   }
 
   async findOne(company_id: string, id: string): Promise<ResponseProductDto> {
@@ -47,6 +56,33 @@ export class ProductsService {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
     return product as ResponseProductDto;
+  }
+
+  async findBySlug(company_id: string, slug: string): Promise<any> {
+    const product = await this.prisma.im_Products.findFirst({
+      where: { company_id, slug },
+      include: {
+        category: {
+          select: { name: true },
+        },
+        images: {
+          select: { imageURL: true, isPrimary: true },
+        },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product with slug ${slug} not found`);
+    }
+
+    const primaryImages = product.images.filter((image) => image.isPrimary);
+    const primaryImageURL =
+      primaryImages.length > 0 ? primaryImages[0].imageURL : null;
+
+    return {
+      ...product,
+      primaryImageURL,
+    };
   }
 
   async update(
