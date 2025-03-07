@@ -44,6 +44,14 @@ export class ProductsController {
     return this.productsService.findBySlug(company_id, slug);
   }
 
+  @Get(':company_id/name/:name')
+  @Public()
+  async findByName(
+    @Param('company_id') company_id: string,
+    @Param('name') name: string,
+  ): Promise<any> {
+    return this.productsService.findByName(company_id, name);
+  }
   @Put(':company_id/:id')
   async update(
     @Param('company_id') company_id: string,

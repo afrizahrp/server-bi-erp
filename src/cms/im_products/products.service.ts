@@ -113,6 +113,42 @@ export class ProductsService {
     };
   }
 
+  async findByName(company_id: string, name: string): Promise<any> {
+    const product = await this.prisma.im_Products.findFirst({
+      where: {
+        company_id,
+        name: {
+          contains: name,
+          mode: 'insensitive',
+        },
+      },
+      include: {
+        category: {
+          select: { name: true },
+        },
+        images: {
+          select: { imageURL: true, isPrimary: true },
+        },
+        descriptions: {
+          select: { descriptions: true },
+        },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product with name ${name} not found`);
+    }
+
+    const primaryImages = product.images.filter((image) => image.isPrimary);
+    const primaryImageURL =
+      primaryImages.length > 0 ? primaryImages[0].imageURL : null;
+
+    return {
+      ...product,
+      primaryImageURL,
+    };
+  }
+
   async update(
     id: string,
     company_id: string,
