@@ -9,6 +9,7 @@ import { ProductsModule } from './cms/im_products/products.module';
 import { CategoriesModule } from './cms/im_categories/categories.module';
 import { UserCompaniesRoleModule } from './user-companies-role/user-companies-role.module';
 import { ProductDescsModule } from './im_productdescs/product-descs.module';
+import { BillboardsModule } from './cms/cms_billboards/billboards.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ProductDescsModule } from './im_productdescs/product-descs.module';
     CategoriesModule,
     UserCompaniesRoleModule,
     ProductDescsModule,
+    BillboardsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

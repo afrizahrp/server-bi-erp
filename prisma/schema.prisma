@@ -239,7 +239,7 @@ model im_Categories {
   type          Int                    @db.SmallInt
   id            String                 @db.Char(10)
   name          String?                @db.VarChar(80)
-  slug          String?                @unique @default(uuid()) @db.VarChar(50)
+  slug          String?                @unique @db.VarChar(50)
   remarks       String?                @db.VarChar(250)
   iStatus       MasterRecordStatusEnum @default(ACTIVE)
   iShowedStatus WebsiteDisplayStatus   @default(HIDDEN)
@@ -303,14 +303,15 @@ model im_Products {
   register_id    String?                @db.Char(20)
   catalog_id     String?                @db.Char(20)
   name           String                 @db.VarChar(250)
+  slug           String?                @db.VarChar(250)
   category_id    String                 @db.Char(10)
   subCategory_id String                 @db.Char(10)
   brand_id       String                 @db.Char(10)
   uom_id         String                 @db.Char(10)
+  eCatalogURL    String?                @db.VarChar(250)
+  remarks        String?                @db.VarChar(250)
   iStatus        MasterRecordStatusEnum @default(ACTIVE)
   iShowedStatus  WebsiteDisplayStatus   @default(HIDDEN)
-  slug           String?                @db.VarChar(250)
-  remarks        String?                @db.VarChar(250)
   isMaterial     Boolean                @default(false)
   isService      Boolean                @default(false)
   isFinishing    Boolean                @default(false)
@@ -448,4 +449,27 @@ model im_ProductImages {
   products   im_Products            @relation(fields: [product_id, company_id], references: [id, company_id], onUpdate: NoAction)
 
   @@id([product_id, company_id, id], map: "pk_im_ProductImages")
+}
+
+model cms_Billboards {
+  id            Int                    @default(autoincrement()) @db.SmallInt
+  section       Int                    @db.SmallInt
+  title         String?                @db.VarChar(50)
+  description   String?                @db.VarChar(250)
+  isShowBtn     Boolean?
+  btnText       String?                @db.VarChar(50)
+  isImage       Boolean?
+  iStatus       MasterRecordStatusEnum @default(ACTIVE)
+  iShowedStatus WebsiteDisplayStatus   @default(HIDDEN)
+  remarks       String?                @db.VarChar(250)
+  createdBy     String?                @db.Char(10)
+  createdAt     DateTime?              @default(now())
+  updatedBy     String?                @db.Char(10)
+  updatedAt     DateTime
+  company_id    String                 @db.Char(5)
+  branch_id     String                 @db.Char(10)
+  contentURL    String                 @db.VarChar(250)
+  content_id    String                 @db.Char(30)
+
+  @@id([company_id, id], map: "pk_cms_Billboards")
 }
