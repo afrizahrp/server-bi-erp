@@ -64,22 +64,22 @@ export class CategoriesService {
     return { data: formattedCategories as ResponseCmsCategoryDto[], total };
   }
 
-  async findOne(
-    company_id: string,
-    id: string,
-  ): Promise<ResponseCmsCategoryDto> {
-    const category = await this.prisma.im_Categories.findUnique({
-      where: { company_id_id: { company_id, id } },
-    });
-    if (!category) {
-      throw new NotFoundException(`Category with ID ${id} not found`);
-    }
-    return {
-      id: category.id.trim(),
-      name: category.name?.trim(),
-      slug: category.slug?.trim(),
-    } as ResponseCmsCategoryDto;
-  }
+  // async findOne(
+  //   company_id: string,
+  //   id: string,
+  // ): Promise<ResponseCmsCategoryDto> {
+  //   const category = await this.prisma.im_Categories.findUnique({
+  //     where: { company_id_id: { company_id, id } },
+  //   });
+  //   if (!category) {
+  //     throw new NotFoundException(`Category with ID ${id} not found`);
+  //   }
+  //   return {
+  //     id: category.id.trim(),
+  //     name: category.name?.trim(),
+  //     slug: category.slug?.trim(),
+  //   } as ResponseCmsCategoryDto;
+  // }
 
   async findBySlug(
     company_id: string,

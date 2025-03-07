@@ -30,17 +30,17 @@ export class CategoriesController {
     return this.categoryService.findAll(company_id, paginationDto);
   }
 
-  @Public()
-  @Get(':id')
-  async findOne(
-    @Param('company_id') company_id: string,
-    @Param('id') id: string,
-  ): Promise<ResponseCmsCategoryDto> {
-    return this.categoryService.findOne(company_id, id);
-  }
+  // @Public()
+  // @Get(':id')
+  // async findOne(
+  //   @Param('company_id') company_id: string,
+  //   @Param('id') id: string,
+  // ): Promise<ResponseCmsCategoryDto> {
+  //   return this.categoryService.findOne(company_id, id);
+  // }
 
   @Public()
-  @Get('slug/:slug')
+  @Get(':slug')
   async findBySlug(
     @Param('company_id') company_id: string,
     @Param('slug') slug: string,

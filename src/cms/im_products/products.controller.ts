@@ -28,16 +28,7 @@ export class ProductsController {
   }
 
   @Public()
-  @Get(':id')
-  async findOne(
-    @Param('company_id') company_id: string,
-    @Param('id') id: string,
-  ): Promise<ResponseCmsProductDto> {
-    return this.productsService.findOne(company_id, id);
-  }
-
-  @Public()
-  @Get('slug/:slug')
+  @Get(':slug')
   async findBySlug(
     @Param('company_id') company_id: string,
     @Param('slug') slug: string,
