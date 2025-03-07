@@ -106,10 +106,11 @@ export class ProductsService {
   async findByName(
     company_id: string,
     name: string,
-  ): Promise<ResponseCmsProductDto> {
-    const product = await this.prisma.im_Products.findFirst({
+  ): Promise<ResponseCmsProductDto[]> {
+    const products = await this.prisma.im_Products.findMany({
       where: {
         company_id,
+        iShowedStatus: 'SHOW',
         name: {
           contains: name,
           mode: 'insensitive',
@@ -128,27 +129,29 @@ export class ProductsService {
       },
     });
 
-    if (!product) {
-      throw new NotFoundException(`Product with name ${name} not found`);
+    if (products.length === 0) {
+      throw new NotFoundException(`Products with name ${name} not found`);
     }
 
-    const primaryImages = product.images.filter((image) => image.isPrimary);
-    const primaryImageURL =
-      primaryImages.length > 0 ? primaryImages[0].imageURL : null;
+    return products.map((product) => {
+      const primaryImages = product.images.filter((image) => image.isPrimary);
+      const primaryImageURL =
+        primaryImages.length > 0 ? primaryImages[0].imageURL : null;
 
-    return {
-      ...product,
-      id: product.id.trim(),
-      name: product.name.trim(),
-      slug: product.slug?.trim(),
-      catalog_id: product.catalog_id?.trim(),
-      register_id: product.register_id?.trim(),
-      category_id: product.category_id.trim(),
-      subCategory_id: product.subCategory_id.trim(),
-      brand_id: product.brand_id.trim(),
-      uom_id: product.uom_id?.trim(),
-      primaryImageURL,
-    } as ResponseCmsProductDto;
+      return {
+        ...product,
+        id: product.id.trim(),
+        name: product.name.trim(),
+        slug: product.slug?.trim(),
+        catalog_id: product.catalog_id?.trim(),
+        register_id: product.register_id?.trim(),
+        category_id: product.category_id.trim(),
+        subCategory_id: product.subCategory_id.trim(),
+        brand_id: product.brand_id.trim(),
+        uom_id: product.uom_id?.trim(),
+        primaryImageURL,
+      } as ResponseCmsProductDto;
+    });
   }
 
   async update(

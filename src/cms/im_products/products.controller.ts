@@ -9,10 +9,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
-import { UpdateProductDto } from './dto/updateProduct.dto';
-import { CreateProductDto } from './dto/createProduct.dto';
 import { ResponseCmsProductDto } from './dto/responseCmsProduct.dto';
 import { Public } from 'src/auth/decorators/public.decorator';
+
+// import { UpdateProductDto } from './dto/updateProduct.dto';
+// import { CreateProductDto } from './dto/createProduct.dto';
 
 @Controller(':company_id/cms/products')
 export class ProductsController {
@@ -37,11 +38,11 @@ export class ProductsController {
   }
 
   @Public()
-  @Get('name/:name')
+  @Get('search/:name')
   async findByName(
     @Param('company_id') company_id: string,
     @Param('name') name: string,
-  ): Promise<ResponseCmsProductDto> {
+  ): Promise<ResponseCmsProductDto[]> {
     return this.productsService.findByName(company_id, name);
   }
 }

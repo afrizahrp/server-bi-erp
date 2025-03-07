@@ -10,4 +10,8 @@ export class ResponseCmsCategoryDto {
   @IsString()
   @IsOptional()
   slug?: string;
+
+  @IsString()
+  @IsOptional()
+  imageURL?: string;
 }
