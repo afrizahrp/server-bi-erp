@@ -1,5 +1,5 @@
 // src/products/dto/product-response.dto.ts
-export class ResponseProductDto {
+export class ResponseCmsProductDto {
   id: string;
   register_id?: string;
   catalog_id?: string;

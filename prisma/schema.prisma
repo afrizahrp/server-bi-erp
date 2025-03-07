@@ -299,35 +299,35 @@ model im_Brands {
 }
 
 model im_Products {
-  id               String                 @db.Char(20)
-  register_id      String?                @db.Char(20)
-  catalog_id       String?                @db.Char(20)
-  name             String                 @db.VarChar(250)
-  category_id      String                 @db.Char(10)
-  subCategory_id   String                 @db.Char(10)
-  brand_id         String                 @db.Char(10)
-  uom_id           String                 @db.Char(10)
-  iStatus          MasterRecordStatusEnum @default(ACTIVE)
-  iShowedStatus    WebsiteDisplayStatus   @default(HIDDEN)
-  slug             String?                @db.VarChar(250)
-  remarks          String?                @db.VarChar(250)
-  isMaterial       Boolean                @default(false)
-  isService        Boolean                @default(false)
-  isFinishing      Boolean                @default(false)
-  isAccessories    Boolean                @default(false)
-  createdBy        String?                @db.Char(10)
-  createdAt        DateTime               @default(now())
-  updatedBy        String?                @db.Char(10)
-  updatedAt        DateTime
-  company_id       String                 @db.Char(5)
-  branch_id        String                 @db.Char(10)
-  productStock     im_ProductStock[]
-  brand            im_Brands              @relation(fields: [company_id, brand_id], references: [company_id, id], onUpdate: NoAction)
-  category         im_Categories          @relation(fields: [company_id, category_id], references: [company_id, id], onUpdate: NoAction)
-  subCategory      im_SubCategories       @relation(fields: [company_id, category_id, subCategory_id], references: [company_id, category_id, id], onUpdate: NoAction)
-  uom              im_Uoms                @relation(fields: [company_id, uom_id], references: [company_id, id], onUpdate: NoAction)
-  im_ProductDescs  im_ProductDescs[]
-  im_ProductImages im_ProductImages[]
+  id             String                 @db.Char(20)
+  register_id    String?                @db.Char(20)
+  catalog_id     String?                @db.Char(20)
+  name           String                 @db.VarChar(250)
+  category_id    String                 @db.Char(10)
+  subCategory_id String                 @db.Char(10)
+  brand_id       String                 @db.Char(10)
+  uom_id         String                 @db.Char(10)
+  iStatus        MasterRecordStatusEnum @default(ACTIVE)
+  iShowedStatus  WebsiteDisplayStatus   @default(HIDDEN)
+  slug           String?                @db.VarChar(250)
+  remarks        String?                @db.VarChar(250)
+  isMaterial     Boolean                @default(false)
+  isService      Boolean                @default(false)
+  isFinishing    Boolean                @default(false)
+  isAccessories  Boolean                @default(false)
+  createdBy      String?                @db.Char(10)
+  createdAt      DateTime               @default(now())
+  updatedBy      String?                @db.Char(10)
+  updatedAt      DateTime
+  company_id     String                 @db.Char(5)
+  branch_id      String                 @db.Char(10)
+  productStock   im_ProductStock[]
+  brand          im_Brands              @relation(fields: [company_id, brand_id], references: [company_id, id], onUpdate: NoAction)
+  category       im_Categories          @relation(fields: [company_id, category_id], references: [company_id, id], onUpdate: NoAction)
+  subCategory    im_SubCategories       @relation(fields: [company_id, category_id, subCategory_id], references: [company_id, category_id, id], onUpdate: NoAction)
+  uom            im_Uoms                @relation(fields: [company_id, uom_id], references: [company_id, id], onUpdate: NoAction)
+  descriptions   im_ProductDescs[]
+  images         im_ProductImages[]
 
   @@id([company_id, id], map: "pk_im_Products")
   @@unique([company_id, id], map: "unique_company_id_id")
