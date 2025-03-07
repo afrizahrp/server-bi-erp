@@ -21,6 +21,7 @@ export class CategoriesService {
       id: category.id.trim(),
       name: category.name?.trim(),
       imageURL: category.imageURL?.trim(),
+      slug: category.slug,
     }));
 
     return { data: formattedCategories };
@@ -42,6 +43,29 @@ export class CategoriesService {
       categoryType: category.categoryType?.name,
       iStatus: category.iStatus,
       remarks: category.remarks,
+      slug: category.slug,
+    } as ResponseCategoryDto;
+  }
+
+  async findBySlug(company_id: string, slug: string): Promise<any> {
+    const category = await this.prisma.im_Categories.findUnique({
+      where: { company_id, slug },
+      include: {
+        categoryType: true,
+      },
+    });
+
+    if (!category) {
+      throw new NotFoundException(`Category with slug ${slug} not found`);
+    }
+
+    return {
+      id: category.id,
+      name: category.name,
+      categoryType: category.categoryType?.name,
+      iStatus: category.iStatus,
+      remarks: category.remarks,
+      slug: category.slug,
     } as ResponseCategoryDto;
   }
 }

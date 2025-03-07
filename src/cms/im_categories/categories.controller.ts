@@ -28,11 +28,21 @@ export class CategoriesController {
     return this.categoryService.findAll(company_id);
   }
 
+  @Public()
   @Get(':company_id/:id')
   async findOne(
     @Param('company_id') company_id: string,
     @Param('id') id: string,
   ): Promise<ResponseCategoryDto> {
     return this.categoryService.findOne(company_id, id);
+  }
+
+  @Get(':company_id/slug/:slug')
+  @Public()
+  async findBySlug(
+    @Param('company_id') company_id: string,
+    @Param('slug') slug: string,
+  ): Promise<any> {
+    return this.categoryService.findBySlug(company_id, slug);
   }
 }

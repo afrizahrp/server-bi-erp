@@ -17,5 +17,9 @@ export class ResponseCategoryDto {
 
   @IsString()
   @IsOptional()
+  slug?: string;
+
+  @IsString()
+  @IsOptional()
   remarks?: string;
 }

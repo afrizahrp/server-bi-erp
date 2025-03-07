@@ -20,9 +20,11 @@ export class ProductsService {
     } as ResponseProductDto;
   }
 
-  async findAll(company_id: string): Promise<any[]> {
+  // async findBySlug(company_id: string, slug: string): Promise<any> {
+
+  async findAll(company_id: string, category_id: string): Promise<any[]> {
     const products = await this.prisma.im_Products.findMany({
-      where: { company_id, iShowedStatus: 'SHOW' },
+      where: { company_id, category_id, iShowedStatus: 'SHOW' },
       include: {
         category: {
           select: { name: true },

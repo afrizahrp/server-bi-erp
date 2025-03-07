@@ -17,14 +17,13 @@ export class ProductsController {
     return this.productsService.create(createProductDto);
   }
 
-  @Get()
   @Public()
+  @Get(':company_id/:category_id')
   async findAll(
-    @Query('company_id') company_id: string,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
+    @Param('company_id') company_id: string,
+    @Param('category_id') category_id: string,
   ): Promise<ResponseProductDto[]> {
-    return this.productsService.findAll(company_id);
+    return this.productsService.findAll(company_id, category_id);
   }
 
   @Get(':company_id/:id')
