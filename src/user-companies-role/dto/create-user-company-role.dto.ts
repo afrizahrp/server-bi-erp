@@ -5,13 +5,13 @@ export class CreateUserCompanyRoleDto {
   user_id: number;
 
   @IsString()
-  @Length(4, 4, { message: 'company_id harus 5 karakter' })
+  // @Length(4, 4, { message: 'company_id harus 5 karakter' })
   company_id: string;
 
   @IsString()
-  @Length(4, 4, { message: 'branch_id harus 10 karakter' })
+  // @Length(4, 4, { message: 'branch_id harus 10 karakter' })
   branch_id: string;
 
-  @IsInt()
-  role_id: number;
+  @IsString()
+  role_id: string;
 }

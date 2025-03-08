@@ -9,7 +9,7 @@ export class UserCompaniesRoleService {
     userId: number,
     company_id: string,
     branch_id: string,
-    role_id: number,
+    role_id: string,
   ) {
     return await this.prisma.sys_UserCompaniesRole.create({
       data: {
@@ -32,7 +32,7 @@ export class UserCompaniesRoleService {
     userId: number,
     company_id: string,
     branch_id: string,
-    role_id: number,
+    role_id: string,
   ) {
     return await this.prisma.sys_UserCompaniesRole.updateMany({
       where: { user_id: userId, company_id, branch_id },

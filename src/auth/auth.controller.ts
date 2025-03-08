@@ -53,7 +53,7 @@ export class AuthController {
     return this.authService.login(name, password, company_id);
   }
 
-  @Roles(1)
+  @Roles('ADMIN')
   @Get('protected')
   getAll(@Request() req): string {
     console.log(req.user);

@@ -54,7 +54,7 @@ enum WebsiteDisplayStatus {
 }
 
 model sys_Roles {
-  id            Int                     @id @default(autoincrement()) @db.SmallInt
+  id            String                  @id @db.Char(20)
   name          String                  @db.VarChar(20)
   iStatus       MasterRecordStatusEnum  @default(ACTIVE)
   remarks       String?                 @db.VarChar(255)
@@ -76,7 +76,7 @@ model sys_User {
 model sys_UserCompaniesRole {
   id         Int                    @id @default(autoincrement()) @db.SmallInt
   user_id    Int                    @db.SmallInt
-  role_id    Int                    @db.SmallInt
+  role_id    String                 @db.Char(20)
   company_id String                 @db.Char(5)
   branch_id  String                 @db.Char(10)
   iStatus    MasterRecordStatusEnum @default(ACTIVE)

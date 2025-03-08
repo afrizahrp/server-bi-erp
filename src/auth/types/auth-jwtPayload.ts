@@ -1,4 +1,4 @@
 export type AuthJwtPayload = {
   sub: number;
-  role_id: number;
+  role_id: string;
 };

@@ -19,7 +19,7 @@ export class UserCompaniesRoleController {
     private readonly userCompaniesRoleService: UserCompaniesRoleService,
   ) {}
 
-  @Roles(1, 3)
+  @Roles('ADMIN')
   @Post()
   async addUserToCompany(
     @Body() createUserCompanyDto: CreateUserCompanyRoleDto,
@@ -28,11 +28,11 @@ export class UserCompaniesRoleController {
       createUserCompanyDto.user_id,
       createUserCompanyDto.company_id,
       createUserCompanyDto.branch_id,
-      createUserCompanyDto.role_id,
+      createUserCompanyDto.role_id.trim(),
     );
   }
 
-  @Roles(1, 3)
+  @Roles('ADMIN')
   @Get(':user_id')
   async getUserCompanies(@Param('user_id') user_id: number) {
     return this.userCompaniesRoleService.getUserCompanies(user_id);
@@ -46,7 +46,7 @@ export class UserCompaniesRoleController {
       updateUserCompanyDto.user_id,
       updateUserCompanyDto.company_id,
       updateUserCompanyDto.branch_id,
-      updateUserCompanyDto.role_id,
+      updateUserCompanyDto.role_id.trim(),
     );
   }
 

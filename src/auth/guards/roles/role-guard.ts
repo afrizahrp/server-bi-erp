@@ -11,7 +11,7 @@ export class RolesGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredRoles = this.reflector.getAllAndOverride<number[]>(
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>(
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
     );
@@ -40,7 +40,9 @@ export class RolesGuard implements CanActivate {
     console.log('User:', user);
     console.log('User Role:', userCompaniesRole.role);
 
-    const hasRequiredRole = requiredRoles.includes(userCompaniesRole.role.id);
+    const hasRequiredRole = requiredRoles.includes(
+      userCompaniesRole.role.id.trim(),
+    );
     console.log('Has required role:', hasRequiredRole);
     return hasRequiredRole;
   }

@@ -96,7 +96,7 @@ export class AuthService {
           ? {
               company_id: selectedCompany.company_id.trim(),
               branch_id: selectedCompany.branch_id.trim(),
-              role_id: selectedCompany.role_id,
+              role_id: selectedCompany.role_id.trim(),
               role_name: selectedCompany.role.name,
             }
           : null,
@@ -117,7 +117,7 @@ export class AuthService {
     };
   }
 
-  async generateTokens(id: number, role_id: number) {
+  async generateTokens(id: number, role_id: string) {
     const payload: AuthJwtPayload = { sub: id, role_id };
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload),
@@ -180,7 +180,7 @@ export class AuthService {
     return currentUser;
   }
 
-  async refreshToken(id: number, role_id: number) {
+  async refreshToken(id: number, role_id: string) {
     const { accessToken, refreshToken } = await this.generateTokens(
       id,
       role_id,
