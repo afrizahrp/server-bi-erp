@@ -7,12 +7,13 @@ import {
   Put,
   Delete,
 } from '@nestjs/common';
+import { Public } from 'src/auth/decorators/public.decorator';
 import { Sys_CompanyService } from './sys_Company.service';
 import { Sys_CreateCompanyDto } from './dto/sys_CreateCompany.dto';
 import { Sys_UpdateCompanyDto } from './dto/sys_UpdateCompany.dto';
 import { Sys_ResponseCompanyDto } from './dto/sys_ResponseCompany.dto';
 
-@Controller('sys/companies')
+@Controller('sys_company')
 export class sys_CompanyController {
   constructor(private readonly companyService: Sys_CompanyService) {}
 
@@ -24,6 +25,7 @@ export class sys_CompanyController {
   }
 
   @Get()
+  @Public()
   async findAll(): Promise<Sys_ResponseCompanyDto[]> {
     return this.companyService.findAll();
   }

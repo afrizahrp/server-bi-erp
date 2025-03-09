@@ -27,6 +27,7 @@ model sys_Company {
   email1          String?  @db.VarChar(100)
   email2          String?  @db.VarChar(100)
   email3          String?  @db.VarChar(100)
+  image           String?  @db.VarChar(255)
   officialWebsite String?  @db.VarChar(100)
   createdBy       String?  @db.Char(10)
   createdAt       DateTime
