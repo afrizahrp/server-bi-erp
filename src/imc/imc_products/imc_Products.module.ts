@@ -8,4 +8,4 @@ import { PrismaService } from 'src/prisma.service';
   providers: [imc_ProductsService, PrismaService],
   exports: [imc_ProductsService],
 })
-export class ProductsModule {}
+export class imc_ProductsModule {}

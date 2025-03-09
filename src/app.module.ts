@@ -12,6 +12,9 @@ import { cms_CategoriesModule } from './cms/cms_categories/cms_Categories.module
 import { cms_ProductsModule } from './cms/cms_products/cms_Products.module';
 import { cms_ProductDescsModule } from './cms/cms_productdescs/cms_ProductDescs.module';
 
+import { imc_CategoriesModule } from './imc/imc_categories/imc_Categories.module';
+import { imc_ProductsModule } from './imc/imc_products/imc_Products.module';
+
 // import { CategoriesModule } from './im/im_categories/categories.module';
 
 @Module({
@@ -26,6 +29,8 @@ import { cms_ProductDescsModule } from './cms/cms_productdescs/cms_ProductDescs.
     cms_ProductsModule,
     cms_ProductDescsModule,
     cms_BillboardsModule,
+    imc_CategoriesModule,
+    imc_ProductsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
