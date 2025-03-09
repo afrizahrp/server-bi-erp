@@ -55,7 +55,7 @@ export class AuthService {
   async login(name: string, password: string, company_id?: string) {
     const validatedUser = await this.validateLocalUser(name, password);
 
-    const userCompanies = await this.prisma.sys_UserCompaniesRole.findMany({
+    const userCompanies = await this.prisma.sys_UserCompanyRole.findMany({
       where: { user_id: validatedUser.id },
       include: { role: true },
     });
@@ -134,12 +134,10 @@ export class AuthService {
     const user = await this.sys_userService.findOne(id);
     if (!user) throw new UnauthorizedException('User not found!');
 
-    const userCompaniesRole = await this.prisma.sys_UserCompaniesRole.findFirst(
-      {
-        where: { user_id: user.id },
-        include: { role: true },
-      },
-    );
+    const userCompaniesRole = await this.prisma.sys_UserCompanyRole.findFirst({
+      where: { user_id: user.id },
+      include: { role: true },
+    });
 
     if (!userCompaniesRole) {
       throw new UnauthorizedException('User role not found!');
@@ -165,12 +163,10 @@ export class AuthService {
     if (!refreshTokenMatched)
       throw new UnauthorizedException('Invalid Refresh Token!');
 
-    const userCompaniesRole = await this.prisma.sys_UserCompaniesRole.findFirst(
-      {
-        where: { user_id: user.id },
-        include: { role: true },
-      },
-    );
+    const userCompaniesRole = await this.prisma.sys_UserCompanyRole.findFirst({
+      where: { user_id: user.id },
+      include: { role: true },
+    });
 
     if (!userCompaniesRole) {
       throw new UnauthorizedException('User role not found!');

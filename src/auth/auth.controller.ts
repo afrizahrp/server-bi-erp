@@ -20,6 +20,7 @@ import { RolesGuard } from './guards/roles/role-guard';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
   @Public()
   @Post('register')
   async registerUser(@Body() sys_CreateUserDto: Sys_CreateUserDto) {
@@ -39,7 +40,9 @@ export class AuthController {
   //     req.user.image,
   //   );
   // }
+
   @Public()
+  @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(
     @Body() body: { name: string; password: string; company_id?: string },

@@ -25,12 +25,10 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
-    const userCompaniesRole = await this.prisma.sys_UserCompaniesRole.findFirst(
-      {
-        where: { user_id: user.id },
-        include: { role: true },
-      },
-    );
+    const userCompaniesRole = await this.prisma.sys_UserCompanyRole.findFirst({
+      where: { user_id: user.id },
+      include: { role: true },
+    });
 
     if (!userCompaniesRole) {
       console.log('Role not found for user');

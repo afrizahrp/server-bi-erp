@@ -3,19 +3,19 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { sys_UserModule } from './sys/sys_user/sys_User.module';
-import { sys_UserCompaniesRoleModule } from './sys/sys_userCompaniesRole/sys_UserCompaniesRole.module';
+import { sys_UserCompanyRoleModule } from './sys/sys_userCompanyRole/sys_UserCompaniesRole.module';
 
 import { AuthModule } from './auth/auth.module';
 import { PrismaService } from './prisma.service';
-import { cms_BillboardsModule } from './cms/cms_billboards/cms_Billboards.module';
-import { cms_CategoriesModule } from './cms/cms_categories/cms_Categories.module';
-import { cms_ProductsModule } from './cms/cms_products/cms_Products.module';
-import { cms_ProductDescsModule } from './cms/cms_productdescs/cms_ProductDescs.module';
+import { cms_BillboardsModule } from './cms/cms_billboard/cms_Billboard.module';
+import { cms_CategoryModule } from './cms/cms_category/cms_Category.module';
+import { cms_ProductModule } from './cms/cms_products/cms_Product.module';
+import { cms_ProductDescModule } from './cms/cms_productdesc/cms_ProductDesc.module';
 
-import { imc_CategoriesModule } from './imc/imc_categories/imc_Categories.module';
-import { imc_ProductsModule } from './imc/imc_products/imc_Products.module';
+import { imc_CategoryModule } from './imc/imc_category/imc_Categories.module';
+import { imc_ProductModule } from './imc/imc_product/imc_Product.module';
 
-// import { CategoriesModule } from './im/im_categories/categories.module';
+import { sys_CompanyModule } from './sys/sys_company/sys_Company.module';
 
 @Module({
   imports: [
@@ -24,15 +24,16 @@ import { imc_ProductsModule } from './imc/imc_products/imc_Products.module';
     }),
     sys_UserModule,
     AuthModule,
-    sys_UserCompaniesRoleModule,
-    cms_CategoriesModule,
-    cms_ProductsModule,
-    cms_ProductDescsModule,
+    sys_UserCompanyRoleModule,
+    cms_CategoryModule,
+    cms_ProductModule,
+    cms_ProductDescModule,
     cms_BillboardsModule,
-    imc_CategoriesModule,
-    imc_ProductsModule,
+    imc_CategoryModule,
+    imc_ProductModule,
+    sys_CompanyModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PrismaService],
+  providers: [AppService, PrismaService, sys_CompanyModule],
 })
 export class AppModule {}
