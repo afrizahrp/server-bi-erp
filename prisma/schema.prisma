@@ -8,30 +8,31 @@ datasource db {
 }
 
 model sys_Company {
-  seq_no          Int      @db.SmallInt
-  id              String   @id @db.Char(5)
-  name            String?  @db.VarChar(50)
-  province        String?  @db.VarChar(50)
-  district        String?  @db.VarChar(50)
-  city            String?  @db.VarChar(50)
-  address1        String?  @db.VarChar(250)
-  address2        String?  @db.VarChar(250)
-  address3        String?  @db.VarChar(250)
-  postalCode      String?  @db.Char(6)
-  phone1          String?  @db.VarChar(20)
-  phone2          String?  @db.VarChar(20)
-  phone3          String?  @db.VarChar(20)
-  mobile1         String?  @db.VarChar(20)
-  mobile2         String?  @db.VarChar(20)
-  mobile3         String?  @db.VarChar(20)
-  email1          String?  @db.VarChar(100)
-  email2          String?  @db.VarChar(100)
-  email3          String?  @db.VarChar(100)
-  image           String?  @db.VarChar(255)
-  officialWebsite String?  @db.VarChar(100)
-  createdBy       String?  @db.Char(10)
+  seq_no          Int                    @db.SmallInt
+  id              String                 @id @db.Char(5)
+  name            String?                @db.VarChar(50)
+  iStatus         MasterRecordStatusEnum @default(ACTIVE)
+  province        String?                @db.VarChar(50)
+  district        String?                @db.VarChar(50)
+  city            String?                @db.VarChar(50)
+  address1        String?                @db.VarChar(250)
+  address2        String?                @db.VarChar(250)
+  address3        String?                @db.VarChar(250)
+  postalCode      String?                @db.Char(6)
+  phone1          String?                @db.VarChar(20)
+  phone2          String?                @db.VarChar(20)
+  phone3          String?                @db.VarChar(20)
+  mobile1         String?                @db.VarChar(20)
+  mobile2         String?                @db.VarChar(20)
+  mobile3         String?                @db.VarChar(20)
+  email1          String?                @db.VarChar(100)
+  email2          String?                @db.VarChar(100)
+  email3          String?                @db.VarChar(100)
+  officialWebsite String?                @db.VarChar(100)
+  companyLogo     String?                @db.VarChar(255)
+  createdBy       String?                @db.Char(10)
   createdAt       DateTime
-  updatedBy       String?  @db.Char(10)
+  updatedBy       String?                @db.Char(10)
   updatedAt       DateTime
 
   @@index([seq_no], map: "idx_sys_Company_seq_no")
@@ -73,31 +74,53 @@ model sys_UserCompanyRole {
 }
 
 model sys_menu {
-  id               Int                    @id @default(autoincrement())
-  parent_id        Int?                   @db.SmallInt
-  menu_description String                 @db.VarChar(255)
-  folder           Boolean                @default(false)
-  module_code      String?                @db.VarChar(50)
-  image_key        String?                @db.VarChar(10)
-  iStatus          MasterRecordStatusEnum @default(ACTIVE)
+  id               Int                   @id @default(autoincrement())
+  parent_id        Int?                  @db.SmallInt
+  menu_description String                @db.VarChar(255)
+  href             String?               @db.VarChar(255) // Untuk href
+  module_id        String                @db.Char(3) // Untuk menentukan module (imc, cms, dll.)
+  menu_type        String?               @db.VarChar(50) // classic, mega, nested
+  has_child        Boolean               @default(false)
+  icon             String?               @db.VarChar(50) // Nama icon atau path/icon key
+  iStatus          String                @default("1") // 1: Active, 0: Inactive
+  createdBy        String?               @db.Char(10)
+  createdAt        DateTime              @default(now())
+  updatedBy        String?               @db.Char(10)
+  updatedAt        DateTime?
+  company_id       String                @db.Char(5)
+  branch_id        String                @db.Char(10)
   permissions      sys_menu_permission[]
+
+  // Relasi ke submenu
+  parent   sys_menu?  @relation("SubMenu", fields: [parent_id], references: [id]) // Parent dari menu ini
+  children sys_menu[] @relation("SubMenu") // Semua submenu dari menu ini
 }
 
 model sys_menu_permission {
-  id                   Int                    @id @default(autoincrement())
-  userCompaniesRole_id Int
-  menu_id              Int
-  can_view             Boolean                @default(false)
-  can_create           Boolean                @default(false)
-  can_edit             Boolean                @default(false)
-  can_delete           Boolean                @default(false)
-  can_print            Boolean                @default(false)
-  can_approve          Boolean                @default(false)
-  iStatus              MasterRecordStatusEnum @default(ACTIVE)
-  menu                 sys_menu               @relation(fields: [menu_id], references: [id])
-  userCompanies        sys_UserCompanyRole    @relation(fields: [userCompaniesRole_id], references: [id])
+  id                 Int                    @id @default(autoincrement())
+  userCompanyRole_id Int
+  menu_id            Int
+  can_view           Boolean                @default(false)
+  can_create         Boolean                @default(false)
+  can_edit           Boolean                @default(false)
+  can_delete         Boolean                @default(false)
+  can_print          Boolean                @default(false)
+  can_approve        Boolean                @default(false)
+  iStatus            MasterRecordStatusEnum @default(ACTIVE)
+  createdBy          String?                @db.Char(10)
+  createdAt          DateTime               @default(now())
+  updatedBy          String?                @db.Char(10)
+  updatedAt          DateTime?
+  company_id         String                 @db.Char(5)
+  branch_id          String                 @db.Char(10)
 
-  @@unique([userCompaniesRole_id, menu_id])
+  // Relasi ke sys_menu
+  menu sys_menu @relation(fields: [menu_id], references: [id], onDelete: Cascade)
+
+  // Relasi ke sys_UserCompanyRole
+  userCompanyRole sys_UserCompanyRole @relation(fields: [userCompanyRole_id], references: [id], onDelete: Cascade)
+
+  @@unique([userCompanyRole_id, menu_id])
 }
 
 model sys_Migration_log {
