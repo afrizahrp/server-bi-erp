@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { UserService } from 'src/user/user.service';
+import { sys_UserService } from 'src/sys/sys_user/sys_User.service';
 import { PrismaService } from 'src/prisma.service';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtService } from '@nestjs/jwt';
@@ -26,7 +26,7 @@ dotenv.config();
   controllers: [AuthController],
   providers: [
     AuthService,
-    UserService,
+    sys_UserService,
     PrismaService,
     LocalStrategy,
     JwtStrategy,

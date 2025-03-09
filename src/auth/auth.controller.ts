@@ -8,7 +8,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { CreateUserDto } from 'src/user/dto/createUser.dto';
+import { Sys_CreateUserDto } from 'src/sys/sys_user/dto/sys_CreateUser.dto';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth/local-auth.guard';
 import { LoginDto } from './dto/login.dto';
@@ -22,8 +22,8 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
   @Public()
   @Post('register')
-  async registerUser(@Body() createUserDto: CreateUserDto) {
-    return await this.authService.registerUser(createUserDto);
+  async registerUser(@Body() sys_CreateUserDto: Sys_CreateUserDto) {
+    return await this.authService.registerUser(sys_CreateUserDto);
   }
 
   // @Public()

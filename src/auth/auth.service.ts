@@ -4,8 +4,8 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { UserService } from 'src/user/user.service';
-import { CreateUserDto } from 'src/user/dto/createUser.dto';
+import { sys_UserService } from 'src/sys/sys_user/sys_User.service';
+import { Sys_CreateUserDto } from 'src/sys/sys_user/dto/sys_CreateUser.dto';
 import { hash, verify } from 'argon2';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma.service';
@@ -16,23 +16,23 @@ import { AuthJwtPayload } from './types/auth-jwtPayload';
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly userService: UserService,
+    private readonly sys_userService: sys_UserService,
     private readonly jwtService: JwtService,
     private prisma: PrismaService,
     @Inject(refreshConfig.KEY)
     private refreshTokenConfig: ConfigType<typeof refreshConfig>,
   ) {}
 
-  async registerUser(CreateUserDto: CreateUserDto) {
-    const user = await this.userService.findByName(CreateUserDto.name);
+  async registerUser(sys_CreateUserDto: Sys_CreateUserDto) {
+    const user = await this.sys_userService.findByName(sys_CreateUserDto.name);
     if (user) {
       throw new ConflictException('User already exists');
     }
-    return this.userService.create(CreateUserDto);
+    return this.sys_userService.create(sys_CreateUserDto);
   }
 
   async validateLocalUser(name: string, password: string) {
-    const user = await this.userService.findByName(name);
+    const user = await this.sys_userService.findByName(name);
 
     if (!user) {
       throw new UnauthorizedException('User has not been registered');
@@ -131,7 +131,7 @@ export class AuthService {
   }
 
   async validateJwtUser(id: number) {
-    const user = await this.userService.findOne(id);
+    const user = await this.sys_userService.findOne(id);
     if (!user) throw new UnauthorizedException('User not found!');
 
     const userCompaniesRole = await this.prisma.sys_UserCompaniesRole.findFirst(
@@ -150,7 +150,7 @@ export class AuthService {
   }
 
   async validateRefreshToken(id: number, refreshToken: string) {
-    const user = await this.userService.findById(id);
+    const user = await this.sys_userService.findById(id);
     if (!user) throw new UnauthorizedException('User not found!');
 
     if (!user.hashedRefreshToken) {
@@ -186,7 +186,7 @@ export class AuthService {
       role_id,
     );
     const hashedRT = await hash(refreshToken);
-    await this.userService.updateHashedRefreshToken(id, hashedRT);
+    await this.sys_userService.updateHashedRefreshToken(id, hashedRT);
     return {
       id: id,
       accessToken,
@@ -195,6 +195,6 @@ export class AuthService {
   }
 
   async signOut(id: number) {
-    return await this.userService.updateHashedRefreshToken(id, null);
+    return await this.sys_userService.updateHashedRefreshToken(id, null);
   }
 }

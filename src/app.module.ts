@@ -2,27 +2,30 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
-import { UserModule } from './user/user.module';
+import { sys_UserModule } from './sys/sys_user/sys_User.module';
+import { sys_UserCompaniesRoleModule } from './sys/sys_userCompaniesRole/sys_UserCompaniesRole.module';
+
 import { AuthModule } from './auth/auth.module';
 import { PrismaService } from './prisma.service';
-import { ProductsModule } from './cms/im_products/products.module';
-import { CategoriesModule } from './cms/im_categories/categories.module';
-import { UserCompaniesRoleModule } from './user-companies-role/user-companies-role.module';
-import { ProductDescsModule } from './im_productdescs/product-descs.module';
-import { BillboardsModule } from './cms/cms_billboards/billboards.module';
+import { cms_BillboardsModule } from './cms/cms_billboards/cms_Billboards.module';
+import { cms_CategoriesModule } from './cms/cms_categories/cms_Categories.module';
+import { cms_ProductsModule } from './cms/cms_products/cms_Products.module';
+import { cms_ProductDescsModule } from './cms/cms_productdescs/cms_ProductDescs.module';
+
+// import { CategoriesModule } from './im/im_categories/categories.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    UserModule,
+    sys_UserModule,
     AuthModule,
-    ProductsModule,
-    CategoriesModule,
-    UserCompaniesRoleModule,
-    ProductDescsModule,
-    BillboardsModule,
+    sys_UserCompaniesRoleModule,
+    cms_CategoriesModule,
+    cms_ProductsModule,
+    cms_ProductDescsModule,
+    cms_BillboardsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

@@ -84,6 +84,8 @@ model sys_UserCompaniesRole {
   user       sys_User               @relation(fields: [user_id], references: [id])
   role       sys_Roles              @relation(fields: [role_id], references: [id])
   permission sys_menu_permissions[]
+
+  @@unique([user_id, company_id, branch_id])
 }
 
 model sys_menus {
@@ -122,7 +124,7 @@ model sys_Migration_log {
   status         String
 }
 
-model im_Warehouse {
+model imc_Warehouse {
   id         String                 @id @db.Char(4)
   name       String?                @db.Char(60)
   iMain      Int?
@@ -136,11 +138,11 @@ model im_Warehouse {
   updatedAt  DateTime
   company_id String                 @db.Char(5)
   branch_id  String                 @db.Char(10)
-  floor      im_Floor[]
+  floor      imc_Floor[]
   // status     sys_MasterTableStatus @relation(fields: [iStatus], references: [id])
 }
 
-model im_Floor {
+model imc_Floor {
   warehouse_id String                 @db.Char(4)
   id           String                 @id(map: "pk_ic_floor") @db.Char(5)
   name         String?                @db.Char(35)
@@ -152,12 +154,12 @@ model im_Floor {
   company_id   String                 @db.Char(5)
   branch_id    String                 @db.Char(10)
   // status       sys_MasterTableStatus @relation(fields: [iStatus], references: [id])
-  warehouse    im_Warehouse           @relation(fields: [warehouse_id], references: [id], onDelete: NoAction)
-  row          im_Row[]
-  shelf        im_Shelf[]
+  warehouse    imc_Warehouse          @relation(fields: [warehouse_id], references: [id], onDelete: NoAction)
+  row          imc_Row[]
+  shelf        imc_Shelf[]
 }
 
-model im_Shelf {
+model imc_Shelf {
   floor_id   String                 @db.Char(5)
   id         String                 @db.Char(15)
   name       String?                @db.Char(35)
@@ -168,15 +170,15 @@ model im_Shelf {
   updatedAt  DateTime
   company_id String                 @db.Char(5)
   branch_id  String                 @db.Char(10)
-  im_row     im_Row[]
-  im_floor   im_Floor               @relation(fields: [floor_id], references: [id], onDelete: NoAction)
+  imc_row    imc_Row[]
+  imc_floor  imc_Floor              @relation(fields: [floor_id], references: [id], onDelete: NoAction)
   // status     sys_MasterTableStatus @relation(fields: [iStatus], references: [id])
 
   @@id([floor_id, id], map: "pk_ic_shelf")
   @@unique([floor_id, id], map: "unique_floor_id_shelf_id")
 }
 
-model im_Row {
+model imc_Row {
   floor_id   String                 @db.Char(5)
   shelf_id   String                 @db.Char(15)
   id         String                 @db.Char(15)
@@ -189,8 +191,8 @@ model im_Row {
   company_id String                 @db.Char(5)
   branch_id  String                 @db.Char(10)
   storages   String?                @db.Char(15)
-  floor      im_Floor               @relation(fields: [floor_id], references: [id], onDelete: NoAction)
-  shelf      im_Shelf               @relation(fields: [floor_id, shelf_id], references: [floor_id, id], onDelete: NoAction)
+  floor      imc_Floor              @relation(fields: [floor_id], references: [id], onDelete: NoAction)
+  shelf      imc_Shelf              @relation(fields: [floor_id, shelf_id], references: [floor_id, id], onDelete: NoAction)
   // status     sys_MasterTableStatus @relation(fields: [iStatus], references: [id])
 
   @@id([floor_id, shelf_id, id], map: "pk_ic_row")
@@ -199,7 +201,7 @@ model im_Row {
 
 /// *
 /// * Product grouping
-model im_Uoms {
+model imc_Uoms {
   id         String                 @db.Char(10)
   name       String?                @db.VarChar(50)
   iStatus    MasterRecordStatusEnum @default(ACTIVE)
@@ -210,12 +212,12 @@ model im_Uoms {
   updatedAt  DateTime
   company_id String                 @db.Char(5)
   branch_id  String                 @db.Char(10)
-  products   im_Products[]
+  products   imc_Products[]
 
-  @@id([company_id, id], map: "pk_im_Uoms")
+  @@id([company_id, id], map: "pk_imc_Uoms")
 }
 
-model im_CategoryTypes {
+model imc_CategoryTypes {
   id           Int                    @id @db.SmallInt
   name         String?                @db.VarChar(20)
   iStatus      MasterRecordStatusEnum @default(ACTIVE)
@@ -231,11 +233,11 @@ model im_CategoryTypes {
   updatedAt    DateTime
   company_id   String                 @db.Char(5)
   branch_id    String                 @db.Char(10)
-  categories   im_Categories[]
+  categories   imc_Categories[]
   // status       sys_MasterTableStatus @relation(fields: [iStatus], references: [id])
 }
 
-model im_Categories {
+model imc_Categories {
   type          Int                    @db.SmallInt
   id            String                 @db.Char(10)
   name          String?                @db.VarChar(80)
@@ -252,53 +254,53 @@ model im_Categories {
   branch_id     String                 @db.Char(10)
   href          String?                @db.VarChar(150)
   icon          String?                @db.VarChar(50)
-  categoryType  im_CategoryTypes       @relation(fields: [type], references: [id], onUpdate: NoAction)
-  products      im_Products[]
-  subCategories im_SubCategories[]
+  categoryType  imc_CategoryTypes      @relation(fields: [type], references: [id], onUpdate: NoAction)
+  products      imc_Products[]
+  subCategories imc_SubCategories[]
   // status        sys_MasterTableStatus @relation(fields: [iStatus], references: [id])
 
-  @@id([company_id, id], map: "pk_im_Categories")
+  @@id([company_id, id], map: "pk_imc_Categories")
   @@unique([company_id, id], map: "company_id_id")
 }
 
-model im_SubCategories {
-  id          String                 @db.Char(10)
-  category_id String                 @db.Char(10)
-  name        String                 @db.VarChar(80)
-  slug        String                 @db.VarChar(50)
-  iStatus     MasterRecordStatusEnum @default(ACTIVE)
-  remarks     String?                @db.VarChar(250)
-  createdBy   String?                @db.Char(10)
-  createdAt   DateTime               @default(now())
-  updatedBy   String?                @db.Char(10)
-  updatedAt   DateTime
-  company_id  String                 @db.Char(5)
-  branch_id   String                 @db.Char(10)
-  im_Products im_Products[]
-  category    im_Categories          @relation(fields: [company_id, category_id], references: [company_id, id])
+model imc_SubCategories {
+  id           String                 @db.Char(10)
+  category_id  String                 @db.Char(10)
+  name         String                 @db.VarChar(80)
+  slug         String                 @db.VarChar(50)
+  iStatus      MasterRecordStatusEnum @default(ACTIVE)
+  remarks      String?                @db.VarChar(250)
+  createdBy    String?                @db.Char(10)
+  createdAt    DateTime               @default(now())
+  updatedBy    String?                @db.Char(10)
+  updatedAt    DateTime
+  company_id   String                 @db.Char(5)
+  branch_id    String                 @db.Char(10)
+  imc_Products imc_Products[]
+  category     imc_Categories         @relation(fields: [company_id, category_id], references: [company_id, id])
 
-  @@id([company_id, category_id, id], map: "pk_im_SubCategories")
+  @@id([company_id, category_id, id], map: "pk_imc_SubCategories")
 }
 
-model im_Brands {
-  id          String                 @db.Char(10)
-  name        String                 @db.VarChar(50)
-  slug        String?                @db.VarChar(50)
-  iStatus     MasterRecordStatusEnum @default(ACTIVE)
-  remarks     String?                @db.VarChar(250)
-  createdBy   String?                @db.Char(10)
-  createdAt   DateTime               @default(now())
-  updatedBy   String?                @db.Char(10)
-  updatedAt   DateTime
-  company_id  String                 @db.Char(5)
-  branch_id   String                 @db.Char(10)
+model imc_Brands {
+  id           String                 @db.Char(10)
+  name         String                 @db.VarChar(50)
+  slug         String?                @db.VarChar(50)
+  iStatus      MasterRecordStatusEnum @default(ACTIVE)
+  remarks      String?                @db.VarChar(250)
+  createdBy    String?                @db.Char(10)
+  createdAt    DateTime               @default(now())
+  updatedBy    String?                @db.Char(10)
+  updatedAt    DateTime
+  company_id   String                 @db.Char(5)
+  branch_id    String                 @db.Char(10)
   // status      sys_MasterTableStatus @relation(fields: [iStatus], references: [id], onUpdate: NoAction)
-  im_Products im_Products[]
+  imc_Products imc_Products[]
 
-  @@id([company_id, id], map: "pk_im_Brands")
+  @@id([company_id, id], map: "pk_imc_Brands")
 }
 
-model im_Products {
+model imc_Products {
   id             String                 @db.Char(20)
   register_id    String?                @db.Char(20)
   catalog_id     String?                @db.Char(20)
@@ -322,26 +324,27 @@ model im_Products {
   updatedAt      DateTime
   company_id     String                 @db.Char(5)
   branch_id      String                 @db.Char(10)
-  productStock   im_ProductStock[]
-  brand          im_Brands              @relation(fields: [company_id, brand_id], references: [company_id, id], onUpdate: NoAction)
-  category       im_Categories          @relation(fields: [company_id, category_id], references: [company_id, id], onUpdate: NoAction)
-  subCategory    im_SubCategories       @relation(fields: [company_id, category_id, subCategory_id], references: [company_id, category_id, id], onUpdate: NoAction)
-  uom            im_Uoms                @relation(fields: [company_id, uom_id], references: [company_id, id], onUpdate: NoAction)
-  descriptions   im_ProductDescs[]
-  images         im_ProductImages[]
+  productStock   imc_ProductStock[]
+  brand          imc_Brands             @relation(fields: [company_id, brand_id], references: [company_id, id], onUpdate: NoAction)
+  category       imc_Categories         @relation(fields: [company_id, category_id], references: [company_id, id], onUpdate: NoAction)
+  subCategory    imc_SubCategories      @relation(fields: [company_id, category_id, subCategory_id], references: [company_id, category_id, id], onUpdate: NoAction)
+  uom            imc_Uoms               @relation(fields: [company_id, uom_id], references: [company_id, id], onUpdate: NoAction)
+  descriptions   imc_ProductDescs[]
+  images         imc_ProductImages[]
+  specs          imc_ProductSpecs[]
 
-  @@id([company_id, id], map: "pk_im_Products")
+  @@id([company_id, id], map: "pk_imc_Products")
   @@unique([company_id, id], map: "unique_company_id_id")
 }
 
-model im_ProductStock {
+model imc_ProductStock {
   id                 String                 @db.Char(20)
   iStatus            MasterRecordStatusEnum @default(ACTIVE)
   warehouse_id       String                 @db.Char(4)
   floor_id           String                 @db.Char(5)
   shelf_id           String                 @db.Char(15)
   row_id             String                 @db.Char(15)
-  batch_no           String                 @db.Char(20)
+  batch_no           String?                @db.Char(20)
   mExpired_dt        String                 @db.Char(10)
   yExpired_dt        String                 @db.Char(4)
   product_cd         String?                @db.Char(20)
@@ -368,12 +371,12 @@ model im_ProductStock {
   updatedAt          DateTime
   company_id         String                 @db.Char(5)
   branch_id          String                 @db.Char(10)
-  products           im_Products            @relation(fields: [id, company_id], references: [id, company_id], onUpdate: NoAction)
+  products           imc_Products           @relation(fields: [id, company_id], references: [id, company_id], onUpdate: NoAction)
 
   @@id([id, floor_id, shelf_id, row_id, mExpired_dt, yExpired_dt, warehouse_id, company_id])
 }
 
-model im_ProductStockCard {
+model imc_ProductStockCard {
   customer_or_supplier_id String                 @db.Char(20)
   trx_id                  String                 @db.Char(2)
   trx_class               String                 @db.Char(2)
@@ -413,98 +416,100 @@ model im_ProductStockCard {
   updatedAt               DateTime
   company_id              String                 @db.Char(5)
   branch_id               String                 @db.Char(10)
+  // products                imc_Products           @relation(fields: [product_id, company_id], references: [id, company_id], onUpdate: NoAction)
+
   // @@id([product_id, floor_id, shelf_id, row_id, mExpired_dt, yExpired_dt, srn_seq, company_id, warehouse_id, doc_id, mutation_id])
 
   @@id([product_id, floor_id, shelf_id, row_id, mExpired_dt, yExpired_dt, doc_id, mutation_id, srn_seq, warehouse_id, company_id])
 }
 
-model im_ProductDescs {
-  id           String                 @db.Char(20)
-  descriptions String?                @db.Text
-  benefits     String?                @db.Text
-  iStatus      MasterRecordStatusEnum @default(ACTIVE)
-  createdBy    String?                @db.Char(10)
-  createdAt    DateTime               @default(now())
-  updatedBy    String?                @db.Char(10)
+model imc_ProductDescs {
+  id           String       @db.Char(20)
+  descriptions String?      @db.Text
+  benefits     String?      @db.Text
+  createdBy    String       @db.Char(10)
+  createdAt    DateTime     @default(now())
+  updatedBy    String       @db.Char(10)
   updatedAt    DateTime
-  company_id   String                 @db.Char(5)
-  branch_id    String                 @db.Char(10)
-  products     im_Products            @relation(fields: [id, company_id], references: [id, company_id], onUpdate: NoAction)
+  company_id   String       @db.Char(5)
+  branch_id    String       @db.Char(10)
+  products     imc_Products @relation(fields: [id, company_id], references: [id, company_id], onUpdate: NoAction)
 
   @@id([id, company_id])
 }
 
-model im_ProductSpecs {
-  id                 String    @db.Char(20)
-  itemFunctions      String?   @db.VarChar(250)
-  item_type          String?   @db.VarChar(100)
-  item_model         String?   @db.VarChar(100)
+model imc_ProductSpecs {
+  id                 String       @db.Char(20)
+  itemFunctions      String?      @db.VarChar(250)
+  item_type          String?      @db.VarChar(100)
+  item_model         String?      @db.VarChar(100)
   construction       String?
-  mattress           String?   @db.VarChar(250)
-  mattressSize       String?   @db.VarChar(250)
-  mattressThickness  String?   @db.VarChar(250)
-  finishing          String?   @db.VarChar(250)
-  dimension          String?   @db.VarChar(250)
-  powerSupply        String?   @db.VarChar(150)
-  loadCapacity       String?   @db.VarChar(150)
-  systemFilter       String?   @db.VarChar(180)
-  accessories        String?   @db.VarChar(250)
-  sideRail           String?   @db.VarChar(180)
-  ivStand            String?   @db.VarChar(180)
-  wheels             String?   @db.VarChar(150)
-  maxLoad            String?   @db.VarChar(150)
-  size               String?   @db.VarChar(150)
-  weight             String?   @db.VarChar(150)
-  standSize          String?   @db.VarChar(150)
-  position           String?   @db.VarChar(150)
-  base               String?   @db.VarChar(150)
-  basePlate          String?   @db.VarChar(180)
-  cover              String?   @db.VarChar(150)
-  material           String?   @db.VarChar(150)
-  coverMaterial      String?   @db.VarChar(150)
-  typeScreen         String?   @db.VarChar(150)
-  powerConsumption   String?   @db.VarChar(150)
-  lamp               String?   @db.VarChar(150)
-  movers             String?   @db.VarChar(200)
-  rim                String?   @db.VarChar(200)
-  custodyFeet        String?   @db.VarChar(200)
-  foot               String?   @db.VarChar(200)
-  footWear           String?   @db.VarChar(200)
-  pole               String?   @db.VarChar(200)
-  inputVoltage       String?   @db.VarChar(150)
-  outputVoltage      String?   @db.VarChar(150)
-  sideGuard          String?   @db.VarChar(250)
-  footandheadPanel   String?   @db.VarChar(250)
-  temperatureControl String?   @db.VarChar(250)
-  top                String?   @db.VarChar(150)
-  foodTray           String?   @db.VarChar(250)
-  traycorpse         String?   @db.VarChar(250)
-  pillowthecorpse    String?   @db.VarChar(250)
-  lightPole          String?   @db.VarChar(250)
-  sterilizing        String?   @db.VarChar(250)
-  filter             String?   @db.VarChar(250)
-  bodyFrame          String?   @db.VarChar(250)
-  underPressure      String?   @db.VarChar(250)
-  foundationTray     String?   @db.VarChar(250)
-  door               String?   @db.VarChar(250)
-  handle             String?   @db.VarChar(250)
-  medicineBox        String?   @db.VarChar(250)
-  handleTrolley      String?   @db.VarChar(250)
-  drawer             String?   @db.VarChar(250)
-  systemControl      String?   @db.VarChar(250)
-  bodyFrameWork      String?   @db.VarChar(250)
-  remarks            String?   @db.Text
-  createdBy          String?   @db.Char(10)
-  createdAt          DateTime? @default(now())
-  updatedBy          String?   @db.Char(10)
+  mattress           String?      @db.VarChar(250)
+  mattressSize       String?      @db.VarChar(250)
+  mattressThickness  String?      @db.VarChar(250)
+  finishing          String?      @db.VarChar(250)
+  dimension          String?      @db.VarChar(250)
+  powerSupply        String?      @db.VarChar(150)
+  loadCapacity       String?      @db.VarChar(150)
+  systemFilter       String?      @db.VarChar(180)
+  accessories        String?      @db.VarChar(250)
+  sideRail           String?      @db.VarChar(180)
+  ivStand            String?      @db.VarChar(180)
+  wheels             String?      @db.VarChar(150)
+  maxLoad            String?      @db.VarChar(150)
+  size               String?      @db.VarChar(150)
+  weight             String?      @db.VarChar(150)
+  standSize          String?      @db.VarChar(150)
+  position           String?      @db.VarChar(150)
+  base               String?      @db.VarChar(150)
+  basePlate          String?      @db.VarChar(180)
+  cover              String?      @db.VarChar(150)
+  material           String?      @db.VarChar(150)
+  coverMaterial      String?      @db.VarChar(150)
+  typeScreen         String?      @db.VarChar(150)
+  powerConsumption   String?      @db.VarChar(150)
+  lamp               String?      @db.VarChar(150)
+  movers             String?      @db.VarChar(200)
+  rim                String?      @db.VarChar(200)
+  custodyFeet        String?      @db.VarChar(200)
+  foot               String?      @db.VarChar(200)
+  footWear           String?      @db.VarChar(200)
+  pole               String?      @db.VarChar(200)
+  inputVoltage       String?      @db.VarChar(150)
+  outputVoltage      String?      @db.VarChar(150)
+  sideGuard          String?      @db.VarChar(250)
+  footandheadPanel   String?      @db.VarChar(250)
+  temperatureControl String?      @db.VarChar(250)
+  top                String?      @db.VarChar(150)
+  foodTray           String?      @db.VarChar(250)
+  traycorpse         String?      @db.VarChar(250)
+  pillowthecorpse    String?      @db.VarChar(250)
+  lightPole          String?      @db.VarChar(250)
+  sterilizing        String?      @db.VarChar(250)
+  filter             String?      @db.VarChar(250)
+  bodyFrame          String?      @db.VarChar(250)
+  underPressure      String?      @db.VarChar(250)
+  foundationTray     String?      @db.VarChar(250)
+  door               String?      @db.VarChar(250)
+  handle             String?      @db.VarChar(250)
+  medicineBox        String?      @db.VarChar(250)
+  handleTrolley      String?      @db.VarChar(250)
+  drawer             String?      @db.VarChar(250)
+  systemControl      String?      @db.VarChar(250)
+  bodyFrameWork      String?      @db.VarChar(250)
+  remarks            String?      @db.Text
+  createdBy          String?      @db.Char(10)
+  createdAt          DateTime?    @default(now())
+  updatedBy          String?      @db.Char(10)
   updatedAt          DateTime
-  company_id         String    @db.Char(5)
-  branch_id          String    @db.Char(10)
+  company_id         String       @db.Char(5)
+  branch_id          String       @db.Char(10)
+  products           imc_Products @relation(fields: [id, company_id], references: [id, company_id], onUpdate: NoAction)
 
   @@id([id, company_id], map: "pk_productSpecs")
 }
 
-model im_ProductImages {
+model imc_ProductImages {
   id         String                 @db.Char(25)
   product_id String                 @db.Char(20)
   imageURL   String                 @db.VarChar(250)
@@ -516,9 +521,9 @@ model im_ProductImages {
   updatedAt  DateTime
   company_id String                 @db.Char(5)
   branch_id  String                 @db.Char(10)
-  products   im_Products            @relation(fields: [product_id, company_id], references: [id, company_id], onUpdate: NoAction)
+  products   imc_Products           @relation(fields: [product_id, company_id], references: [id, company_id], onUpdate: NoAction)
 
-  @@id([product_id, company_id, id], map: "pk_im_ProductImages")
+  @@id([product_id, company_id, id], map: "pk_imc_ProductImages")
 }
 
 model cms_Billboards {
