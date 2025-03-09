@@ -1,4 +1,5 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsEnum } from 'class-validator';
+import { MasterRecordStatusEnum, WebsiteDisplayStatus } from '@prisma/client';
 
 export class Imc_ResponseCategoryDto {
   @IsString()
@@ -9,9 +10,20 @@ export class Imc_ResponseCategoryDto {
 
   @IsString()
   @IsOptional()
+  categoryType?: string;
+
+  @IsString()
+  @IsOptional()
   slug?: string;
+
+  @IsEnum(MasterRecordStatusEnum)
+  iStatus: MasterRecordStatusEnum;
 
   @IsString()
   @IsOptional()
   imageURL?: string;
+
+  @IsString()
+  @IsOptional()
+  remarks?: string;
 }

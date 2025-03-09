@@ -14,6 +14,7 @@ import { Imc_UpdateCategoryDto } from './dto/imc_UpdateCategory.dto';
 import { imc_CategoryService } from './imc_Category.service';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
+import { Imc_PaginationCategoryDto } from './dto/imc_PaginationCategory.dto';
 
 @Controller(':company_id/imc/categories')
 export class imc_CategoryController {
@@ -32,9 +33,10 @@ export class imc_CategoryController {
   @Public()
   @Get()
   async findAll(
-    @Query('company_id') company_id: string,
-  ): Promise<{ data: Imc_ResponseCategoryDto[] }> {
-    return this.imc_categoryService.findAll(company_id);
+    @Param('company_id') company_id: string,
+    @Query() paginationDto: Imc_PaginationCategoryDto,
+  ): Promise<{ data: Imc_ResponseCategoryDto[]; totalRecords: number }> {
+    return this.imc_categoryService.findAll(company_id, paginationDto);
   }
 
   @Public()
