@@ -36,23 +36,6 @@ model sys_Company {
   @@index([seq_no], map: "idx_sys_Company_seq_no")
 }
 
-enum MasterRecordStatusEnum {
-  INACTIVE @map("0")
-  ACTIVE   @map("1")
-}
-
-enum TransactionRecordStatusEnum {
-  DRAFT    @map("0")
-  APPROVED @map("1")
-  PENDING  @map("2")
-  CANCEL   @map("3")
-}
-
-enum WebsiteDisplayStatus {
-  HIDDEN @map("0")
-  SHOW   @map("1")
-}
-
 model sys_Roles {
   id            String                  @id @db.Char(20)
   name          String                  @db.VarChar(20)
@@ -81,8 +64,8 @@ model sys_UserCompaniesRole {
   branch_id  String                 @db.Char(10)
   iStatus    MasterRecordStatusEnum @default(ACTIVE)
   isDefault  Boolean?               @default(false)
-  user       sys_User               @relation(fields: [user_id], references: [id])
   role       sys_Roles              @relation(fields: [role_id], references: [id])
+  user       sys_User               @relation(fields: [user_id], references: [id])
   permission sys_menu_permissions[]
 
   @@unique([user_id, company_id, branch_id])
@@ -110,8 +93,8 @@ model sys_menu_permissions {
   can_print            Boolean                @default(false)
   can_approve          Boolean                @default(false)
   iStatus              MasterRecordStatusEnum @default(ACTIVE)
-  userCompanies        sys_UserCompaniesRole  @relation(fields: [userCompaniesRole_id], references: [id])
   menu                 sys_menus              @relation(fields: [menu_id], references: [id])
+  userCompanies        sys_UserCompaniesRole  @relation(fields: [userCompaniesRole_id], references: [id])
 
   @@unique([userCompaniesRole_id, menu_id])
 }
@@ -139,7 +122,6 @@ model imc_Warehouse {
   company_id String                 @db.Char(5)
   branch_id  String                 @db.Char(10)
   floor      imc_Floor[]
-  // status     sys_MasterTableStatus @relation(fields: [iStatus], references: [id])
 }
 
 model imc_Floor {
@@ -153,7 +135,6 @@ model imc_Floor {
   updatedAt    DateTime
   company_id   String                 @db.Char(5)
   branch_id    String                 @db.Char(10)
-  // status       sys_MasterTableStatus @relation(fields: [iStatus], references: [id])
   warehouse    imc_Warehouse          @relation(fields: [warehouse_id], references: [id], onDelete: NoAction)
   row          imc_Row[]
   shelf        imc_Shelf[]
@@ -172,7 +153,6 @@ model imc_Shelf {
   branch_id  String                 @db.Char(10)
   imc_row    imc_Row[]
   imc_floor  imc_Floor              @relation(fields: [floor_id], references: [id], onDelete: NoAction)
-  // status     sys_MasterTableStatus @relation(fields: [iStatus], references: [id])
 
   @@id([floor_id, id], map: "pk_ic_shelf")
   @@unique([floor_id, id], map: "unique_floor_id_shelf_id")
@@ -193,7 +173,6 @@ model imc_Row {
   storages   String?                @db.Char(15)
   floor      imc_Floor              @relation(fields: [floor_id], references: [id], onDelete: NoAction)
   shelf      imc_Shelf              @relation(fields: [floor_id, shelf_id], references: [floor_id, id], onDelete: NoAction)
-  // status     sys_MasterTableStatus @relation(fields: [iStatus], references: [id])
 
   @@id([floor_id, shelf_id, id], map: "pk_ic_row")
   @@unique([floor_id, shelf_id, id], map: "unique_floor_id_shelf_id_row_id")
@@ -234,7 +213,6 @@ model imc_CategoryTypes {
   company_id   String                 @db.Char(5)
   branch_id    String                 @db.Char(10)
   categories   imc_Categories[]
-  // status       sys_MasterTableStatus @relation(fields: [iStatus], references: [id])
 }
 
 model imc_Categories {
@@ -257,7 +235,6 @@ model imc_Categories {
   categoryType  imc_CategoryTypes      @relation(fields: [type], references: [id], onUpdate: NoAction)
   products      imc_Products[]
   subCategories imc_SubCategories[]
-  // status        sys_MasterTableStatus @relation(fields: [iStatus], references: [id])
 
   @@id([company_id, id], map: "pk_imc_Categories")
   @@unique([company_id, id], map: "company_id_id")
@@ -294,7 +271,6 @@ model imc_Brands {
   updatedAt    DateTime
   company_id   String                 @db.Char(5)
   branch_id    String                 @db.Char(10)
-  // status      sys_MasterTableStatus @relation(fields: [iStatus], references: [id], onUpdate: NoAction)
   imc_Products imc_Products[]
 
   @@id([company_id, id], map: "pk_imc_Brands")
@@ -324,14 +300,14 @@ model imc_Products {
   updatedAt      DateTime
   company_id     String                 @db.Char(5)
   branch_id      String                 @db.Char(10)
+  descriptions   imc_ProductDescs?
+  images         imc_ProductImages[]
+  specs          imc_ProductSpecs?
   productStock   imc_ProductStock[]
   brand          imc_Brands             @relation(fields: [company_id, brand_id], references: [company_id, id], onUpdate: NoAction)
   category       imc_Categories         @relation(fields: [company_id, category_id], references: [company_id, id], onUpdate: NoAction)
   subCategory    imc_SubCategories      @relation(fields: [company_id, category_id, subCategory_id], references: [company_id, category_id, id], onUpdate: NoAction)
   uom            imc_Uoms               @relation(fields: [company_id, uom_id], references: [company_id, id], onUpdate: NoAction)
-  descriptions   imc_ProductDescs[]
-  images         imc_ProductImages[]
-  specs          imc_ProductSpecs[]
 
   @@id([company_id, id], map: "pk_imc_Products")
   @@unique([company_id, id], map: "unique_company_id_id")
@@ -416,17 +392,14 @@ model imc_ProductStockCard {
   updatedAt               DateTime
   company_id              String                 @db.Char(5)
   branch_id               String                 @db.Char(10)
-  // products                imc_Products           @relation(fields: [product_id, company_id], references: [id, company_id], onUpdate: NoAction)
-
-  // @@id([product_id, floor_id, shelf_id, row_id, mExpired_dt, yExpired_dt, srn_seq, company_id, warehouse_id, doc_id, mutation_id])
 
   @@id([product_id, floor_id, shelf_id, row_id, mExpired_dt, yExpired_dt, doc_id, mutation_id, srn_seq, warehouse_id, company_id])
 }
 
 model imc_ProductDescs {
   id           String       @db.Char(20)
-  descriptions String?      @db.Text
-  benefits     String?      @db.Text
+  descriptions String?
+  benefits     String?
   createdBy    String       @db.Char(10)
   createdAt    DateTime     @default(now())
   updatedBy    String       @db.Char(10)
@@ -497,7 +470,7 @@ model imc_ProductSpecs {
   drawer             String?      @db.VarChar(250)
   systemControl      String?      @db.VarChar(250)
   bodyFrameWork      String?      @db.VarChar(250)
-  remarks            String?      @db.Text
+  remarks            String?
   createdBy          String?      @db.Char(10)
   createdAt          DateTime?    @default(now())
   updatedBy          String?      @db.Char(10)
@@ -547,4 +520,21 @@ model cms_Billboards {
   content_id    String                 @db.Char(30)
 
   @@id([company_id, id], map: "pk_cms_Billboards")
+}
+
+enum MasterRecordStatusEnum {
+  INACTIVE @map("0")
+  ACTIVE   @map("1")
+}
+
+enum TransactionRecordStatusEnum {
+  DRAFT    @map("0")
+  APPROVED @map("1")
+  PENDING  @map("2")
+  CANCEL   @map("3")
+}
+
+enum WebsiteDisplayStatus {
+  HIDDEN @map("0")
+  SHOW   @map("1")
 }
