@@ -68,12 +68,12 @@ model sys_UserCompanyRole {
   isDefault  Boolean?               @default(false)
   role       sys_Role               @relation(fields: [role_id], references: [id])
   user       sys_User               @relation(fields: [user_id], references: [id])
-  permission sys_menu_permission[]
+  permission sys_Menu_Permission[]
 
   @@unique([user_id, company_id, branch_id])
 }
 
-model sys_menu {
+model sys_Menu {
   id               Int                   @id @default(autoincrement())
   parent_id        Int?                  @db.SmallInt
   menu_description String                @db.VarChar(255)
@@ -89,14 +89,13 @@ model sys_menu {
   updatedAt        DateTime?
   company_id       String                @db.Char(5)
   branch_id        String                @db.Char(10)
-  permissions      sys_menu_permission[]
+  permissions      sys_Menu_Permission[]
 
-  // Relasi ke submenu
-  parent   sys_menu?  @relation("SubMenu", fields: [parent_id], references: [id]) // Parent dari menu ini
-  children sys_menu[] @relation("SubMenu") // Semua submenu dari menu ini
+  parent   sys_Menu?  @relation("SubMenu", fields: [parent_id], references: [id]) // Parent dari menu ini
+  children sys_Menu[] @relation("SubMenu") // Semua submenu dari menu ini
 }
 
-model sys_menu_permission {
+model sys_Menu_Permission {
   id                 Int                    @id @default(autoincrement())
   userCompanyRole_id Int
   menu_id            Int
@@ -114,10 +113,8 @@ model sys_menu_permission {
   company_id         String                 @db.Char(5)
   branch_id          String                 @db.Char(10)
 
-  // Relasi ke sys_menu
-  menu sys_menu @relation(fields: [menu_id], references: [id], onDelete: Cascade)
+  menu sys_Menu @relation(fields: [menu_id], references: [id], onDelete: Cascade)
 
-  // Relasi ke sys_UserCompanyRole
   userCompanyRole sys_UserCompanyRole @relation(fields: [userCompanyRole_id], references: [id], onDelete: Cascade)
 
   @@unique([userCompanyRole_id, menu_id])
