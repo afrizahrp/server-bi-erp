@@ -13,8 +13,9 @@ import { Imc_CreateProductDto } from './dto/imc_CreateProduct.dto';
 import { Imc_UpdateProductDto } from './dto/imc_UpdateProducts.dto';
 import { imc_ProductsService } from './imc_Products.service';
 import { Public } from 'src/auth/decorators/public.decorator';
+import { Imc_PaginationProductDto } from './dto/imc_PaginationProduct.dto';
 
-@Controller(':company_id/cms/products')
+@Controller(':company_id/imc/products')
 export class imc_ProductsController {
   constructor(private readonly imc_productsService: imc_ProductsService) {}
 
@@ -22,9 +23,9 @@ export class imc_ProductsController {
   @Get()
   async findAll(
     @Param('company_id') company_id: string,
-    @Query('category_id') category_id: string,
+    @Query() paginationDto: Imc_PaginationProductDto,
   ): Promise<Imc_ResponseProductDto[]> {
-    return this.imc_productsService.findAll(company_id, category_id);
+    return this.imc_productsService.findAll(company_id, paginationDto);
   }
 
   @Public()

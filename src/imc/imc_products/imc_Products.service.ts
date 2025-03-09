@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma.service';
 import { Imc_CreateProductDto } from './dto/imc_CreateProduct.dto';
 import { Imc_UpdateProductDto } from './dto/imc_UpdateProducts.dto';
 import { Imc_ResponseProductDto } from './dto/imc_ResponseProducts.dto';
+import { Imc_PaginationProductDto } from './dto/imc_PaginationProduct.dto';
 
 @Injectable()
 export class imc_ProductsService {
@@ -22,10 +23,15 @@ export class imc_ProductsService {
 
   async findAll(
     company_id: string,
-    category_id: string,
+    paginationDto: Imc_PaginationProductDto,
   ): Promise<Imc_ResponseProductDto[]> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
     const products = await this.prisma.imc_Products.findMany({
-      where: { company_id, category_id, iShowedStatus: 'SHOW' },
+      where: { company_id, iShowedStatus: 'SHOW' },
+      skip,
+      take: limit,
       include: {
         category: {
           select: { name: true },
