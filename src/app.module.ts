@@ -17,13 +17,17 @@ import { imc_ProductModule } from './imc/imc_product/imc_Product.module';
 
 import { sys_CompanyModule } from './sys/sys_company/sys_Company.module';
 
+import { sys_MenuModule } from './sys/sys_menu/sys_Menu.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    sys_UserModule,
     AuthModule,
+    sys_CompanyModule,
+    sys_UserModule,
+    sys_MenuModule,
     sys_UserCompanyRoleModule,
     cms_CategoryModule,
     cms_ProductModule,
@@ -31,7 +35,6 @@ import { sys_CompanyModule } from './sys/sys_company/sys_Company.module';
     cms_BillboardsModule,
     imc_CategoryModule,
     imc_ProductModule,
-    sys_CompanyModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService, sys_CompanyModule],
