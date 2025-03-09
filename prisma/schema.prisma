@@ -74,30 +74,30 @@ model sys_UserCompanyRole {
 }
 
 model sys_Menu {
-  id               Int                   @id @default(autoincrement())
-  parent_id        Int?                  @db.SmallInt
-  menu_description String                @db.VarChar(255)
-  href             String?               @db.VarChar(255) // Untuk href
-  module_id        String                @db.Char(3) // Untuk menentukan module (imc, cms, dll.)
-  menu_type        String?               @db.VarChar(50) // classic, mega, nested
-  has_child        Boolean               @default(false)
-  icon             String?               @db.VarChar(50) // Nama icon atau path/icon key
-  iStatus          String                @default("1") // 1: Active, 0: Inactive
-  createdBy        String?               @db.Char(10)
-  createdAt        DateTime              @default(now())
-  updatedBy        String?               @db.Char(10)
+  id               Int                    @id @default(autoincrement())
+  parent_id        Int                    @db.SmallInt
+  menu_description String                 @db.VarChar(255)
+  href             String                 @db.VarChar(255)
+  module_id        String                 @db.Char(3)
+  menu_type        String                 @db.VarChar(50)
+  has_child        Boolean                @default(false)
+  icon             String                 @db.VarChar(50)
+  iStatus          MasterRecordStatusEnum @default(ACTIVE)
+  createdBy        String?                @db.Char(10)
+  createdAt        DateTime               @default(now())
+  updatedBy        String?                @db.Char(10)
   updatedAt        DateTime?
-  company_id       String                @db.Char(5)
-  branch_id        String                @db.Char(10)
-  permissions      sys_Menu_Permission[]
+  company_id       String                 @db.Char(5)
+  branch_id        String                 @db.Char(10)
+  permissions      sys_Menu_Permission[]  @relation("MenuPermissions")
 
-  parent   sys_Menu?  @relation("SubMenu", fields: [parent_id], references: [id]) // Parent dari menu ini
-  children sys_Menu[] @relation("SubMenu") // Semua submenu dari menu ini
+  parent   sys_Menu?  @relation("SubMenu", fields: [parent_id], references: [id])
+  children sys_Menu[] @relation("SubMenu")
 }
 
 model sys_Menu_Permission {
   id                 Int                    @id @default(autoincrement())
-  userCompanyRole_id Int
+  userCompanyRole_id Int                    @db.SmallInt
   menu_id            Int
   can_view           Boolean                @default(false)
   can_create         Boolean                @default(false)
@@ -113,11 +113,11 @@ model sys_Menu_Permission {
   company_id         String                 @db.Char(5)
   branch_id          String                 @db.Char(10)
 
-  menu sys_Menu @relation(fields: [menu_id], references: [id], onDelete: Cascade)
+  menu sys_Menu @relation("MenuPermissions", fields: [menu_id], references: [id], onDelete: Cascade)
 
   userCompanyRole sys_UserCompanyRole @relation(fields: [userCompanyRole_id], references: [id], onDelete: Cascade)
 
-  @@unique([userCompanyRole_id, menu_id])
+  @@unique([userCompanyRole_id, menu_id], map: "unique_userCompanyRole_id_menu_id")
 }
 
 model sys_Migration_log {

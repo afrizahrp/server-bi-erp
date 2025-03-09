@@ -1,42 +1,43 @@
+import { MasterRecordStatusEnum } from '@prisma/client';
 import {
-  IsString,
-  IsOptional,
-  IsInt,
   IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
   IsDate,
   IsEnum,
 } from 'class-validator';
-import { MasterRecordStatusEnum } from '@prisma/client';
 
-export class Sys_ResponseMenuDto {
+export class Sys_CreateMenuPermissionDto {
   @IsInt()
-  id: number;
+  userCompanyRole_id: number;
 
   @IsInt()
-  @IsOptional()
-  parent_id?: number | null;
-
-  @IsString()
-  menu_description: string;
-
-  @IsString()
-  @IsOptional()
-  href?: string | null;
-
-  @IsString()
-  module_id: string;
-
-  @IsString()
-  @IsOptional()
-  menu_type?: string;
+  menu_id: number;
 
   @IsBoolean()
   @IsOptional()
-  has_child?: boolean;
+  can_view?: boolean;
 
-  @IsString()
+  @IsBoolean()
   @IsOptional()
-  icon?: string;
+  can_create?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  can_edit?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  can_delete?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  can_print?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  can_approve?: boolean;
 
   @IsEnum(MasterRecordStatusEnum)
   iStatus: MasterRecordStatusEnum;
@@ -46,7 +47,8 @@ export class Sys_ResponseMenuDto {
   createdBy?: string;
 
   @IsDate()
-  createdAt: Date;
+  @IsOptional()
+  createdAt?: Date;
 
   @IsString()
   @IsOptional()

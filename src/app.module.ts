@@ -19,6 +19,8 @@ import { sys_CompanyModule } from './sys/sys_company/sys_Company.module';
 
 import { sys_MenuModule } from './sys/sys_menu/sys_Menu.module';
 
+import { sys_MenuPermissionModule } from './sys/sys_menu_permission/sys_Menu_Permission.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -27,8 +29,9 @@ import { sys_MenuModule } from './sys/sys_menu/sys_Menu.module';
     AuthModule,
     sys_CompanyModule,
     sys_UserModule,
-    sys_MenuModule,
     sys_UserCompanyRoleModule,
+    sys_MenuModule,
+    sys_MenuPermissionModule,
     cms_CategoryModule,
     cms_ProductModule,
     cms_ProductDescModule,

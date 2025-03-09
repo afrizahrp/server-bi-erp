@@ -12,14 +12,14 @@ import { MasterRecordStatusEnum } from '@prisma/client';
 export class Sys_CreateMenuDto {
   @IsInt()
   @IsOptional()
-  parent_id?: number;
+  parent_id?: number | null;
 
   @IsString()
   menu_description: string;
 
   @IsString()
   @IsOptional()
-  href?: string;
+  href?: string | null;
 
   @IsString()
   module_id: string;

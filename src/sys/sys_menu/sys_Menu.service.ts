@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma.service';
 import { Sys_CreateMenuDto } from './dto/sys_CreateMenu.dto';
 import { Sys_UpdateMenuDto } from './dto/sys_UpdateMenu.dto';
 import { Sys_ResponseMenuDto } from './dto/sys_ResponseMenu.dto';
+import { Sys_MenuWithPermissionDto } from './dto/sys_MenuWithPermission.dto';
 
 @Injectable()
 export class sys_MenuService {
@@ -30,6 +31,42 @@ export class sys_MenuService {
       throw new NotFoundException(`Menu with ID ${id} not found`);
     }
     return this.mapToResponseDto(menu);
+  }
+
+  async findMenusWithPermissions(
+    userCompanyRole_id: number,
+  ): Promise<Sys_MenuWithPermissionDto[]> {
+    const menus = await this.prisma.sys_Menu.findMany({
+      include: {
+        permissions: {
+          where: { userCompanyRole_id },
+        },
+      },
+    });
+
+    return menus.map((menu) => ({
+      id: menu.id,
+      parent_id: menu.parent_id,
+      menu_description: menu.menu_description,
+      href: menu.href,
+      module_id: menu.module_id,
+      menu_type: menu.menu_type,
+      has_child: menu.has_child,
+      icon: menu.icon,
+      iStatus: menu.iStatus,
+      createdBy: menu.createdBy,
+      createdAt: menu.createdAt,
+      updatedBy: menu.updatedBy,
+      updatedAt: menu.updatedAt,
+      company_id: menu.company_id,
+      branch_id: menu.branch_id,
+      can_view: menu.permissions[0]?.can_view || false,
+      can_create: menu.permissions[0]?.can_create || false,
+      can_edit: menu.permissions[0]?.can_edit || false,
+      can_delete: menu.permissions[0]?.can_delete || false,
+      can_print: menu.permissions[0]?.can_print || false,
+      can_approve: menu.permissions[0]?.can_approve || false,
+    }));
   }
 
   async update(
