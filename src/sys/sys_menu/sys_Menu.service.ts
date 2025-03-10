@@ -4,6 +4,9 @@ import { Sys_CreateMenuDto } from './dto/sys_CreateMenu.dto';
 import { Sys_UpdateMenuDto } from './dto/sys_UpdateMenu.dto';
 import { Sys_ResponseMenuDto } from './dto/sys_ResponseMenu.dto';
 import { Sys_MenuWithPermissionDto } from './dto/sys_MenuWithPermission.dto';
+import { MenuItemDto } from './dto/sys_MenuItem.dto';
+
+// import { Sys_MenuWithPermissionDto } from './dto/sys_MenuWithPermission.dto';
 
 @Injectable()
 export class sys_MenuService {
@@ -13,60 +16,76 @@ export class sys_MenuService {
     const menu = await this.prisma.sys_Menu.create({
       data: createMenuDto,
     });
+
+    // Jika menu baru adalah child, update parent has_child menjadi true
+    if (menu.parent_id) {
+      await this.prisma.sys_Menu.update({
+        where: { id: menu.parent_id },
+        data: { has_child: true },
+      });
+    }
+
     return this.mapToResponseDto(menu);
   }
 
-  async findAll(company_id: string): Promise<Sys_ResponseMenuDto[]> {
+  async findAll(company_id: string): Promise<Sys_MenuWithPermissionDto[]> {
     const menus = await this.prisma.sys_Menu.findMany({
       where: { company_id },
+      include: {
+        permissions: true,
+        child: {
+          include: {
+            permissions: true,
+          },
+        },
+      },
     });
-    return menus.map(this.mapToResponseDto);
+
+    // Hanya return root menus, dan rekursi untuk menyusun hirarki child
+    return menus
+      .filter((menu) => !menu.parent_id)
+      .map((menu) => this.mapToMenuWithPermissionDto(menu));
   }
 
   async findOne(id: number): Promise<Sys_ResponseMenuDto> {
     const menu = await this.prisma.sys_Menu.findUnique({
       where: { id },
+      include: {
+        permissions: true,
+        child: {
+          include: {
+            permissions: true,
+          },
+        },
+      },
     });
+
     if (!menu) {
       throw new NotFoundException(`Menu with ID ${id} not found`);
     }
+
     return this.mapToResponseDto(menu);
   }
 
   async findMenusWithPermissions(
     userCompanyRole_id: number,
-  ): Promise<Sys_MenuWithPermissionDto[]> {
+  ): Promise<MenuItemDto[]> {
     const menus = await this.prisma.sys_Menu.findMany({
-      include: {
-        permissions: {
-          where: { userCompanyRole_id },
-        },
-      },
+      where: { permissions: { some: { userCompanyRole_id } } },
+      include: { child: true },
     });
 
-    return menus.map((menu) => ({
-      id: menu.id,
-      parent_id: menu.parent_id,
-      menu_description: menu.menu_description,
-      href: menu.href,
-      module_id: menu.module_id,
-      menu_type: menu.menu_type,
-      has_child: menu.has_child,
-      icon: menu.icon,
-      iStatus: menu.iStatus,
-      createdBy: menu.createdBy,
-      createdAt: menu.createdAt,
-      updatedBy: menu.updatedBy,
-      updatedAt: menu.updatedAt,
-      company_id: menu.company_id,
-      branch_id: menu.branch_id,
-      can_view: menu.permissions[0]?.can_view || false,
-      can_create: menu.permissions[0]?.can_create || false,
-      can_edit: menu.permissions[0]?.can_edit || false,
-      can_delete: menu.permissions[0]?.can_delete || false,
-      can_print: menu.permissions[0]?.can_print || false,
-      can_approve: menu.permissions[0]?.can_approve || false,
-    }));
+    return menus.map((menu) => this.mapToMenuItem(menu));
+  }
+  private mapToMenuItem(menu: any): MenuItemDto {
+    return {
+      title: menu.menu_description, // Sesuaikan dengan field di database
+      href: menu.href || '#', // Gunakan '#' jika tidak ada href
+      icon: menu.icon || 'DefaultIcon', // Bisa diganti dengan handler khusus untuk icon
+      child: menu.child ? menu.child.map(this.mapToMenuItem) : [],
+      multi_menu: [], // Sesuaikan jika multi_menu tersedia di database
+      nested: [],
+    };
   }
 
   async update(
@@ -101,6 +120,26 @@ export class sys_MenuService {
   private mapToResponseDto(menu: any): Sys_ResponseMenuDto {
     return {
       id: menu.id,
+      parent_id: menu.parent_id || null,
+      menu_description: menu.menu_description,
+      href: menu.href || null,
+      module_id: menu.module_id,
+      menu_type: menu.menu_type || null,
+      has_child: menu.has_child,
+      icon: menu.icon || null,
+      createdBy: menu.createdBy || null,
+      createdAt: menu.createdAt,
+      updatedBy: menu.updatedBy || null,
+      updatedAt: menu.updatedAt || null,
+      company_id: menu.company_id,
+      branch_id: menu.branch_id,
+      child: menu.child ? menu.child.map(this.mapToResponseDto) : [],
+    };
+  }
+
+  private mapToMenuWithPermissionDto(menu: any): Sys_MenuWithPermissionDto {
+    return {
+      id: menu.id,
       parent_id: menu.parent_id,
       menu_description: menu.menu_description,
       href: menu.href,
@@ -108,13 +147,19 @@ export class sys_MenuService {
       menu_type: menu.menu_type,
       has_child: menu.has_child,
       icon: menu.icon,
-      iStatus: menu.iStatus,
       createdBy: menu.createdBy,
       createdAt: menu.createdAt,
       updatedBy: menu.updatedBy,
       updatedAt: menu.updatedAt,
       company_id: menu.company_id,
       branch_id: menu.branch_id,
+      can_view: menu.permissions?.[0]?.can_view || false,
+      can_create: menu.permissions?.[0]?.can_create || false,
+      can_edit: menu.permissions?.[0]?.can_edit || false,
+      can_delete: menu.permissions?.[0]?.can_delete || false,
+      can_print: menu.permissions?.[0]?.can_print || false,
+      can_approve: menu.permissions?.[0]?.can_approve || false,
+      child: menu.child ? menu.child.map(this.mapToMenuWithPermissionDto) : [],
     };
   }
 }

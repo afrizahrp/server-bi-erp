@@ -66,38 +66,36 @@ model sys_UserCompanyRole {
   branch_id  String                 @db.Char(10)
   iStatus    MasterRecordStatusEnum @default(ACTIVE)
   isDefault  Boolean?               @default(false)
+  permission sys_Menu_Permission[]
   role       sys_Role               @relation(fields: [role_id], references: [id])
   user       sys_User               @relation(fields: [user_id], references: [id])
-  permission sys_Menu_Permission[]
 
   @@unique([user_id, company_id, branch_id])
 }
 
 model sys_Menu {
-  id               Int                    @id @default(autoincrement())
-  parent_id        Int                    @db.SmallInt
-  menu_description String                 @db.VarChar(255)
-  href             String                 @db.VarChar(255)
-  module_id        String                 @db.Char(3)
-  menu_type        String                 @db.VarChar(50)
-  has_child        Boolean                @default(false)
-  icon             String                 @db.VarChar(50)
-  iStatus          MasterRecordStatusEnum @default(ACTIVE)
-  createdBy        String?                @db.Char(10)
-  createdAt        DateTime               @default(now())
-  updatedBy        String?                @db.Char(10)
+  id               Int                   @id @default(autoincrement())
+  parent_id        Int?                  @db.SmallInt
+  menu_description String                @db.VarChar(255)
+  href             String?               @db.VarChar(255)
+  module_id        String                @db.Char(3)
+  menu_type        String?               @db.VarChar(50)
+  has_child        Boolean               @default(false)
+  icon             String?               @db.VarChar(50)
+  createdBy        String?               @db.Char(10)
+  createdAt        DateTime              @default(now())
+  updatedBy        String?               @db.Char(10)
   updatedAt        DateTime?
-  company_id       String                 @db.Char(5)
-  branch_id        String                 @db.Char(10)
-  permissions      sys_Menu_Permission[]  @relation("MenuPermissions")
-
-  parent   sys_Menu?  @relation("SubMenu", fields: [parent_id], references: [id])
-  children sys_Menu[] @relation("SubMenu")
+  company_id       String                @db.Char(5)
+  branch_id        String                @db.Char(10)
+  parent           sys_Menu?             @relation("SubMenu", fields: [parent_id], references: [id])
+  child            sys_Menu[]            @relation("SubMenu")
+  permissions      sys_Menu_Permission[] @relation("MenuPermissions")
 }
 
 model sys_Menu_Permission {
   id                 Int                    @id @default(autoincrement())
-  userCompanyRole_id Int                    @db.SmallInt
+  userCompanyRole_id Int
   menu_id            Int
   can_view           Boolean                @default(false)
   can_create         Boolean                @default(false)
@@ -112,12 +110,10 @@ model sys_Menu_Permission {
   updatedAt          DateTime?
   company_id         String                 @db.Char(5)
   branch_id          String                 @db.Char(10)
+  menu               sys_Menu               @relation("MenuPermissions", fields: [menu_id], references: [id], onDelete: Cascade)
+  userCompanyRole    sys_UserCompanyRole    @relation(fields: [userCompanyRole_id], references: [id], onDelete: Cascade)
 
-  menu sys_Menu @relation("MenuPermissions", fields: [menu_id], references: [id], onDelete: Cascade)
-
-  userCompanyRole sys_UserCompanyRole @relation(fields: [userCompanyRole_id], references: [id], onDelete: Cascade)
-
-  @@unique([userCompanyRole_id, menu_id], map: "unique_userCompanyRole_id_menu_id")
+  @@unique([userCompanyRole_id, menu_id])
 }
 
 model sys_Migration_log {
@@ -321,14 +317,14 @@ model imc_Product {
   updatedAt      DateTime
   company_id     String                 @db.Char(5)
   branch_id      String                 @db.Char(10)
-  descriptions   imc_ProductDesc?
-  images         imc_ProductImage[]
-  specs          imc_ProductSpec?
-  productStock   imc_ProductStock[]
   brand          imc_Brand              @relation(fields: [company_id, brand_id], references: [company_id, id], onUpdate: NoAction)
   category       imc_Category           @relation(fields: [company_id, category_id], references: [company_id, id], onUpdate: NoAction)
   subCategory    imc_SubCategory        @relation(fields: [company_id, category_id, subCategory_id], references: [company_id, category_id, id], onUpdate: NoAction)
   uom            imc_Uom                @relation(fields: [company_id, uom_id], references: [company_id, id], onUpdate: NoAction)
+  descriptions   imc_ProductDesc?
+  images         imc_ProductImage[]
+  specs          imc_ProductSpec?
+  productStock   imc_ProductStock[]
 
   @@id([company_id, id], map: "pk_imc_Products")
   @@unique([company_id, id], map: "unique_company_id_id")
