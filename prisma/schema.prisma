@@ -82,6 +82,7 @@ model sys_Menu {
   menu_type        String?               @db.VarChar(50)
   has_child        Boolean               @default(false)
   icon             String?               @db.VarChar(50)
+  iStatus          String                @default("1")
   createdBy        String?               @db.Char(10)
   createdAt        DateTime              @default(now())
   updatedBy        String?               @db.Char(10)

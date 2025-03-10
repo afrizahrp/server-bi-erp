@@ -67,25 +67,89 @@ export class sys_MenuService {
     return this.mapToResponseDto(menu);
   }
 
+  private mapToMenuItem(menu: any, allMenus: any[]): MenuItemDto {
+    const childMenus = allMenus.filter((m) => m.parent_id === menu.id);
+
+    // Jika menu memiliki "List", child-nya harus masuk ke multi_menu
+    if (menu.menu_description === 'List') {
+      return {
+        title: menu.menu_description,
+        href: menu.href || '#',
+        icon: menu.icon || 'DefaultIcon',
+        child: [], // Kosongkan child karena menggunakan multi_menu
+        multi_menu: childMenus.map((child) => ({
+          title: child.menu_description,
+          href: child.href || '#',
+          icon: child.icon || 'DefaultIcon',
+          child: [],
+          multi_menu: [],
+          nested: [],
+        })),
+        nested: [],
+      };
+    }
+
+    // Menu biasa tetap memiliki child
+    return {
+      title: menu.menu_description,
+      href: menu.href || '#',
+      icon: menu.icon || 'DefaultIcon',
+      child: childMenus.map((child) => this.mapToMenuItem(child, allMenus)),
+      multi_menu: [],
+      nested: [],
+    };
+  }
+
   async findMenusWithPermissions(
     userCompanyRole_id: number,
   ): Promise<MenuItemDto[]> {
     const menus = await this.prisma.sys_Menu.findMany({
-      where: { permissions: { some: { userCompanyRole_id } } },
-      include: { child: true },
+      where: {
+        permissions: { some: { userCompanyRole_id } },
+      },
+      include: {
+        permissions: true,
+      },
     });
 
-    return menus.map((menu) => this.mapToMenuItem(menu));
-  }
-  private mapToMenuItem(menu: any): MenuItemDto {
-    return {
-      title: menu.menu_description, // Sesuaikan dengan field di database
-      href: menu.href || '#', // Gunakan '#' jika tidak ada href
-      icon: menu.icon || 'DefaultIcon', // Bisa diganti dengan handler khusus untuk icon
-      child: menu.child ? menu.child.map(this.mapToMenuItem) : [],
-      multi_menu: [], // Sesuaikan jika multi_menu tersedia di database
-      nested: [],
-    };
+    const menuMap = new Map<number, any>();
+
+    menus.forEach((menu) => {
+      menuMap.set(menu.id, { ...menu, child: [] });
+    });
+
+    menus.forEach((menu) => {
+      if (menu.parent_id) {
+        const parentMenu = menuMap.get(menu.parent_id);
+        if (parentMenu) {
+          parentMenu.child.push(menuMap.get(menu.id));
+        }
+      }
+    });
+
+    const rootMenus = Array.from(menuMap.values()).filter(
+      (menu) => !menu.parent_id,
+    );
+
+    function cleanEmptyArrays(menu: any): any {
+      if (Array.isArray(menu.child) && menu.child.length === 0)
+        delete menu.child;
+      if (Array.isArray(menu.multi_menu) && menu.multi_menu.length === 0)
+        delete menu.multi_menu;
+      if (Array.isArray(menu.nested) && menu.nested.length === 0)
+        delete menu.nested;
+
+      if (menu.child) menu.child = menu.child.map(cleanEmptyArrays);
+      if (menu.multi_menu)
+        menu.multi_menu = menu.multi_menu.map(cleanEmptyArrays);
+      if (menu.nested) menu.nested = menu.nested.map(cleanEmptyArrays);
+
+      return menu;
+    }
+
+    return rootMenus.map((menu) =>
+      cleanEmptyArrays(this.mapToMenuItem(menu, menus)),
+    );
   }
 
   async update(
