@@ -60,7 +60,7 @@ export class sys_MenuController {
   @Get('permissions/:userCompanyRole_id')
   async findMenusWithPermissions(
     @Param('userCompanyRole_id') userCompanyRole_id: number,
-  ): Promise<MenuItemDto[]> {
+  ): Promise<{ sidebarNav: { classic: MenuItemDto[] } }> {
     return this.menuService.findMenusWithPermissions(userCompanyRole_id);
   }
 }

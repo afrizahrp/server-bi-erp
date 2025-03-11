@@ -75,12 +75,12 @@ export class sys_MenuService {
       return {
         title: menu.menu_description,
         href: menu.href || '#',
-        icon: menu.icon || 'DefaultIcon',
+        ...(menu.icon ? { icon: menu.icon } : {}), // ✅ Hanya tambahkan icon jika ada
         child: [], // Kosongkan child karena menggunakan multi_menu
         multi_menu: childMenus.map((child) => ({
           title: child.menu_description,
           href: child.href || '#',
-          icon: child.icon || 'DefaultIcon',
+          ...(child.icon ? { icon: child.icon } : {}), // ✅ Hanya tambahkan icon jika ada
           child: [],
           multi_menu: [],
           nested: [],
@@ -93,7 +93,8 @@ export class sys_MenuService {
     return {
       title: menu.menu_description,
       href: menu.href || '#',
-      icon: menu.icon || 'DefaultIcon',
+      icon: menu.icon || '',
+      module_id: menu.module_id || '',
       child: childMenus.map((child) => this.mapToMenuItem(child, allMenus)),
       multi_menu: [],
       nested: [],
@@ -102,7 +103,7 @@ export class sys_MenuService {
 
   async findMenusWithPermissions(
     userCompanyRole_id: number,
-  ): Promise<MenuItemDto[]> {
+  ): Promise<{ sidebarNav: { classic: MenuItemDto[] } }> {
     const menus = await this.prisma.sys_Menu.findMany({
       where: {
         permissions: { some: { userCompanyRole_id } },
@@ -139,17 +140,28 @@ export class sys_MenuService {
       if (Array.isArray(menu.nested) && menu.nested.length === 0)
         delete menu.nested;
 
+      if (!menu.icon) delete menu.icon; // ✅ Hapus icon jika kosong
+
       if (menu.child) menu.child = menu.child.map(cleanEmptyArrays);
       if (menu.multi_menu)
         menu.multi_menu = menu.multi_menu.map(cleanEmptyArrays);
       if (menu.nested) menu.nested = menu.nested.map(cleanEmptyArrays);
 
+      // console.log('Root Menus:', JSON.stringify(rootMenus, null, 2));
+
       return menu;
     }
+    return {
+      sidebarNav: {
+        classic: rootMenus.map((menu) =>
+          cleanEmptyArrays(this.mapToMenuItem(menu, menus)),
+        ),
+      },
+    };
 
-    return rootMenus.map((menu) =>
-      cleanEmptyArrays(this.mapToMenuItem(menu, menus)),
-    );
+    // return rootMenus.map((menu) =>
+    //   cleanEmptyArrays(this.mapToMenuItem(menu, menus)),
+    // );
   }
 
   async update(
