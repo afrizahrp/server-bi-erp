@@ -16,7 +16,7 @@ import { Public } from 'src/auth/decorators/public.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Imc_PaginationCategoryDto } from './dto/imc_PaginationCategory.dto';
 
-@Controller(':company_id/imc/categories')
+@Controller(':company_id/:module_id/get-categories')
 export class imc_CategoryController {
   constructor(private readonly imc_categoryService: imc_CategoryService) {}
 
@@ -27,6 +27,7 @@ export class imc_CategoryController {
     @Body() imc_CreateCategoryDto: Imc_CreateCategoryDto,
   ): Promise<Imc_ResponseCategoryDto> {
     imc_CreateCategoryDto.company_id = company_id;
+
     return this.imc_categoryService.create(imc_CreateCategoryDto);
   }
 
@@ -34,9 +35,14 @@ export class imc_CategoryController {
   @Get()
   async findAll(
     @Param('company_id') company_id: string,
+    @Param('module_id') module_id: string,
     @Query() paginationDto: Imc_PaginationCategoryDto,
   ): Promise<{ data: Imc_ResponseCategoryDto[]; totalRecords: number }> {
-    return this.imc_categoryService.findAll(company_id, paginationDto);
+    return this.imc_categoryService.findAll(
+      company_id,
+      module_id,
+      paginationDto,
+    );
   }
 
   @Public()

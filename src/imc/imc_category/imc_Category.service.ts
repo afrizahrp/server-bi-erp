@@ -9,6 +9,8 @@ import { Imc_UpdateCategoryDto } from './dto/imc_UpdateCategory.dto';
 import { Imc_ResponseCategoryDto } from './dto/imc_ResponseCategory.dto';
 import { Imc_PaginationCategoryDto } from './dto/imc_PaginationCategory.dto';
 
+import { MasterRecordStatusEnum, WebsiteDisplayStatus } from '@prisma/client';
+
 @Injectable()
 export class imc_CategoryService {
   constructor(private prisma: PrismaService) {}
@@ -24,19 +26,28 @@ export class imc_CategoryService {
 
   async findAll(
     company_id: string,
+    module_id: string,
     paginationDto: Imc_PaginationCategoryDto,
   ): Promise<{ data: Imc_ResponseCategoryDto[]; totalRecords: number }> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
+    let totalRecords: number;
+    let categories: any[];
+
+    const whereCondition =
+      module_id === 'IMC' // Check if module_id is IMC then show all records
+        ? { company_id }
+        : { company_id, iShowedStatus: WebsiteDisplayStatus.SHOW }; // Else show only records with iShowedStatus = SHOW
+
     // Query to get total records
-    const totalRecords = await this.prisma.imc_Category.count({
-      where: { company_id },
+    totalRecords = await this.prisma.imc_Category.count({
+      where: whereCondition,
     });
 
     // Query to get paginated records
-    const categories = await this.prisma.imc_Category.findMany({
-      where: { company_id },
+    categories = await this.prisma.imc_Category.findMany({
+      where: whereCondition,
       skip,
       take: limit,
       include: {
@@ -90,7 +101,7 @@ export class imc_CategoryService {
       slug: category.slug?.trim(),
       iStatus: category.iStatus,
       imageURL: category.imageURL?.trim(),
-      remarks: category.remarks?.trim(),
+      remarks: category.remarks,
     };
   }
 }

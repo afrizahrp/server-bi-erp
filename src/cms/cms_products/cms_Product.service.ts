@@ -49,7 +49,7 @@ export class cms_ProductService {
         name: product.name.trim(),
         slug: product.slug?.trim(),
         catalog_id: product.catalog_id?.trim(),
-        register_id: product.register_id?.trim(),
+        register_id: product.register_id?.trim() || undefined,
         category_id: product.category_id.trim(),
         subCategory_id: product.subCategory_id.trim(),
         brand_id: product.brand_id.trim(),
@@ -64,7 +64,7 @@ export class cms_ProductService {
   async findBySlug(
     company_id: string,
     slug: string,
-  ): Promise<Cms_ResponseProductDto> {
+  ): Promise<Cms_ResponseProductDto[]> {
     const product = await this.prisma.imc_Product.findFirst({
       where: { company_id, slug },
       include: {
@@ -88,19 +88,17 @@ export class cms_ProductService {
     const primaryImageURL =
       primaryImages.length > 0 ? primaryImages[0].imageURL : null;
 
-    return {
+    const responseProduct: Cms_ResponseProductDto = {
       ...product,
       id: product.id.trim(),
+      register_id: product.register_id?.trim() || undefined,
+
       name: product.name.trim(),
       slug: product.slug?.trim(),
       catalog_id: product.catalog_id?.trim(),
-      register_id: product.register_id?.trim(),
-      category_id: product.category_id.trim(),
-      subCategory_id: product.subCategory_id.trim(),
-      brand_id: product.brand_id.trim(),
-      uom_id: product.uom_id?.trim(),
       primaryImageURL,
-    } as Cms_ResponseProductDto;
+    };
+    return [responseProduct]; // Mengembalikan hasil sebagai array
   }
 
   async findByName(

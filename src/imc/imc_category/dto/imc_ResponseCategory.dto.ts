@@ -26,4 +26,8 @@ export class Imc_ResponseCategoryDto {
   @IsString()
   @IsOptional()
   remarks?: string;
+
+  @IsString()
+  @IsOptional()
+  module_id?: string;
 }
