@@ -75,7 +75,7 @@ export class cms_ProductService {
           select: { imageURL: true, isPrimary: true },
         },
         descriptions: {
-          select: { descriptions: true },
+          select: { descriptions: true, benefits: true },
         },
       },
     });
