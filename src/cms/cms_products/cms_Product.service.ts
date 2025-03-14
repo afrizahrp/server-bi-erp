@@ -14,10 +14,7 @@ export class cms_ProductService {
     const product = await this.prisma.imc_Product.create({
       data: cms_CreateProductDto,
     });
-    return {
-      ...product,
-      iShowedStatus: product.iShowedStatus === 'HIDDEN' ? 'HIDDEN' : 'SHOW',
-    } as Cms_ResponseProductDto;
+    return mapProductToResponse(product);
   }
 
   async findAll(
@@ -34,31 +31,12 @@ export class cms_ProductService {
           select: { imageURL: true, isPrimary: true },
         },
         descriptions: {
-          select: { descriptions: true },
+          select: { descriptions: true, benefits: true },
         },
       },
     });
 
-    const productsWithPrimaryImage = products.map((product) => {
-      const primaryImages = product.images.filter((image) => image.isPrimary);
-      const primaryImageURL =
-        primaryImages.length > 0 ? primaryImages[0].imageURL : null;
-      return {
-        ...product,
-        id: product.id.trim(),
-        name: product.name.trim(),
-        slug: product.slug?.trim(),
-        catalog_id: product.catalog_id?.trim(),
-        register_id: product.register_id?.trim() || undefined,
-        category_id: product.category_id.trim(),
-        subCategory_id: product.subCategory_id.trim(),
-        brand_id: product.brand_id.trim(),
-        uom_id: product.uom_id?.trim(),
-        primaryImageURL,
-      };
-    });
-
-    return productsWithPrimaryImage as Cms_ResponseProductDto[];
+    return products.map(mapProductToResponse);
   }
 
   async findBySlug(
@@ -84,20 +62,7 @@ export class cms_ProductService {
       throw new NotFoundException(`Product with slug ${slug} not found`);
     }
 
-    const primaryImages = product.images.filter((image) => image.isPrimary);
-    const primaryImageURL =
-      primaryImages.length > 0 ? primaryImages[0].imageURL : null;
-
-    const responseProduct: Cms_ResponseProductDto = {
-      ...product,
-      id: product.id.trim(),
-
-      name: product.name.trim(),
-      slug: product.slug?.trim(),
-      catalog_id: product.catalog_id?.trim(),
-      primaryImageURL,
-    };
-    return responseProduct; // Mengembalikan hasil sebagai array
+    return mapProductToResponse(product);
   }
 
   async findByName(
@@ -121,7 +86,7 @@ export class cms_ProductService {
           select: { imageURL: true, isPrimary: true },
         },
         descriptions: {
-          select: { descriptions: true },
+          select: { descriptions: true, benefits: true },
         },
       },
     });
@@ -130,25 +95,7 @@ export class cms_ProductService {
       throw new NotFoundException(`Products with name ${name} not found`);
     }
 
-    return products.map((product) => {
-      const primaryImages = product.images.filter((image) => image.isPrimary);
-      const primaryImageURL =
-        primaryImages.length > 0 ? primaryImages[0].imageURL : null;
-
-      return {
-        ...product,
-        id: product.id.trim(),
-        name: product.name.trim(),
-        slug: product.slug?.trim(),
-        catalog_id: product.catalog_id?.trim(),
-        register_id: product.register_id?.trim(),
-        category_id: product.category_id.trim(),
-        subCategory_id: product.subCategory_id.trim(),
-        brand_id: product.brand_id.trim(),
-        uom_id: product.uom_id?.trim(),
-        primaryImageURL,
-      } as Cms_ResponseProductDto;
-    });
+    return products.map(mapProductToResponse);
   }
 
   async update(
@@ -162,10 +109,37 @@ export class cms_ProductService {
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
-    const cms_UpdatedProduct = await this.prisma.imc_Product.update({
+    const updatedProduct = await this.prisma.imc_Product.update({
       where: { company_id_id: { id, company_id } },
       data: cms_UpdateProductDto,
     });
-    return cms_UpdatedProduct as Cms_ResponseProductDto;
+    return mapProductToResponse(updatedProduct);
   }
+}
+
+export function mapProductToResponse(product: any): Cms_ResponseProductDto {
+  const primaryImages = product.images.filter((image) => image.isPrimary);
+  const primaryImageURL =
+    primaryImages.length > 0 ? primaryImages[0].imageURL : null;
+
+  return {
+    id: product.id.trim(),
+    catalog_id: product.catalog_id?.trim(),
+    name: product.name.trim(),
+    slug: product.slug?.trim(),
+    eCatalogURL: product.eCatalogURL,
+    category_id: product.category_id.trim(),
+    category: {
+      name: product.category.name.trim(),
+    },
+    images: product.images.map((image) => ({
+      imageURL: image.imageURL,
+      isPrimary: image.isPrimary,
+    })),
+    descriptions: {
+      descriptions: product.descriptions.descriptions,
+      benefits: product.descriptions.benefits,
+    },
+    primaryImageURL,
+  };
 }
