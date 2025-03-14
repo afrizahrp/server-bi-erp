@@ -129,6 +129,7 @@ export function mapProductToResponse(product: any): Cms_ResponseProductDto {
     slug: product.slug?.trim(),
     eCatalogURL: product.eCatalogURL,
     category_id: product.category_id.trim(),
+    updatedAt: product.updatedAt,
     category: {
       name: product.category.name.trim(),
     },

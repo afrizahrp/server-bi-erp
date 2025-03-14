@@ -17,6 +17,7 @@ export class Cms_ResponseProductDto {
     imageURL: string;
     isPrimary: boolean;
   }[];
+  updatedAt: Date;
 
   primaryImageURL?: string | null;
 }
