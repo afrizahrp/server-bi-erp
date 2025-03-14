@@ -42,7 +42,7 @@ export class cms_ProductController {
   async findBySlug(
     @Param('company_id') company_id: string,
     @Param('slug') slug: string,
-  ): Promise<Cms_ResponseProductDto[]> {
+  ): Promise<Cms_ResponseProductDto> {
     return this.cms_productsService.findBySlug(company_id, slug);
   }
 

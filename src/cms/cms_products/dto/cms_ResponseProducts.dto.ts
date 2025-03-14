@@ -1,7 +1,6 @@
 // src/products/dto/product-response.dto.ts
 export class Cms_ResponseProductDto {
   id: string;
-  register_id?: string;
   catalog_id?: string;
   name: string;
   slug?: string;

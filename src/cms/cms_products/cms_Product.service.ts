@@ -64,7 +64,7 @@ export class cms_ProductService {
   async findBySlug(
     company_id: string,
     slug: string,
-  ): Promise<Cms_ResponseProductDto[]> {
+  ): Promise<Cms_ResponseProductDto> {
     const product = await this.prisma.imc_Product.findFirst({
       where: { company_id, slug },
       include: {
@@ -91,14 +91,13 @@ export class cms_ProductService {
     const responseProduct: Cms_ResponseProductDto = {
       ...product,
       id: product.id.trim(),
-      register_id: product.register_id?.trim() || undefined,
 
       name: product.name.trim(),
       slug: product.slug?.trim(),
       catalog_id: product.catalog_id?.trim(),
       primaryImageURL,
     };
-    return [responseProduct]; // Mengembalikan hasil sebagai array
+    return responseProduct; // Mengembalikan hasil sebagai array
   }
 
   async findByName(
