@@ -7,11 +7,14 @@ import {
   IsEnum,
 } from 'class-validator';
 
-// import { MasterRecordStatusEnum, WebsiteDisplayStatus } from '@prisma/client';
+import { MasterRecordStatusEnum, WebsiteDisplayStatus } from '@prisma/client';
 
 export class Cms_ResponseBillboardDto {
   @IsInt()
-  id: number;
+  id: string;
+
+  @IsString()
+  content_id: string;
 
   @IsInt()
   section: number;
@@ -22,21 +25,7 @@ export class Cms_ResponseBillboardDto {
 
   @IsString()
   @IsOptional()
-  description?: string;
-
-  // @IsEnum(MasterRecordStatusEnum)
-  // iStatus: MasterRecordStatusEnum;
-
-  // @IsEnum(WebsiteDisplayStatus)
-  // iShowedStatus?: WebsiteDisplayStatus;
-
-  @IsBoolean()
-  @IsOptional()
-  isShowBtn?: boolean;
-
-  @IsString()
-  @IsOptional()
-  btnText?: string;
+  name?: string;
 
   @IsBoolean()
   @IsOptional()
@@ -44,32 +33,51 @@ export class Cms_ResponseBillboardDto {
 
   @IsString()
   @IsOptional()
-  remarks?: string;
-
-  @IsString()
-  @IsOptional()
-  createdBy?: string;
-
-  @IsDate()
-  @IsOptional()
-  createdAt?: Date;
-
-  @IsString()
-  @IsOptional()
-  updatedBy?: string;
-
-  @IsDate()
-  updatedAt: Date;
-
-  @IsString()
-  company_id: string;
-
-  @IsString()
-  branch_id: string;
+  contentType?: string;
 
   @IsString()
   contentURL: string;
 
+  @IsEnum(MasterRecordStatusEnum)
+  iStatus: MasterRecordStatusEnum;
+
+  @IsEnum(WebsiteDisplayStatus)
+  iShowedStatus?: WebsiteDisplayStatus;
+
   @IsString()
-  content_id: string;
+  @IsOptional()
+  remarks?: string;
+
+  @IsString()
+  @IsOptional()
+  module_id: string;
+
+  // @IsBoolean()
+  // @IsOptional()
+  // isShowBtn?: boolean;
+
+  // @IsString()
+  // @IsOptional()
+  // btnText?: string;
+
+  // @IsString()
+  // @IsOptional()
+  // createdBy?: string;
+
+  // @IsDate()
+  // @IsOptional()
+  // createdAt?: Date;
+
+  // @IsString()
+  // @IsOptional()
+  // updatedBy?: string;
+
+  // @IsDate()
+  // updatedAt: Date;
+
+  // @IsString()
+  // company_id: string;
+
+  // @IsString()
+  // branch_id: string;
 }

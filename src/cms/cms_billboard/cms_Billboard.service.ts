@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma.service';
 import { Cms_CreateBillboardDto } from './dto/cms_CreateBillboard.dto';
 import { Cms_UpdateBillboardDto } from './dto/cms_UpdateBillboard.dto';
 import { Cms_ResponseBillboardDto } from './dto/cms_ResponseBillboard.dto';
+import { Cms_PaginationBillboardDto } from './dto/cms_PaginationBillboard.dto';
 
 @Injectable()
 export class cms_BillboardService {
@@ -14,27 +15,80 @@ export class cms_BillboardService {
     const billboard = await this.prisma.cms_Billboard.create({
       data: cms_CreateBillboardDto,
     });
-    return billboard as Cms_ResponseBillboardDto;
+    return this.mapToResponseDto(billboard);
   }
 
-  async findAll(company_id: string): Promise<Cms_ResponseBillboardDto[]> {
+  async findAll(
+    company_id: string,
+    module_id: string,
+    paginationDto: Cms_PaginationBillboardDto,
+  ): Promise<{ data: Cms_ResponseBillboardDto[]; totalRecords: number }> {
+    const { page = 1, limit = 10 } = paginationDto;
+
+    const whereCondition = { company_id, module_id };
+    const totalRecords = await this.prisma.cms_Billboard.count({
+      where: whereCondition,
+    });
+
+    // Pastikan skip tidak lebih besar dari totalRecords
+    const skip = Math.min((page - 1) * limit, totalRecords);
+
+    const billboards = await this.prisma.cms_Billboard.findMany({
+      where: whereCondition,
+      skip,
+      take: limit, // Tidak perlu dikurangi
+    });
+
+    const formattedBillboards = billboards.map(this.mapToResponseDto);
+    return { data: formattedBillboards, totalRecords };
+  }
+
+  // async findAll(
+  //   company_id: string,
+  //   module_id: string,
+  // ): Promise<Cms_ResponseBillboardDto[]> {
+  //   let totalRecords: number;
+
+  //   const whereCondition = { company_id, module_id };
+
+  //   totalRecords = await this.prisma.cms_Billboard.count({
+  //     where: whereCondition,
+  //   });
+
+  //   const billboards = await this.prisma.cms_Billboard.findMany({
+  //     where: whereCondition,
+  //   });
+
+  //   const formattedBillboards = billboards.map(this.mapToResponseDto);
+  //   return formattedBillboards;
+  // }
+
+  async getShowedBillboard(
+    company_id: string,
+  ): Promise<Cms_ResponseBillboardDto[]> {
     const billboards = await this.prisma.cms_Billboard.findMany({
       where: { company_id, iShowedStatus: 'SHOW' },
     });
-    return billboards as Cms_ResponseBillboardDto[];
+
+    return billboards.map(this.mapToResponseDto);
   }
 
   async findOne(
     company_id: string,
-    id: number,
+    id: string,
   ): Promise<Cms_ResponseBillboardDto> {
     const billboard = await this.prisma.cms_Billboard.findUnique({
-      where: { company_id_id: { id, company_id } },
+      where: {
+        company_id_id: {
+          company_id: company_id,
+          id: parseInt(id, 10), // Ensure id is passed as an Int
+        },
+      },
     });
     if (!billboard) {
       throw new NotFoundException(`Billboard with ID ${id} not found`);
     }
-    return billboard as Cms_ResponseBillboardDto;
+    return this.mapToResponseDto(billboard);
   }
 
   async update(
@@ -56,7 +110,7 @@ export class cms_BillboardService {
       },
       data: cms_UpdateBillboardDto,
     });
-    return updatedBillboard as Cms_ResponseBillboardDto;
+    return this.mapToResponseDto(updatedBillboard);
   }
 
   async remove(company_id: string, id: number): Promise<void> {
@@ -69,5 +123,22 @@ export class cms_BillboardService {
     await this.prisma.cms_Billboard.delete({
       where: { company_id_id: { id, company_id } },
     });
+  }
+
+  private mapToResponseDto(billboard: any): Cms_ResponseBillboardDto {
+    return {
+      id: billboard.id,
+      section: billboard.section,
+      content_id: billboard.content_id.trim(),
+      title: billboard.title?.trim(),
+      name: billboard.name?.trim(),
+      isImage: billboard.isImage,
+      contentURL: billboard.contentURL,
+      contentType: billboard.contentType,
+      iStatus: billboard.iStatus,
+      iShowedStatus: billboard.iShowedStatus,
+      remarks: billboard.remarks,
+      module_id: billboard.module_id,
+    };
   }
 }

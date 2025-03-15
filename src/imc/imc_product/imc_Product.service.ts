@@ -24,11 +24,18 @@ export class imc_ProductService {
   async findAll(
     company_id: string,
     paginationDto: Imc_PaginationProductDto,
-  ): Promise<Imc_ResponseProductDto[]> {
-    const { page = 1, limit = 10 } = paginationDto;
-    const skip = (page - 1) * limit;
+  ): Promise<{ data: Imc_ResponseProductDto[]; totalRecords: number }> {
+    const { page = 1, limit = 20 } = paginationDto;
 
-    const products = await this.prisma.imc_Product.findMany({
+    let totalRecords: number;
+    let products: any[];
+    const whereCondition = { company_id };
+    totalRecords = await this.prisma.imc_Category.count({
+      where: whereCondition,
+    });
+    const skip = Math.min((page - 1) * limit, totalRecords);
+
+    products = await this.prisma.imc_Product.findMany({
       where: { company_id, iShowedStatus: 'SHOW' },
       skip,
       take: limit,
@@ -64,7 +71,7 @@ export class imc_ProductService {
       };
     });
 
-    return productsWithPrimaryImage as Imc_ResponseProductDto[];
+    return { data: productsWithPrimaryImage, totalRecords };
   }
 
   async findOne(

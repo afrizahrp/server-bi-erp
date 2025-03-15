@@ -24,7 +24,7 @@ export class imc_ProductController {
   async findAll(
     @Param('company_id') company_id: string,
     @Query() paginationDto: Imc_PaginationProductDto,
-  ): Promise<Imc_ResponseProductDto[]> {
+  ): Promise<{ data: Imc_ResponseProductDto[]; totalRecords: number }> {
     return this.imc_productService.findAll(company_id, paginationDto);
   }
 

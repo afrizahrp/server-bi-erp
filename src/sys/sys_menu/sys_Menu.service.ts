@@ -39,6 +39,9 @@ export class sys_MenuService {
           },
         },
       },
+      orderBy: {
+        id: 'asc',
+      },
     });
 
     // Hanya return root menus, dan rekursi untuk menyusun hirarki child
@@ -107,6 +110,9 @@ export class sys_MenuService {
     const menus = await this.prisma.sys_Menu.findMany({
       where: {
         permissions: { some: { userCompanyRole_id } },
+      },
+      orderBy: {
+        id: 'asc',
       },
       include: {
         permissions: true,

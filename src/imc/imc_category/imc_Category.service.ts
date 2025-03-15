@@ -9,7 +9,7 @@ import { Imc_UpdateCategoryDto } from './dto/imc_UpdateCategory.dto';
 import { Imc_ResponseCategoryDto } from './dto/imc_ResponseCategory.dto';
 import { Imc_PaginationCategoryDto } from './dto/imc_PaginationCategory.dto';
 
-import { MasterRecordStatusEnum, WebsiteDisplayStatus } from '@prisma/client';
+import { WebsiteDisplayStatus } from '@prisma/client';
 
 @Injectable()
 export class imc_CategoryService {
@@ -29,8 +29,7 @@ export class imc_CategoryService {
     module_id: string,
     paginationDto: Imc_PaginationCategoryDto,
   ): Promise<{ data: Imc_ResponseCategoryDto[]; totalRecords: number }> {
-    const { page = 1, limit = 10 } = paginationDto;
-    const skip = (page - 1) * limit;
+    const { page = 1, limit = 20 } = paginationDto;
 
     let totalRecords: number;
     let categories: any[];
@@ -44,6 +43,7 @@ export class imc_CategoryService {
     totalRecords = await this.prisma.imc_Category.count({
       where: whereCondition,
     });
+    const skip = Math.min((page - 1) * limit, totalRecords);
 
     // Query to get paginated records
     categories = await this.prisma.imc_Category.findMany({
