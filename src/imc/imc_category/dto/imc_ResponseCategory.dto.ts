@@ -27,6 +27,10 @@ export class Imc_ResponseCategoryDto {
   @IsOptional()
   remarks?: string;
 
+  @IsEnum(WebsiteDisplayStatus)
+  @IsOptional()
+  iShowedStatus?: WebsiteDisplayStatus;
+
   @IsString()
   @IsOptional()
   module_id?: string;

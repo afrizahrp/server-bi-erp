@@ -102,6 +102,7 @@ export class imc_CategoryService {
       iStatus: category.iStatus,
       imageURL: category.imageURL?.trim(),
       remarks: category.remarks,
+      iShowedStatus: category.iShowedStatus,
     };
   }
 }
