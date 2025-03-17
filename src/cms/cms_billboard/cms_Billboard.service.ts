@@ -107,17 +107,16 @@ export class cms_BillboardService {
 
   private mapToResponseDto(billboard: any): Cms_ResponseBillboardDto {
     return {
-      id: billboard.id,
       section: billboard.section,
       content_id: billboard.content_id.trim() || 0,
       title: billboard.title.trim() || '',
       name: billboard.name.trim() || '',
-      isImage: billboard.isImage,
-      contentURL: billboard.contentURL,
+      isImage: billboard.isImage || true,
+      contentURL: billboard.contentURL || '',
       contentType: billboard.contentType,
-      iStatus: billboard.iStatus,
-      iShowedStatus: billboard.iShowedStatus,
-      remarks: billboard.remarks,
+      iStatus: billboard.iStatus || 'ACTIVE',
+      iShowedStatus: billboard.iShowedStatus || 'SHOW',
+      remarks: billboard.remarks || '',
     };
   }
 }

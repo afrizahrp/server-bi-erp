@@ -64,7 +64,7 @@ export class cms_BillboardController {
   }
 
   @Public()
-  @Patch(':company_id/:id')
+  @Patch(':id')
   async update(
     @Param('company_id') company_id: string,
     @Param('id') id: number,
