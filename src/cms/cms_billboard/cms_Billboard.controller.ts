@@ -5,6 +5,7 @@ import {
   Body,
   Param,
   Put,
+  Patch,
   Delete,
   Query,
   UseGuards,
@@ -63,7 +64,7 @@ export class cms_BillboardController {
   }
 
   @Public()
-  @Put(':id')
+  @Patch(':company_id/:id')
   async update(
     @Param('company_id') company_id: string,
     @Param('id') id: number,

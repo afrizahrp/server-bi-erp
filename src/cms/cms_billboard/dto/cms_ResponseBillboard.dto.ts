@@ -11,32 +11,25 @@ import { MasterRecordStatusEnum, WebsiteDisplayStatus } from '@prisma/client';
 
 export class Cms_ResponseBillboardDto {
   @IsInt()
-  id: string;
-
-  @IsString()
-  content_id: string;
+  id: number;
 
   @IsInt()
   section: number;
 
   @IsString()
-  @IsOptional()
-  title?: string;
+  title: string;
 
   @IsString()
-  @IsOptional()
-  name?: string;
-
-  @IsBoolean()
-  @IsOptional()
-  isImage?: boolean;
-
-  @IsString()
-  @IsOptional()
-  contentType?: string;
+  name: string;
 
   @IsString()
   contentURL: string;
+
+  @IsString()
+  contentType: string;
+
+  @IsString()
+  content_id: string;
 
   @IsEnum(MasterRecordStatusEnum)
   iStatus: MasterRecordStatusEnum;
@@ -44,40 +37,9 @@ export class Cms_ResponseBillboardDto {
   @IsEnum(WebsiteDisplayStatus)
   iShowedStatus?: WebsiteDisplayStatus;
 
-  @IsString()
-  @IsOptional()
-  remarks?: string;
+  @IsBoolean()
+  isImage: boolean;
 
   @IsString()
-  @IsOptional()
-  module_id: string;
-
-  // @IsBoolean()
-  // @IsOptional()
-  // isShowBtn?: boolean;
-
-  // @IsString()
-  // @IsOptional()
-  // btnText?: string;
-
-  // @IsString()
-  // @IsOptional()
-  // createdBy?: string;
-
-  // @IsDate()
-  // @IsOptional()
-  // createdAt?: Date;
-
-  // @IsString()
-  // @IsOptional()
-  // updatedBy?: string;
-
-  // @IsDate()
-  // updatedAt: Date;
-
-  // @IsString()
-  // company_id: string;
-
-  // @IsString()
-  // branch_id: string;
+  remarks: string;
 }

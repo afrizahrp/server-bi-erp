@@ -36,32 +36,12 @@ export class cms_BillboardService {
     const billboards = await this.prisma.cms_Billboard.findMany({
       where: whereCondition,
       skip,
-      take: limit, // Tidak perlu dikurangi
+      take: limit,
     });
 
     const formattedBillboards = billboards.map(this.mapToResponseDto);
     return { data: formattedBillboards, totalRecords };
   }
-
-  // async findAll(
-  //   company_id: string,
-  //   module_id: string,
-  // ): Promise<Cms_ResponseBillboardDto[]> {
-  //   let totalRecords: number;
-
-  //   const whereCondition = { company_id, module_id };
-
-  //   totalRecords = await this.prisma.cms_Billboard.count({
-  //     where: whereCondition,
-  //   });
-
-  //   const billboards = await this.prisma.cms_Billboard.findMany({
-  //     where: whereCondition,
-  //   });
-
-  //   const formattedBillboards = billboards.map(this.mapToResponseDto);
-  //   return formattedBillboards;
-  // }
 
   async getShowedBillboard(
     company_id: string,
@@ -129,16 +109,15 @@ export class cms_BillboardService {
     return {
       id: billboard.id,
       section: billboard.section,
-      content_id: billboard.content_id.trim(),
-      title: billboard.title?.trim(),
-      name: billboard.name?.trim(),
+      content_id: billboard.content_id.trim() || 0,
+      title: billboard.title.trim() || '',
+      name: billboard.name.trim() || '',
       isImage: billboard.isImage,
       contentURL: billboard.contentURL,
       contentType: billboard.contentType,
       iStatus: billboard.iStatus,
       iShowedStatus: billboard.iShowedStatus,
       remarks: billboard.remarks,
-      module_id: billboard.module_id,
     };
   }
 }

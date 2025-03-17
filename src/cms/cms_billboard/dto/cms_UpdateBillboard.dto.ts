@@ -11,20 +11,31 @@ import { MasterRecordStatusEnum, WebsiteDisplayStatus } from '@prisma/client';
 
 export class Cms_UpdateBillboardDto {
   @IsInt()
-  @IsOptional()
-  id?: number;
+  id: number;
 
   @IsInt()
   @IsOptional()
-  section?: number;
+  section: number;
 
   @IsString()
   @IsOptional()
-  title?: string;
+  title: string;
 
   @IsString()
   @IsOptional()
-  description?: string;
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  contentURL: string;
+
+  @IsString()
+  @IsOptional()
+  contentType: string;
+
+  @IsString()
+  @IsOptional()
+  content_id: string;
 
   @IsEnum(MasterRecordStatusEnum)
   iStatus: MasterRecordStatusEnum;
@@ -34,19 +45,11 @@ export class Cms_UpdateBillboardDto {
 
   @IsBoolean()
   @IsOptional()
-  isShowBtn?: boolean;
+  isImage: boolean;
 
   @IsString()
   @IsOptional()
-  btnText?: string;
-
-  @IsBoolean()
-  @IsOptional()
-  isImage?: boolean;
-
-  @IsString()
-  @IsOptional()
-  remarks?: string;
+  remarks: string;
 
   @IsString()
   @IsOptional()
@@ -67,16 +70,4 @@ export class Cms_UpdateBillboardDto {
   @IsString()
   @IsOptional()
   company_id?: string;
-
-  @IsString()
-  @IsOptional()
-  branch_id?: string;
-
-  @IsString()
-  @IsOptional()
-  contentURL?: string;
-
-  @IsString()
-  @IsOptional()
-  content_id?: string;
 }

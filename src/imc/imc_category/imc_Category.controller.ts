@@ -4,9 +4,9 @@ import {
   Post,
   Body,
   Param,
-  Put,
   Query,
   UseGuards,
+  Patch,
 } from '@nestjs/common';
 import { Imc_ResponseCategoryDto } from './dto/imc_ResponseCategory.dto';
 import { Imc_CreateCategoryDto } from './dto/imc_CreateCategory.dto';
@@ -55,7 +55,7 @@ export class imc_CategoryController {
   }
 
   @Public()
-  @Put(':id')
+  @Patch(':company_id/:id')
   async update(
     @Param('company_id') company_id: string,
     @Param('id') id: string,

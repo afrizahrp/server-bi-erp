@@ -17,12 +17,19 @@ export class Cms_CreateBillboardDto {
   section: number;
 
   @IsString()
-  @IsOptional()
-  title?: string;
+  title: string;
 
   @IsString()
-  @IsOptional()
-  description?: string;
+  name: string;
+
+  @IsString()
+  contentURL: string;
+
+  @IsString()
+  contentType: string;
+
+  @IsString()
+  content_id: string;
 
   @IsEnum(MasterRecordStatusEnum)
   iStatus: MasterRecordStatusEnum;
@@ -31,20 +38,10 @@ export class Cms_CreateBillboardDto {
   iShowedStatus?: WebsiteDisplayStatus;
 
   @IsBoolean()
-  @IsOptional()
-  isShowBtn?: boolean;
+  isImage: boolean;
 
   @IsString()
-  @IsOptional()
-  btnText?: string;
-
-  @IsBoolean()
-  @IsOptional()
-  isImage?: boolean;
-
-  @IsString()
-  @IsOptional()
-  remarks?: string;
+  remarks: string;
 
   @IsString()
   @IsOptional()
@@ -59,17 +56,9 @@ export class Cms_CreateBillboardDto {
   updatedBy?: string;
 
   @IsDate()
-  updatedAt: Date;
+  @IsOptional()
+  updatedAt?: Date;
 
   @IsString()
   company_id: string;
-
-  @IsString()
-  branch_id: string;
-
-  @IsString()
-  contentURL: string;
-
-  @IsString()
-  content_id: string;
 }
