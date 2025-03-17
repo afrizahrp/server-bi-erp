@@ -107,6 +107,7 @@ export class cms_BillboardService {
 
   private mapToResponseDto(billboard: any): Cms_ResponseBillboardDto {
     return {
+      id: billboard.id,
       section: billboard.section,
       content_id: billboard.content_id.trim() || 0,
       title: billboard.title.trim() || '',
