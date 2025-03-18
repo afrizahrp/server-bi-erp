@@ -109,15 +109,14 @@ export class cms_BillboardService {
     return {
       id: billboard.id,
       section: billboard.section,
-      content_id: billboard.content_id.trim() || 0,
-      title: billboard.title.trim() || '',
+      content_id: billboard.content_id.trim() || '',
       name: billboard.name.trim() || '',
-      isImage: billboard.isImage || true,
+      isImage: billboard.isImage,
       contentURL: billboard.contentURL || '',
-      contentType: billboard.contentType,
       iStatus: billboard.iStatus || 'ACTIVE',
       iShowedStatus: billboard.iShowedStatus || 'SHOW',
       remarks: billboard.remarks || '',
+      company_id: billboard.company_id,
     };
   }
 }

@@ -14,21 +14,18 @@ export class Cms_UpdateBillboardDto {
   id: number;
 
   @IsInt()
+  @IsOptional()
   section: number;
-
-  @IsString()
-  title: string;
 
   @IsString()
   name: string;
 
   @IsString()
+  @IsOptional()
   contentURL: string;
 
   @IsString()
-  contentType: string;
-
-  @IsString()
+  @IsOptional()
   content_id: string;
 
   @IsEnum(MasterRecordStatusEnum)
@@ -38,9 +35,11 @@ export class Cms_UpdateBillboardDto {
   iShowedStatus: WebsiteDisplayStatus;
 
   @IsBoolean()
+  @IsOptional()
   isImage: boolean;
 
   @IsString()
+  @IsOptional()
   remarks: string;
 
   @IsString()

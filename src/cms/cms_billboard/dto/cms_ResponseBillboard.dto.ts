@@ -14,21 +14,18 @@ export class Cms_ResponseBillboardDto {
   id: number;
 
   @IsInt()
+  @IsOptional()
   section: number;
-
-  @IsString()
-  title: string;
 
   @IsString()
   name: string;
 
   @IsString()
+  @IsOptional()
   contentURL: string;
 
   @IsString()
-  contentType: string;
-
-  @IsString()
+  @IsOptional()
   content_id: string;
 
   @IsEnum(MasterRecordStatusEnum)
@@ -38,8 +35,13 @@ export class Cms_ResponseBillboardDto {
   iShowedStatus?: WebsiteDisplayStatus;
 
   @IsBoolean()
+  @IsOptional()
   isImage: boolean;
 
   @IsString()
+  @IsOptional()
   remarks: string;
+
+  @IsString()
+  company_id?: string;
 }

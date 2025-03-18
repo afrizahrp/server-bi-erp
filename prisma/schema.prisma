@@ -520,15 +520,13 @@ model imc_ProductImage {
 model cms_Billboard {
   id            Int                    @default(autoincrement()) @db.SmallInt
   name          String                 @db.VarChar(250)
-  section       Int                    @db.SmallInt
-  title         String                 @db.VarChar(50)
-  contentURL    String                 @db.VarChar(250)
-  content_id    String                 @db.Char(30)
-  isImage       Boolean
-  contentType   String                 @db.VarChar(10)
+  section       Int?                   @db.SmallInt
+  contentURL    String?                @db.VarChar(250)
+  content_id    String?                @db.Char(30)
+  isImage       Boolean? // true = image,  false = video
   iStatus       MasterRecordStatusEnum @default(ACTIVE)
   iShowedStatus WebsiteDisplayStatus   @default(HIDDEN)
-  remarks       String                 @db.VarChar(250)
+  remarks       String?                @db.VarChar(250)
   company_id    String                 @db.Char(5)
   // createdBy     String?                @db.Char(10)
   // createdAt     DateTime?              @default(now())
