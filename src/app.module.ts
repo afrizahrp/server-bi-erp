@@ -21,6 +21,9 @@ import { sys_MenuModule } from './sys/sys_menu/sys_Menu.module';
 
 import { sys_MenuPermissionModule } from './sys/sys_menu_permission/sys_Menu_Permission.module';
 
+import { UploadController } from './cloudinary/cloudinary.controller';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -38,8 +41,9 @@ import { sys_MenuPermissionModule } from './sys/sys_menu_permission/sys_Menu_Per
     cms_BillboardsModule,
     imc_CategoryModule,
     imc_ProductModule,
+    CloudinaryModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, UploadController],
   providers: [AppService, PrismaService, sys_CompanyModule],
 })
 export class AppModule {}
