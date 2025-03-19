@@ -59,7 +59,6 @@ export class AuthController {
   @Roles('ADMIN')
   @Get('protected')
   getAll(@Request() req): string {
-    console.log(req.user);
     return 'Now you can access this protected API';
   }
 

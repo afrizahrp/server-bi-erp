@@ -522,7 +522,7 @@ model cms_Billboard {
   name          String                 @db.VarChar(250)
   section       Int?                   @db.SmallInt
   contentURL    String?                @db.VarChar(250)
-  content_id    String?                @db.Char(30)
+  content_id    String?                @db.VarChar(50)
   isImage       Boolean? // true = image,  false = video
   iStatus       MasterRecordStatusEnum @default(ACTIVE)
   iShowedStatus WebsiteDisplayStatus   @default(HIDDEN)
