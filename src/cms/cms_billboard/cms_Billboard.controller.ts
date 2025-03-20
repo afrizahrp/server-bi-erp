@@ -58,7 +58,7 @@ export class cms_BillboardController {
   @Get(':id')
   async findOne(
     @Param('company_id') company_id: string,
-    @Param('id') id: string,
+    @Param('id') id: number,
   ): Promise<Cms_ResponseBillboardDto> {
     return this.cms_billboardService.findOne(company_id, id);
   }

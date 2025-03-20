@@ -11,9 +11,6 @@ import { MasterRecordStatusEnum, WebsiteDisplayStatus } from '@prisma/client';
 
 export class Cms_CreateBillboardDto {
   @IsInt()
-  id: number;
-
-  @IsInt()
   @IsOptional()
   section: number;
 

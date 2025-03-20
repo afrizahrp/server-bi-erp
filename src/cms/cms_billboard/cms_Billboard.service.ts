@@ -55,13 +55,13 @@ export class cms_BillboardService {
 
   async findOne(
     company_id: string,
-    id: string,
+    id: number,
   ): Promise<Cms_ResponseBillboardDto> {
     const billboard = await this.prisma.cms_Billboard.findUnique({
       where: {
         company_id_id: {
           company_id: company_id,
-          id: parseInt(id, 10), // Ensure id is passed as an Int
+          id, // Ensure id is passed as an Int
         },
       },
     });

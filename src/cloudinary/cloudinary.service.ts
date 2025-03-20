@@ -11,7 +11,6 @@ export class CloudinaryService {
 
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        // { folder: 'upload' },
         (error, result) => {
           if (error) {
             console.error('Cloudinary Upload Error:', error);
@@ -21,7 +20,6 @@ export class CloudinaryService {
         },
       );
 
-      // Convert buffer ke Readable Stream
       const readableStream = new Readable();
       readableStream.push(file.buffer);
       readableStream.push(null);
@@ -32,7 +30,7 @@ export class CloudinaryService {
   async deleteImage(publicId: string): Promise<any> {
     try {
       const result = await cloudinary.uploader.destroy(publicId, {
-        invalidate: true, // Pastikan cache Cloudinary dihapus
+        invalidate: true,
       });
 
       if (result.result !== 'ok') {
