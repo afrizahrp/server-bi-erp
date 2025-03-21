@@ -39,22 +39,17 @@ export class Cms_CreateBillboardDto {
   @IsOptional()
   remarks: string;
 
-  // @IsString()
-  // @IsOptional()
-  // createdBy?: string;
+  @IsString()
+  @IsOptional()
+  createdBy?: string;
 
-  // @IsDate()
-  // @IsOptional()
-  // createdAt?: Date;
-
-  // @IsString()
-  // @IsOptional()
-  // updatedBy?: string;
-
-  // @IsDate()
-  // @IsOptional()
-  // updatedAt?: Date;
+  @IsString()
+  @IsOptional()
+  updatedBy?: string;
 
   @IsString()
   company_id: string;
+
+  @IsString()
+  branch_id: string;
 }

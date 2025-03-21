@@ -528,11 +528,11 @@ model cms_Billboard {
   iShowedStatus WebsiteDisplayStatus   @default(HIDDEN)
   remarks       String?                @db.VarChar(250)
   company_id    String                 @db.Char(5)
-  // createdBy     String?                @db.Char(10)
-  // createdAt     DateTime?              @default(now())
-  // updatedBy     String?                @db.Char(10)
-  // updatedAt     DateTime?
-  // branch_id     String                 @db.Char(10)
+  createdBy     String?                @db.Char(10)
+  createdAt     DateTime?              @default(now())
+  updatedBy     String?                @db.Char(10)
+  updatedAt     DateTime?
+  branch_id     String?                @db.Char(10)
 
   @@id([company_id, id], map: "pk_cms_Billboards")
 }

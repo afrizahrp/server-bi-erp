@@ -30,7 +30,6 @@ export class cms_BillboardService {
       where: whereCondition,
     });
 
-    // Pastikan skip tidak lebih besar dari totalRecords
     const skip = Math.min((page - 1) * limit, totalRecords);
 
     const billboards = await this.prisma.cms_Billboard.findMany({

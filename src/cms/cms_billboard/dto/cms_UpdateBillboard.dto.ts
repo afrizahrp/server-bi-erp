@@ -43,5 +43,20 @@ export class Cms_UpdateBillboardDto {
   remarks: string;
 
   @IsString()
-  company_id?: string;
+  @IsOptional()
+  createdBy?: string;
+
+  @IsString()
+  @IsOptional()
+  updatedBy?: string;
+
+  @IsString()
+  company_id: string;
+
+  @IsString()
+  branch_id: string;
+
+  @IsOptional()
+  @IsDate() // 🚨 HAPUS INI!
+  updatedAt?: Date;
 }
