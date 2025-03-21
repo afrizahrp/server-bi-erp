@@ -4,6 +4,7 @@ import { Cms_CreateBillboardDto } from './dto/cms_CreateBillboard.dto';
 import { Cms_UpdateBillboardDto } from './dto/cms_UpdateBillboard.dto';
 import { Cms_ResponseBillboardDto } from './dto/cms_ResponseBillboard.dto';
 import { Cms_PaginationBillboardDto } from './dto/cms_PaginationBillboard.dto';
+import { ConvertToWib } from 'src/utils/convertToWib';
 
 @Injectable()
 export class cms_BillboardService {
@@ -83,12 +84,14 @@ export class cms_BillboardService {
     if (!billboard) {
       throw new NotFoundException(`Billboard with ID ${id} not found`);
     }
+
     const updatedBillboard = await this.prisma.cms_Billboard.update({
       where: {
         company_id_id: { id, company_id: cms_UpdateBillboardDto.company_id! },
       },
       data: cms_UpdateBillboardDto,
     });
+
     return this.mapToResponseDto(updatedBillboard);
   }
 
@@ -116,6 +119,8 @@ export class cms_BillboardService {
       iShowedStatus: billboard.iShowedStatus || 'SHOW',
       remarks: billboard.remarks || '',
       company_id: billboard.company_id,
+      createdAt: ConvertToWib(billboard.createdAt), // 🔥 Pakai fungsi utilitas
+      updatedAt: ConvertToWib(billboard.updatedAt), // 🔥 Pakai fungsi utilitas
     };
   }
 }

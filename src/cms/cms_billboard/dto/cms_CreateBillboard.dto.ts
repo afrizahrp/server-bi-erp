@@ -6,6 +6,7 @@ import {
   IsDate,
   IsNumber,
   IsEnum,
+  IsDateString,
 } from 'class-validator';
 import { MasterRecordStatusEnum, WebsiteDisplayStatus } from '@prisma/client';
 
@@ -43,9 +44,17 @@ export class Cms_CreateBillboardDto {
   @IsOptional()
   createdBy?: string;
 
+  @IsOptional()
+  @IsDateString()
+  createdAt?: Date;
+
   @IsString()
   @IsOptional()
   updatedBy?: string;
+
+  @IsOptional()
+  @IsDateString()
+  updatedAt: Date;
 
   @IsString()
   company_id: string;

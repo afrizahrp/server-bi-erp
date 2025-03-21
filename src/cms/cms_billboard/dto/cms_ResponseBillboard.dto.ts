@@ -5,6 +5,8 @@ import {
   IsBoolean,
   IsDate,
   IsEnum,
+  IsDateString,
+  isDateString,
 } from 'class-validator';
 
 import { MasterRecordStatusEnum, WebsiteDisplayStatus } from '@prisma/client';
@@ -44,4 +46,10 @@ export class Cms_ResponseBillboardDto {
 
   @IsString()
   company_id?: string;
+
+  @IsDateString()
+  createdAt: string;
+
+  @IsDateString()
+  updatedAt: string;
 }

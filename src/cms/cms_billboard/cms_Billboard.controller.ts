@@ -71,6 +71,7 @@ export class cms_BillboardController {
     @Body() cms_UpdateBillboardDto: Cms_UpdateBillboardDto,
   ): Promise<Cms_ResponseBillboardDto> {
     cms_UpdateBillboardDto.company_id = company_id;
+
     return this.cms_billboardService.update(
       id,
       company_id,

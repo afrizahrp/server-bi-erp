@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsDate,
   IsEnum,
+  IsDateString,
 } from 'class-validator';
 
 import { MasterRecordStatusEnum, WebsiteDisplayStatus } from '@prisma/client';
@@ -42,9 +43,17 @@ export class Cms_UpdateBillboardDto {
   @IsOptional()
   remarks: string;
 
+  @IsOptional()
+  @IsDateString()
+  createdAt?: Date;
+
   @IsString()
   @IsOptional()
   createdBy?: string;
+
+  @IsOptional()
+  @IsDateString()
+  updatedAt: Date;
 
   @IsString()
   @IsOptional()
@@ -55,8 +64,4 @@ export class Cms_UpdateBillboardDto {
 
   @IsString()
   branch_id: string;
-
-  @IsOptional()
-  @IsDate() // 🚨 HAPUS INI!
-  updatedAt?: Date;
 }
