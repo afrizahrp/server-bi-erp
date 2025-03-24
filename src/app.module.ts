@@ -14,6 +14,7 @@ import { cms_ProductDescModule } from './cms/cms_productdesc/cms_ProductDesc.mod
 
 import { imc_CategoryModule } from './imc/imc_category/imc_Categories.module';
 import { imc_ProductModule } from './imc/imc_product/imc_Product.module';
+import { imc_CategoryTypeModule } from './imc/imc_categoryType/imc_categoryType.module';
 
 import { sys_CompanyModule } from './sys/sys_company/sys_Company.module';
 
@@ -39,11 +40,12 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     cms_ProductModule,
     cms_ProductDescModule,
     cms_BillboardsModule,
+    imc_CategoryTypeModule,
     imc_CategoryModule,
     imc_ProductModule,
     CloudinaryModule,
   ],
   controllers: [AppController, UploadController],
-  providers: [AppService, PrismaService, sys_CompanyModule],
+  providers: [AppService, PrismaService],
 })
 export class AppModule {}

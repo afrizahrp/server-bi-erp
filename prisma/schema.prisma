@@ -215,7 +215,7 @@ model imc_Uom {
 }
 
 model imc_CategoryType {
-  id           Int                    @id @db.SmallInt
+  id           Int                    @id @default(autoincrement()) @db.SmallInt
   name         String?                @db.VarChar(20)
   iStatus      MasterRecordStatusEnum @default(ACTIVE)
   remarks      String?                @db.VarChar(250)
@@ -224,12 +224,12 @@ model imc_CategoryType {
   cogs_acct    String?                @db.Char(10)
   expense_acct String?                @db.Char(10)
   asset_acct   String?                @db.Char(10)
-  createdBy    String?                @db.Char(10)
-  createdAt    DateTime               @default(now())
-  updatedBy    String?                @db.Char(10)
-  updatedAt    DateTime
   company_id   String                 @db.Char(5)
-  branch_id    String                 @db.Char(10)
+  createdBy    String?                @db.Char(10)
+  createdAt    DateTime?              @default(now())
+  updatedBy    String?                @db.Char(10)
+  updatedAt    DateTime?
+  branch_id    String?                @db.Char(10)
   categories   imc_Category[]
 }
 
