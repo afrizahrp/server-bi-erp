@@ -46,6 +46,15 @@ export class imc_CategoryController {
   }
 
   @Public()
+  @Get('statuses')
+  async getStatuses(
+    @Param('company_id') company_id: string,
+    @Param('module_id') module_id: string,
+  ) {
+    return this.imc_categoryService.findAllStatuses(company_id, module_id);
+  }
+
+  @Public()
   @Get(':id')
   async findByid(
     @Param('company_id') company_id: string,

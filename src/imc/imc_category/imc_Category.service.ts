@@ -29,37 +29,57 @@ export class imc_CategoryService {
     module_id: string,
     paginationDto: Imc_PaginationCategoryDto,
   ): Promise<{ data: Imc_ResponseCategoryDto[]; totalRecords: number }> {
-    const { page = 1, limit = 20 } = paginationDto;
+    const { page = 1, limit = 100, status, categoryType } = paginationDto;
 
-    let totalRecords: number;
-    let categories: any[];
+    let whereCondition: any = { company_id };
 
-    const whereCondition =
-      module_id === 'IMC' // Check if module_id is IMC then show all records
-        ? { company_id }
-        : { company_id, iShowedStatus: WebsiteDisplayStatus.SHOW }; // Else show only records with iShowedStatus = SHOW
+    if (module_id !== 'IMC') {
+      whereCondition.iShowedStatus = WebsiteDisplayStatus.SHOW;
+    }
 
-    // Query to get total records
-    totalRecords = await this.prisma.imc_Category.count({
+    if (status) {
+      whereCondition.iStatus = status; // Tambahkan filter status
+    }
+
+    if (categoryType) {
+      whereCondition.categoryType = {
+        is: { name: categoryType },
+      };
+    }
+
+    // Hitung total data sebelum pagination
+    const totalRecords = await this.prisma.imc_Category.count({
       where: whereCondition,
     });
+
     const skip = Math.min((page - 1) * limit, totalRecords);
 
-    // Query to get paginated records
-    categories = await this.prisma.imc_Category.findMany({
+    const categories = await this.prisma.imc_Category.findMany({
       where: whereCondition,
       skip,
       take: limit,
       include: {
-        categoryType: {
-          select: { name: true },
-        },
+        categoryType: true, // Pastikan ini sesuai dengan schema Prisma
       },
     });
 
+    // Format hasil agar sesuai DTO
     const formattedCategories = categories.map(this.mapToResponseDto);
 
     return { data: formattedCategories, totalRecords };
+  }
+
+  async findAllStatuses(
+    company_id: string,
+    module_id: string,
+  ): Promise<string[]> {
+    const statuses = await this.prisma.imc_Category.findMany({
+      where: { company_id },
+      select: { iStatus: true }, // Hanya ambil field iStatus
+      distinct: ['iStatus'], // Ambil hanya nilai unik
+    });
+
+    return statuses.map((s) => s.iStatus); // Return dalam bentuk array
   }
 
   async findOne(

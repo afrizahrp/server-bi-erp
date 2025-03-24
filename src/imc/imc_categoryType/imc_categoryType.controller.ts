@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Param,
+  Query,
   Patch,
   Delete,
   ParseIntPipe,
@@ -13,6 +14,7 @@ import { imc_CategoryTypeService } from './imc_categoryType.service';
 import { Imc_CreateCategoryTypeDto } from './dto/imc_CreateCategoryType.dto';
 import { Imc_UpdateCategoryTypeDto } from './dto/imc_UpdateCategoryType.dto';
 import { Imc_ResponseCategoryTypeDto } from './dto/imc_ResponseCategoryType.dto';
+import { Imc_PaginationCategoryTypeDto } from './dto/imc_PaginationCategoryType.dto';
 
 @Controller(':company_id/:module_id/get-categoryType')
 export class imc_CategoryTypeController {
@@ -32,8 +34,13 @@ export class imc_CategoryTypeController {
   async findAll(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
-  ): Promise<Imc_ResponseCategoryTypeDto[]> {
-    return this.imc_categoryTypeService.findAll(company_id, module_id);
+    @Query() paginationDto: Imc_PaginationCategoryTypeDto,
+  ): Promise<{ data: Imc_ResponseCategoryTypeDto[]; totalRecords: number }> {
+    return this.imc_categoryTypeService.findAll(
+      company_id,
+      module_id,
+      paginationDto,
+    );
   }
 
   @Get(':id')

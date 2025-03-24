@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma.service';
 import { Imc_CreateCategoryTypeDto } from './dto/imc_CreateCategoryType.dto';
 import { Imc_UpdateCategoryTypeDto } from './dto/imc_UpdateCategoryType.dto';
 import { Imc_ResponseCategoryTypeDto } from './dto/imc_ResponseCategoryType.dto';
+import { Imc_PaginationCategoryTypeDto } from './dto/imc_PaginationCategoryType.dto';
 
 @Injectable()
 export class imc_CategoryTypeService {
@@ -20,14 +21,28 @@ export class imc_CategoryTypeService {
   async findAll(
     company_id: string,
     module_id: string,
-  ): Promise<Imc_ResponseCategoryTypeDto[]> {
-    const categoryTypes = await this.prisma.imc_CategoryType.findMany({
-      where: {
-        company_id,
-      },
-      orderBy: { createdAt: 'desc' },
+    paginationDto: Imc_PaginationCategoryTypeDto,
+  ): Promise<{ data: Imc_ResponseCategoryTypeDto[]; totalRecords: number }> {
+    const { page = 1, limit = 20 } = paginationDto;
+
+    let totalRecords: number;
+    let categoryTypes: any[];
+
+    const whereCondition = { company_id };
+    totalRecords = await this.prisma.imc_CategoryType.count({
+      where: whereCondition,
     });
-    return categoryTypes.map(this.mapToResponseDto);
+    const skip = Math.min((page - 1) * limit, totalRecords);
+
+    categoryTypes = await this.prisma.imc_CategoryType.findMany({
+      where: whereCondition,
+      skip,
+      take: limit,
+    });
+
+    const formattedCategoryTypes = categoryTypes.map(this.mapToResponseDto);
+
+    return { data: formattedCategoryTypes, totalRecords };
   }
 
   async findOne(id: number): Promise<Imc_ResponseCategoryTypeDto> {
