@@ -12,9 +12,10 @@ import { cms_CategoryModule } from './cms/cms_category/cms_Category.module';
 import { cms_ProductModule } from './cms/cms_products/cms_Product.module';
 import { cms_ProductDescModule } from './cms/cms_productdesc/cms_ProductDesc.module';
 
+import { imc_CategoryTypeModule } from './imc/imc_categoryType/imc_categoryType.module';
 import { imc_CategoryModule } from './imc/imc_category/imc_Categories.module';
 import { imc_ProductModule } from './imc/imc_product/imc_Product.module';
-import { imc_CategoryTypeModule } from './imc/imc_categoryType/imc_categoryType.module';
+import { imc_ProductStockCardModule } from './imc/imc_productStockCard/imc_ProductStockCard.module';
 
 import { sys_CompanyModule } from './sys/sys_company/sys_Company.module';
 
@@ -43,6 +44,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     imc_CategoryTypeModule,
     imc_CategoryModule,
     imc_ProductModule,
+    imc_ProductStockCardModule,
     CloudinaryModule,
   ],
   controllers: [AppController, UploadController],
