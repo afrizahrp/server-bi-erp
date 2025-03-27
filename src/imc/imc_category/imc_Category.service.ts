@@ -93,7 +93,13 @@ export class imc_CategoryService {
       _count: { _all: true },
     });
 
-    return statuses.map((s) => ({
+    const sortedStatuses = statuses.sort((a, b) => {
+      if (a.iStatus === 'Active') return -1; // Prioritaskan 'Active'
+      if (b.iStatus === 'Active') return 1;
+      return a.iStatus.localeCompare(b.iStatus); // Urutkan alfabetis untuk status lainnya
+    });
+
+    return sortedStatuses.map((s) => ({
       id: s.iStatus,
       name: s.iStatus,
       count: s._count._all.toString(), // Konversi count ke string

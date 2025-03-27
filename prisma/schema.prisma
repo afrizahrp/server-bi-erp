@@ -11,7 +11,7 @@ model sys_Company {
   seq_no          Int                    @db.SmallInt
   id              String                 @id @db.Char(5)
   name            String?                @db.VarChar(50)
-  iStatus         MasterRecordStatusEnum @default(ACTIVE)
+  iStatus         MasterRecordStatusEnum @default(Active)
   province        String?                @db.VarChar(50)
   district        String?                @db.VarChar(50)
   city            String?                @db.VarChar(50)
@@ -41,7 +41,7 @@ model sys_Company {
 model sys_Role {
   id            String                 @id @db.Char(20)
   name          String                 @db.VarChar(20)
-  iStatus       MasterRecordStatusEnum @default(ACTIVE)
+  iStatus       MasterRecordStatusEnum @default(Active)
   remarks       String?                @db.VarChar(255)
   userCompanies sys_UserCompanyRole[]
 }
@@ -51,7 +51,7 @@ model sys_User {
   name               String                 @unique @db.VarChar(50)
   email              String                 @db.VarChar(100)
   isAdmin            Boolean                @default(false)
-  iStatus            MasterRecordStatusEnum @default(ACTIVE)
+  iStatus            MasterRecordStatusEnum @default(Active)
   image              String?                @db.VarChar(255)
   password           String                 @db.VarChar(255)
   hashedRefreshToken String?                @db.VarChar(255)
@@ -64,7 +64,7 @@ model sys_UserCompanyRole {
   role_id    String                 @db.Char(20)
   company_id String                 @db.Char(5)
   branch_id  String                 @db.Char(10)
-  iStatus    MasterRecordStatusEnum @default(ACTIVE)
+  iStatus    MasterRecordStatusEnum @default(Active)
   isDefault  Boolean?               @default(false)
   permission sys_Menu_Permission[]
   role       sys_Role               @relation(fields: [role_id], references: [id])
@@ -104,7 +104,7 @@ model sys_Menu_Permission {
   can_delete         Boolean                @default(false)
   can_print          Boolean                @default(false)
   can_approve        Boolean                @default(false)
-  iStatus            MasterRecordStatusEnum @default(ACTIVE)
+  iStatus            MasterRecordStatusEnum @default(Active)
   createdBy          String?                @db.Char(10)
   createdAt          DateTime               @default(now())
   updatedBy          String?                @db.Char(10)
@@ -129,7 +129,7 @@ model imc_Warehouse {
   id         String                 @id @db.Char(4)
   name       String?                @db.Char(60)
   iMain      Int?
-  iStatus    MasterRecordStatusEnum @default(ACTIVE)
+  iStatus    MasterRecordStatusEnum @default(Active)
   address    String?                @db.VarChar(250)
   postalCode String?                @db.Char(6)
   phone      String?                @db.Char(12)
@@ -146,7 +146,7 @@ model imc_Floor {
   warehouse_id String                 @db.Char(4)
   id           String                 @id(map: "pk_ic_floor") @db.Char(5)
   name         String?                @db.Char(35)
-  iStatus      MasterRecordStatusEnum @default(ACTIVE)
+  iStatus      MasterRecordStatusEnum @default(Active)
   createdBy    String?                @db.Char(10)
   createdAt    DateTime
   updatedBy    String?                @db.Char(10)
@@ -162,7 +162,7 @@ model imc_Shelf {
   floor_id   String                 @db.Char(5)
   id         String                 @db.Char(15)
   name       String?                @db.Char(35)
-  iStatus    MasterRecordStatusEnum @default(ACTIVE)
+  iStatus    MasterRecordStatusEnum @default(Active)
   createdBy  String?                @db.Char(10)
   createdAt  DateTime
   updatedBy  String?                @db.Char(10)
@@ -181,7 +181,7 @@ model imc_Row {
   shelf_id   String                 @db.Char(15)
   id         String                 @db.Char(15)
   name       String?                @db.Char(35)
-  iStatus    MasterRecordStatusEnum @default(ACTIVE)
+  iStatus    MasterRecordStatusEnum @default(Active)
   createdBy  String?                @db.Char(10)
   createdAt  DateTime
   updatedBy  String?                @db.Char(10)
@@ -201,7 +201,7 @@ model imc_Row {
 model imc_Uom {
   id         String                 @db.Char(10)
   name       String?                @db.VarChar(50)
-  iStatus    MasterRecordStatusEnum @default(ACTIVE)
+  iStatus    MasterRecordStatusEnum @default(Active)
   remarks    String?                @db.VarChar(250)
   createdBy  String?                @db.Char(10)
   createdAt  DateTime               @default(now())
@@ -217,7 +217,7 @@ model imc_Uom {
 model imc_CategoryType {
   id           Int                    @id @default(autoincrement()) @db.SmallInt
   name         String?                @db.VarChar(20)
-  iStatus      MasterRecordStatusEnum @default(ACTIVE)
+  iStatus      MasterRecordStatusEnum @default(Active)
   remarks      String?                @db.VarChar(250)
   stock_acct   String?                @db.Char(10)
   sales_acct   String?                @db.Char(10)
@@ -239,7 +239,7 @@ model imc_Category {
   name          String?                @db.VarChar(80)
   slug          String?                @unique @db.VarChar(50)
   remarks       String?                @db.VarChar(250)
-  iStatus       MasterRecordStatusEnum @default(ACTIVE)
+  iStatus       MasterRecordStatusEnum @default(Active)
   iShowedStatus WebsiteDisplayStatus   @default(HIDDEN)
   imageURL      String?                @db.VarChar(250)
   createdBy     String?                @db.Char(10)
@@ -263,7 +263,7 @@ model imc_SubCategory {
   category_id  String                 @db.Char(10)
   name         String                 @db.VarChar(80)
   slug         String                 @db.VarChar(50)
-  iStatus      MasterRecordStatusEnum @default(ACTIVE)
+  iStatus      MasterRecordStatusEnum @default(Active)
   remarks      String?                @db.VarChar(250)
   createdBy    String?                @db.Char(10)
   createdAt    DateTime               @default(now())
@@ -281,7 +281,7 @@ model imc_Brand {
   id           String                 @db.Char(10)
   name         String                 @db.VarChar(50)
   slug         String?                @db.VarChar(50)
-  iStatus      MasterRecordStatusEnum @default(ACTIVE)
+  iStatus      MasterRecordStatusEnum @default(Active)
   remarks      String?                @db.VarChar(250)
   createdBy    String?                @db.Char(10)
   createdAt    DateTime               @default(now())
@@ -306,7 +306,7 @@ model imc_Product {
   uom_id         String                 @db.Char(10)
   eCatalogURL    String?                @db.VarChar(250)
   remarks        String?                @db.VarChar(250)
-  iStatus        MasterRecordStatusEnum @default(ACTIVE)
+  iStatus        MasterRecordStatusEnum @default(Active)
   iShowedStatus  WebsiteDisplayStatus   @default(HIDDEN)
   isMaterial     Boolean                @default(false)
   isService      Boolean                @default(false)
@@ -333,7 +333,7 @@ model imc_Product {
 
 model imc_ProductStock {
   id                 String                 @db.Char(20)
-  iStatus            MasterRecordStatusEnum @default(ACTIVE)
+  iStatus            MasterRecordStatusEnum @default(Active)
   warehouse_id       String                 @db.Char(4)
   floor_id           String                 @db.Char(5)
   shelf_id           String                 @db.Char(15)
@@ -385,7 +385,7 @@ model imc_ProductStockCard {
   mutation_date           DateTime
   ref_id                  String                 @db.Char(20)
   ref_date                DateTime
-  iStatus                 MasterRecordStatusEnum @default(ACTIVE)
+  iStatus                 MasterRecordStatusEnum @default(Active)
   warehouse_id            String                 @db.Char(4)
   to_warehouse_id         String                 @db.Char(4)
   srn_seq                 Int                    @db.SmallInt
@@ -505,7 +505,7 @@ model imc_ProductImage {
   product_id String                 @db.Char(20)
   imageURL   String                 @db.VarChar(250)
   isPrimary  Boolean
-  iStatus    MasterRecordStatusEnum @default(ACTIVE)
+  iStatus    MasterRecordStatusEnum @default(Active)
   createdBy  String?                @db.Char(10)
   createdAt  DateTime               @default(now())
   updatedBy  String                 @db.Char(10)
@@ -524,7 +524,7 @@ model cms_Billboard {
   contentURL    String?                @db.VarChar(250)
   content_id    String?                @db.VarChar(50)
   isImage       Boolean? // true = image,  false = video
-  iStatus       MasterRecordStatusEnum @default(ACTIVE)
+  iStatus       MasterRecordStatusEnum @default(Active)
   iShowedStatus WebsiteDisplayStatus   @default(HIDDEN)
   remarks       String?                @db.VarChar(250)
   company_id    String                 @db.Char(5)
@@ -538,8 +538,8 @@ model cms_Billboard {
 }
 
 enum MasterRecordStatusEnum {
-  INACTIVE @map("0")
-  ACTIVE   @map("1")
+  InActive @map("0")
+  Active   @map("1")
 }
 
 enum TransactionRecordStatusEnum {

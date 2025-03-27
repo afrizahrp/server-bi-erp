@@ -13,7 +13,7 @@ export class sys_UserService {
       email,
       password,
       image,
-      iStatus = 'ACTIVE',
+      iStatus = 'Active',
       isAdmin = false,
       hashedRefreshToken = null,
     } = sys_CreateUserDto;
@@ -26,7 +26,7 @@ export class sys_UserService {
         email,
         password: hashedPassword,
         image,
-        iStatus: 'ACTIVE',
+        iStatus: 'Active',
         isAdmin,
         hashedRefreshToken,
       },

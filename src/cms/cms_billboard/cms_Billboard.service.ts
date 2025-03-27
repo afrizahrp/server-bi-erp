@@ -115,7 +115,7 @@ export class cms_BillboardService {
       name: billboard.name.trim() || '',
       isImage: billboard.isImage,
       contentURL: billboard.contentURL || '',
-      iStatus: billboard.iStatus || 'ACTIVE',
+      iStatus: billboard.iStatus || 'Active',
       iShowedStatus: billboard.iShowedStatus || 'SHOW',
       remarks: billboard.remarks || '',
       company_id: billboard.company_id,
