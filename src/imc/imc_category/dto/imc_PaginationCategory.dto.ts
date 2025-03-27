@@ -1,5 +1,11 @@
-import { IsString, IsNumber, IsOptional, IsPositive } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsArray,
+} from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
 export class Imc_PaginationCategoryDto {
   @Type(() => Number)
@@ -14,11 +20,12 @@ export class Imc_PaginationCategoryDto {
   @IsOptional()
   limit?: number;
 
-  @IsString()
   @IsOptional()
-  status?: string; // Tambahkan properti ini
-
-  @IsString()
-  @IsOptional()
-  categoryType?: string; // Tambahkan properti ini
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value])) // ✅ Ubah string menjadi array otomatis
+  @IsArray()
+  @IsString({ each: true })
+  status?: string[];
+  // @IsString()
+  // @IsOptional()
+  // status?: string; // Tambahkan properti ini
 }

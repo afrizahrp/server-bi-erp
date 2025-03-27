@@ -29,7 +29,7 @@ export class imc_CategoryService {
     module_id: string,
     paginationDto: Imc_PaginationCategoryDto,
   ): Promise<{ data: Imc_ResponseCategoryDto[]; totalRecords: number }> {
-    const { page = 1, limit = 100, status, categoryType } = paginationDto;
+    const { page = 1, limit = 100, status } = paginationDto;
 
     let whereCondition: any = { company_id };
 
@@ -38,14 +38,14 @@ export class imc_CategoryService {
     }
 
     if (status) {
-      whereCondition.iStatus = status; // Tambahkan filter status
+      whereCondition.iStatus = Array.isArray(status) ? { in: status } : status;
     }
 
-    if (categoryType) {
-      whereCondition.categoryType = {
-        is: { name: categoryType },
-      };
-    }
+    // if (categoryType) {
+    //   whereCondition.categoryType = {
+    //     is: { name: categoryType },
+    //   };
+    // }
 
     // Hitung total data sebelum pagination
     const totalRecords = await this.prisma.imc_Category.count({
@@ -69,17 +69,20 @@ export class imc_CategoryService {
     return { data: formattedCategories, totalRecords };
   }
 
-  async findAllStatuses(
-    company_id: string,
-    module_id: string,
-  ): Promise<string[]> {
-    const statuses = await this.prisma.imc_Category.findMany({
+  async findAllStatuses(company_id: string, module_id: string) {
+    const statuses = await this.prisma.imc_Category.groupBy({
+      by: ['iStatus'],
       where: { company_id },
-      select: { iStatus: true }, // Hanya ambil field iStatus
-      distinct: ['iStatus'], // Ambil hanya nilai unik
+      _count: {
+        _all: true,
+      },
     });
 
-    return statuses.map((s) => s.iStatus); // Return dalam bentuk array
+    return statuses.map((s) => ({
+      id: s.iStatus, //.toLowerCase(), // Misalnya "ACTIVE" -> "active"
+      name: s.iStatus,
+      count: s._count._all.toString(), // Ubah angka ke string agar sesuai respons frontend
+    }));
   }
 
   async findOne(

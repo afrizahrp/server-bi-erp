@@ -47,11 +47,16 @@ export class imc_CategoryController {
 
   @Public()
   @Get('statuses')
-  async getStatuses(
+  async getCategoryStatuses(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
   ) {
-    return this.imc_categoryService.findAllStatuses(company_id, module_id);
+    const rawData = await this.imc_categoryService.findAllStatuses(
+      company_id,
+      module_id,
+    );
+
+    return { data: rawData ?? [] };
   }
 
   @Public()
