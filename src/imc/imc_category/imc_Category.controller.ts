@@ -36,6 +36,8 @@ export class imc_CategoryController {
   async findAll(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
+    @Query('status') status: string | string[], // ✅ Pastikan bisa menerima array atau string
+    @Query('categoryType') categoryType: string | string[], // ✅ Pastikan bisa menerima array atau string
     @Query() paginationDto: Imc_PaginationCategoryDto,
   ): Promise<{ data: Imc_ResponseCategoryDto[]; totalRecords: number }> {
     return this.imc_categoryService.findAll(
@@ -54,6 +56,23 @@ export class imc_CategoryController {
     const rawData = await this.imc_categoryService.findAllStatuses(
       company_id,
       module_id,
+    );
+
+    return { data: rawData ?? [] };
+  }
+
+  @Public()
+  @Get('types')
+  async getCategoryTypes(
+    @Param('company_id') company_id: string,
+    @Param('module_id') module_id: string,
+    @Query('types') categoryType?: string,
+    @Query('status') status?: string,
+  ) {
+    const rawData = await this.imc_categoryService.findAllCategoryType(
+      company_id,
+      module_id,
+      { categoryType, status },
     );
 
     return { data: rawData ?? [] };

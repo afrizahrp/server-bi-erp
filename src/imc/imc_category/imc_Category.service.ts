@@ -29,7 +29,7 @@ export class imc_CategoryService {
     module_id: string,
     paginationDto: Imc_PaginationCategoryDto,
   ): Promise<{ data: Imc_ResponseCategoryDto[]; totalRecords: number }> {
-    const { page = 1, limit = 100, status } = paginationDto;
+    const { page = 1, limit = 100, status, categoryType } = paginationDto;
 
     let whereCondition: any = { company_id };
 
@@ -38,16 +38,13 @@ export class imc_CategoryService {
     }
 
     if (status) {
-      whereCondition.iStatus = Array.isArray(status) ? { in: status } : status;
+      whereCondition.iStatus = { in: status.split(',') }; // ✅ Ubah string menjadi array
     }
 
-    // if (categoryType) {
-    //   whereCondition.categoryType = {
-    //     is: { name: categoryType },
-    //   };
-    // }
+    if (categoryType) {
+      whereCondition.categoryType = { name: { in: categoryType.split(',') } }; // ✅ Ubah string menjadi array
+    }
 
-    // Hitung total data sebelum pagination
     const totalRecords = await this.prisma.imc_Category.count({
       where: whereCondition,
     });
@@ -59,11 +56,10 @@ export class imc_CategoryService {
       skip,
       take: limit,
       include: {
-        categoryType: true, // Pastikan ini sesuai dengan schema Prisma
+        categoryType: true,
       },
     });
 
-    // Format hasil agar sesuai DTO
     const formattedCategories = categories.map(this.mapToResponseDto);
 
     return { data: formattedCategories, totalRecords };
@@ -79,8 +75,49 @@ export class imc_CategoryService {
     });
 
     return statuses.map((s) => ({
-      id: s.iStatus, //.toLowerCase(), // Misalnya "ACTIVE" -> "active"
+      id: s.iStatus,
       name: s.iStatus,
+      count: s._count._all.toString(), // Ubah angka ke string agar sesuai respons frontend
+    }));
+  }
+
+  async findAllCategoryType(
+    company_id: string,
+    module_id: string,
+    filters?: { categoryType?: string; status?: string },
+  ) {
+    // Buat kondisi where secara dinamis
+    const whereCondition: any = { company_id };
+
+    if (filters?.categoryType) {
+      whereCondition.type = filters.categoryType;
+    }
+    if (filters?.status) {
+      whereCondition.iStatus = filters.status;
+    }
+
+    const types = await this.prisma.imc_Category.groupBy({
+      by: ['type'],
+      where: whereCondition,
+      _count: {
+        _all: true,
+      },
+    });
+
+    // Ambil data `name` dari tabel `imc_CategoryType`
+    const categoryTypeIds = types.map((s) => s.type);
+    const categoryTypes = await this.prisma.imc_CategoryType.findMany({
+      where: { id: { in: categoryTypeIds } },
+      select: { id: true, name: true },
+    });
+
+    const categoryTypeMap = new Map(
+      categoryTypes.map((ct) => [ct.id, ct.name]),
+    );
+
+    return types.map((s) => ({
+      id: categoryTypeMap.get(s.type) || 'Unknown',
+      name: categoryTypeMap.get(s.type) || 'Unknown',
       count: s._count._all.toString(), // Ubah angka ke string agar sesuai respons frontend
     }));
   }

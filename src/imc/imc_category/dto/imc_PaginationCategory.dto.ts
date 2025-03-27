@@ -20,12 +20,11 @@ export class Imc_PaginationCategoryDto {
   @IsOptional()
   limit?: number;
 
+  @IsString()
   @IsOptional()
-  @Transform(({ value }) => (Array.isArray(value) ? value : [value])) // ✅ Ubah string menjadi array otomatis
-  @IsArray()
-  @IsString({ each: true })
-  status?: string[];
-  // @IsString()
-  // @IsOptional()
-  // status?: string; // Tambahkan properti ini
+  status?: string; // Tambahkan properti ini
+
+  @IsString()
+  @IsOptional()
+  categoryType?: string; // Tambahkan properti ini
 }
