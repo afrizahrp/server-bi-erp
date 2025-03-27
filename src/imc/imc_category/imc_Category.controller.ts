@@ -52,10 +52,12 @@ export class imc_CategoryController {
   async getCategoryStatuses(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
+    @Query('categoryType') categoryType?: string,
   ) {
     const rawData = await this.imc_categoryService.findAllStatuses(
       company_id,
       module_id,
+      categoryType, // Kirim filter categoryType jika ada
     );
 
     return { data: rawData ?? [] };

@@ -65,19 +65,38 @@ export class imc_CategoryService {
     return { data: formattedCategories, totalRecords };
   }
 
-  async findAllStatuses(company_id: string, module_id: string) {
+  async findAllStatuses(
+    company_id: string,
+    module_id: string,
+    categoryType?: string,
+  ) {
+    const whereCondition: any = { company_id };
+
+    // Jika categoryType diberikan, cari ID-nya terlebih dahulu
+    if (categoryType) {
+      const categoryTypeRecord = await this.prisma.imc_CategoryType.findFirst({
+        where: { name: categoryType },
+        select: { id: true },
+      });
+
+      if (!categoryTypeRecord) {
+        throw new Error(`Category type '${categoryType}' not found`);
+      }
+
+      whereCondition.type = categoryTypeRecord.id; // Gunakan ID, bukan string
+    }
+
+    // Query status berdasarkan whereCondition
     const statuses = await this.prisma.imc_Category.groupBy({
       by: ['iStatus'],
-      where: { company_id },
-      _count: {
-        _all: true,
-      },
+      where: whereCondition,
+      _count: { _all: true },
     });
 
     return statuses.map((s) => ({
       id: s.iStatus,
       name: s.iStatus,
-      count: s._count._all.toString(), // Ubah angka ke string agar sesuai respons frontend
+      count: s._count._all.toString(), // Konversi count ke string
     }));
   }
 
