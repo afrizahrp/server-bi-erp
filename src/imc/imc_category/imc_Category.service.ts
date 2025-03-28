@@ -4,6 +4,9 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
+import { MasterRecordStatusEnum } from '@prisma/client'; // ✅ Tambahkan ini
+import { Prisma } from '@prisma/client'; // ✅ Tambahkan ini
+
 import { Imc_CreateCategoryDto } from './dto/imc_CreateCategory.dto';
 import { Imc_UpdateCategoryDto } from './dto/imc_UpdateCategory.dto';
 import { Imc_ResponseCategoryDto } from './dto/imc_ResponseCategory.dto';
@@ -80,18 +83,27 @@ export class imc_CategoryService {
       });
 
       if (!categoryTypeRecord) {
-        throw new Error(`Category type '${categoryType}' not found`);
+        throw new NotFoundException(
+          `Category type '${categoryType}' not found`,
+        );
       }
 
       whereCondition.type = categoryTypeRecord.id; // Gunakan ID, bukan string
     }
 
-    // Query status berdasarkan whereCondition
+    whereCondition.iStatus = {
+      in: [MasterRecordStatusEnum.Active, MasterRecordStatusEnum.InActive],
+    };
+
     const statuses = await this.prisma.imc_Category.groupBy({
       by: ['iStatus'],
       where: whereCondition,
       _count: { _all: true },
     });
+
+    if (!statuses || statuses.length === 0) {
+      throw new NotFoundException(`No statuses found for the given criteria`);
+    }
 
     const sortedStatuses = statuses.sort((a, b) => {
       if (a.iStatus === 'Active') return -1; // Prioritaskan 'Active'
@@ -158,6 +170,49 @@ export class imc_CategoryService {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
     return this.mapToResponseDto(category);
+  }
+
+  async findByName(
+    company_id: string,
+    name: string,
+    paginationDto?: Imc_PaginationCategoryDto,
+  ): Promise<{ data: Imc_ResponseCategoryDto[]; totalRecords: number }> {
+    const { page = 1, limit = 20 } = paginationDto || {};
+
+    // Kondisi pencarian berdasarkan nama dan company_id
+    const whereCondition: any = {
+      company_id,
+      name: {
+        contains: name, // Pencarian dengan LIKE (case-insensitive)
+        mode: 'insensitive', // Prisma mendukung pencarian case-insensitive
+      },
+    };
+
+    // Hitung total records
+    const totalRecords = await this.prisma.imc_Category.count({
+      where: whereCondition,
+    });
+
+    // Hitung offset untuk pagination
+    const skip = Math.min((page - 1) * limit, totalRecords);
+
+    // Query data dengan pagination
+    const categories = await this.prisma.imc_Category.findMany({
+      where: whereCondition,
+      skip,
+      take: limit,
+      include: {
+        categoryType: true, // Sertakan relasi ke tabel `imc_CategoryType`
+      },
+      orderBy: {
+        name: 'asc', // Urutkan berdasarkan nama secara ascending
+      },
+    });
+
+    // Format hasil query
+    const formattedCategories = categories.map(this.mapToResponseDto);
+
+    return { data: formattedCategories, totalRecords };
   }
 
   async update(

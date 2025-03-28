@@ -22,6 +22,10 @@ export class Imc_PaginationCategoryDto {
 
   @IsString()
   @IsOptional()
+  name?: string; // Tambahkan properti ini
+
+  @IsString()
+  @IsOptional()
   status?: string; // Tambahkan properti ini
 
   @IsString()

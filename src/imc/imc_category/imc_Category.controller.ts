@@ -7,6 +7,7 @@ import {
   Query,
   UseGuards,
   Patch,
+  BadRequestException,
 } from '@nestjs/common';
 import { Imc_ResponseCategoryDto } from './dto/imc_ResponseCategory.dto';
 import { Imc_CreateCategoryDto } from './dto/imc_CreateCategory.dto';
@@ -78,6 +79,19 @@ export class imc_CategoryController {
     );
 
     return { data: rawData ?? [] };
+  }
+
+  @Public()
+  @Get('search')
+  async findByName(
+    @Param('company_id') company_id: string,
+    @Query('name') name: string,
+    @Query() paginationDto: Imc_PaginationCategoryDto,
+  ): Promise<{ data: any[]; totalRecords: number }> {
+    if (!name) {
+      throw new BadRequestException('Name parameter is required.');
+    }
+    return this.imc_categoryService.findByName(company_id, name, paginationDto);
   }
 
   @Public()
