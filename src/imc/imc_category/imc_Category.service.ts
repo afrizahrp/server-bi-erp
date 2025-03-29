@@ -32,7 +32,7 @@ export class imc_CategoryService {
     module_id: string,
     paginationDto: Imc_PaginationCategoryDto,
   ): Promise<{ data: Imc_ResponseCategoryDto[]; totalRecords: number }> {
-    const { page = 1, limit = 100, status, categoryType } = paginationDto;
+    const { page = 1, limit = 10, status, categoryType } = paginationDto;
 
     let whereCondition: any = { company_id };
 
