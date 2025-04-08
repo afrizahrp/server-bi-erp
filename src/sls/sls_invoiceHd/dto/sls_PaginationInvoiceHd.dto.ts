@@ -1,7 +1,6 @@
 import { IsString, IsNumber, IsOptional, IsPositive } from 'class-validator';
 import { Type } from 'class-transformer';
-
-export class Imc_PaginationCategoryDto {
+export class sls_PaginationInvoiceHdDto {
   @Type(() => Number)
   @IsNumber()
   @IsPositive()
@@ -21,8 +20,4 @@ export class Imc_PaginationCategoryDto {
   @IsString()
   @IsOptional()
   status?: string; // Tambahkan properti ini
-
-  @IsString()
-  @IsOptional()
-  categoryType?: string; // Tambahkan properti ini
 }
