@@ -523,7 +523,7 @@ model cms_Billboard {
   section       Int?                   @db.SmallInt
   contentURL    String?                @db.VarChar(250)
   content_id    String?                @db.VarChar(50)
-  isImage       Boolean? // true = image,  false = video
+  isImage       Boolean?
   iStatus       MasterRecordStatusEnum @default(Active)
   iShowedStatus WebsiteDisplayStatus   @default(HIDDEN)
   remarks       String?                @db.VarChar(250)
@@ -535,6 +535,89 @@ model cms_Billboard {
   branch_id     String?                @db.Char(10)
 
   @@id([company_id, id], map: "pk_cms_Billboards")
+}
+
+model sls_Customer {
+  id          String  @db.Char(20)
+  name        String? @db.VarChar(150)
+  creditTerms Int?    @db.SmallInt
+  company_id  String  @db.Char(5)
+
+  @@id([company_id, id], map: "pk_sls_Customer")
+}
+
+model sls_InvoiceDt {
+  po_no         String?       @db.Char(80)
+  ecat_no       String?       @db.Char(20)
+  so_no         String?       @db.Char(20)
+  spk_id        String?       @db.Char(20)
+  delivery_id   String?       @db.Char(20)
+  id            String        @db.Char(20)
+  line_no       Int           @db.SmallInt
+  acct_id       String        @db.Char(20)
+  description   String?       @db.VarChar(250)
+  product_id    String        @db.Char(20)
+  product_name  String?       @db.VarChar(250)
+  uom_id        String        @db.Char(10)
+  unit_price    Decimal?      @db.Decimal(21, 4)
+  qty           Decimal?      @db.Decimal(12, 4)
+  selling_price Decimal?      @db.Decimal(21, 4)
+  base_amt      Decimal?      @db.Decimal(21, 4)
+  discount_amt  Decimal?      @db.Decimal(21, 4)
+  tax_amt       Decimal?      @db.Decimal(21, 4)
+  delivery_amt  Decimal?      @db.Decimal(21, 4)
+  total_amt     Decimal?      @db.Decimal(21, 4)
+  company_id    String        @db.Char(5)
+  createdBy     String?       @db.Char(10)
+  createdAt     DateTime?     @default(now())
+  updatedBy     String?       @db.Char(10)
+  updatedAt     DateTime?
+  branch_id     String?       @db.Char(10)
+  sls_InvoiceHd sls_InvoiceHd @relation(fields: [company_id, id], references: [company_id, id], onDelete: NoAction)
+
+  @@id([company_id, id, product_id, acct_id, line_no], map: "pk_sls_Invoicedt")
+}
+
+model sls_InvoiceHd {
+  so_id              String?           @db.Char(20)
+  id                 String            @db.Char(20)
+  invoice_date       DateTime          @default(now())
+  ref_id             String?           @db.Char(20)
+  tax_id             String?           @db.Char(20)
+  tax_rate           Int?              @db.SmallInt
+  debtor_id          String            @db.Char(20)
+  debtor_name        String?           @db.VarChar(150)
+  customer_id        String            @db.Char(20)
+  customer_name      String?           @db.VarChar(150)
+  credit_terms       Int?              @db.SmallInt
+  duedate            DateTime?         @db.Date
+  sales_person_id    String?           @db.Char(10)
+  sales_person_name  String?           @db.VarChar(50)
+  base_amt           Decimal?          @db.Decimal(21, 4)
+  dp_amt             Decimal?          @db.Decimal(21, 4)
+  discount_amt       Decimal?          @db.Decimal(21, 4)
+  total_discount     Decimal?          @db.Decimal(21, 4)
+  tax_amt            Decimal?          @db.Decimal(21, 4)
+  total_delivery_amt Decimal?          @db.Decimal(21, 4)
+  total_amt          Decimal?          @db.Decimal(21, 4)
+  invoice_status     InvoiceStatusEnum @default(UNPAID)
+  company_id         String            @db.Char(5)
+  createdBy          String?           @db.Char(10)
+  createdAt          DateTime?         @default(now())
+  updatedBy          String?           @db.Char(10)
+  updatedAt          DateTime?
+  branch_id          String?           @db.Char(10)
+  sls_InvoiceDt      sls_InvoiceDt[]
+
+  @@id([company_id, id], map: "pk_sls_InvoiceHd")
+}
+
+model sls_SalesPerson {
+  id         String  @db.Char(10)
+  name       String? @db.VarChar(50)
+  company_id String  @db.Char(5)
+
+  @@id([company_id, id], map: "pk_sls_SalesPerson")
 }
 
 enum MasterRecordStatusEnum {
@@ -552,4 +635,17 @@ enum TransactionRecordStatusEnum {
 enum WebsiteDisplayStatus {
   HIDDEN @map("0")
   SHOW   @map("1")
+}
+
+enum InvoiceStatusEnum {
+  UNPAID   @map("0")
+  PAID     @map("1")
+  DUE_SOON @map("2")
+  OVERDUE  @map("3")
+  RETURNED @map("4")
+}
+
+enum InvoiceDueDateStatusEnum {
+  DUE     @map("0")
+  OVERDUE @map("1")
 }
