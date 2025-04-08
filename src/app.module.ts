@@ -22,6 +22,7 @@ import { sys_MenuModule } from './sys/sys_menu/sys_Menu.module';
 import { sys_MenuPermissionModule } from './sys/sys_menu_permission/sys_Menu_Permission.module';
 
 import { sls_InvoiceHdModule } from './sls/sls_invoiceHd/sls_InvoiceHd.module';
+import { sls_InvoiceDtModule } from './sls/sls_InvoiceDt/sls_InvoiceDt.module';
 
 import { UploadController } from './cloudinary/cloudinary.controller';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
@@ -46,6 +47,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     imc_ProductModule,
     imc_ProductStockCardModule,
     sls_InvoiceHdModule,
+    sls_InvoiceDtModule,
     CloudinaryModule,
   ],
   controllers: [AppController, UploadController],
