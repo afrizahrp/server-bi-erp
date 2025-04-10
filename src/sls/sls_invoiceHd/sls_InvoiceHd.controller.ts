@@ -32,4 +32,26 @@ export class sls_InvoiceHdController {
   ): Promise<sls_ResponseInvoiceHdDto> {
     return this.sls_invoiceHdService.findOne(company_id, id);
   }
+
+  @Public()
+  @Get('filter')
+  async filterInvoices(
+    @Param('company_id') company_id: string,
+    @Param('module_id') module_id: string,
+    @Query('status') status: string,
+    @Query('customerName') customerName: string,
+    @Query('salesPersonName') salesPersonName: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ): Promise<sls_ResponseInvoiceHdDto[]> {
+    return this.sls_invoiceHdService.filterInvoices(
+      company_id,
+      module_id,
+      status,
+      customerName,
+      salesPersonName,
+      startDate,
+      endDate,
+    );
+  }
 }

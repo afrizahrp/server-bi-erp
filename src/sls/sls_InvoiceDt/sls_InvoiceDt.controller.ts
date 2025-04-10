@@ -9,10 +9,10 @@ export class sls_InvoiceDtController {
   constructor(private readonly invoiceDtService: sls_InvoiceDtService) {}
 
   @Public()
-  @Get()
+  @Get(':id')
   async findByInvoiceId(
     @Param('company_id') company_id: string,
-    @Query('id') id: string,
+    @Param('id') id: string,
   ): Promise<sls_ResponseInvoiceDtDto[]> {
     return this.invoiceDtService.findByInvoiceId(company_id, id);
   }

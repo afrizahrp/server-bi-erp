@@ -22,13 +22,13 @@ export class sls_InvoiceDtService {
     });
 
     return details.map((item) => ({
-      id: item.id,
+      id: item.id.trim(),
       line_no: item.line_no,
-      acct_id: item.acct_id,
-      description: item.description ?? undefined,
-      product_id: item.product_id,
-      product_name: item.product_name ?? undefined,
-      uom_id: item.uom_id,
+      acct_id: item.acct_id.trim() ?? undefined,
+      description: item.description.trim() ?? undefined,
+      product_id: item.product_id.trim(),
+      product_name: item.product_name.trim() ?? undefined,
+      uom_id: item.uom_id.trim(),
       unit_price: Number(item.unit_price),
       qty: Number(item.qty),
       selling_price: Number(item.selling_price),

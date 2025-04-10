@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma.service';
 import { sls_PaginationInvoiceHdDto } from './dto/sls_PaginationInvoiceHd.dto';
 import { sls_ResponseInvoiceHdDto } from './dto/sls_ResponseInvoiceHd.dto';
 import { sls_ResponseInvoiceHdWithDetailDto } from './dto/sls_ResponseInvoiceDt.dto';
+import { InvoiceStatusEnum } from '@prisma/client';
 
 @Injectable()
 export class sls_InvoiceHdService {
@@ -13,20 +14,9 @@ export class sls_InvoiceHdService {
     module_id: string,
     paginationDto: sls_PaginationInvoiceHdDto,
   ): Promise<{ data: sls_ResponseInvoiceHdDto[]; totalRecords: number }> {
-    const { page = 1, limit = 10, name, status } = paginationDto;
+    const { page = 1, limit = 10 } = paginationDto;
 
     const whereCondition: any = { company_id };
-
-    if (name) {
-      whereCondition.OR = [
-        { debtor_name: { contains: name, mode: 'insensitive' } },
-        { customer_name: { contains: name, mode: 'insensitive' } },
-      ];
-    }
-
-    if (status) {
-      whereCondition.invoice_status = status;
-    }
 
     const totalRecords = await this.prisma.sls_InvoiceHd.count({
       where: whereCondition,
@@ -81,22 +71,75 @@ export class sls_InvoiceHdService {
     };
   }
 
+  async filterInvoices(
+    company_id: string,
+    module_id: string,
+    status?: string,
+    customerName?: string,
+    salesPersonName?: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<sls_ResponseInvoiceHdDto[]> {
+    const whereCondition: any = { company_id };
+
+    // if (status) {
+    //   whereCondition.invoice_status = {
+    //     in: [InvoiceStatusEnum.PAID, InvoiceStatusEnum.UNPAID],
+    //   };
+    // }
+
+    if (status) {
+      whereCondition.invoice_status = status;
+    }
+
+    if (customerName) {
+      whereCondition.customer_name = {
+        contains: customerName,
+        mode: 'insensitive',
+      };
+    }
+
+    if (salesPersonName) {
+      whereCondition.sales_person_name = {
+        contains: salesPersonName,
+        mode: 'insensitive',
+      };
+    }
+
+    if (startDate || endDate) {
+      whereCondition.invoice_date = {};
+      if (startDate) {
+        whereCondition.invoice_date.gte = new Date(startDate);
+      }
+      if (endDate) {
+        whereCondition.invoice_date.lte = new Date(endDate);
+      }
+    }
+
+    const invoices = await this.prisma.sls_InvoiceHd.findMany({
+      where: whereCondition,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return invoices.map((invoice) => this.mapToResponseDto(invoice));
+  }
+
   private mapToResponseDto(invoice: any): sls_ResponseInvoiceHdDto {
     return {
       id: invoice.id.trim(),
-      so_id: invoice.so_id.trim(),
+      so_id: invoice.so_id.trim() ?? undefined,
       invoice_date: invoice.invoice_date,
-      ref_id: invoice.ref_id,
-      tax_id: invoice.tax_id.trim(),
+      ref_id: invoice.ref_id.trim() ?? undefined,
+      tax_id: invoice.tax_id.trim() ?? undefined,
       tax_rate: invoice.tax_rate,
-      debtor_id: invoice.debtor_id.trim(),
-      debtor_name: invoice.debtor_name.trim(),
-      customer_id: invoice.customer_id.trim(),
-      customer_name: invoice.customer_name.trim(),
+      debtor_id: invoice.debtor_id.trim() ?? undefined,
+      debtor_name: invoice.debtor_name.trim() ?? undefined,
+      customer_id: invoice.customer_id.trim() ?? undefined,
+      customer_name: invoice.customer_name.trim() ?? undefined,
       credit_terms: invoice.credit_terms,
       duedate: invoice.duedate,
-      sales_person_id: invoice.sales_person_id.trim(),
-      sales_person_name: invoice.sales_person_name.trim(),
+      sales_person_id: invoice.sales_person_id.trim() ?? undefined,
+      sales_person_name: invoice.sales_person_name.trim() ?? undefined,
       base_amt: invoice.base_amt,
       dp_amt: invoice.dp_amt,
       discount_amt: invoice.discount_amt,

@@ -15,9 +15,21 @@ export class sls_PaginationInvoiceHdDto {
 
   @IsString()
   @IsOptional()
-  name?: string; // Tambahkan properti ini
+  customerName?: string; // Tambahkan properti ini
+
+  @IsString()
+  @IsOptional()
+  salesPersonName?: string; // Tambahkan properti ini
 
   @IsString()
   @IsOptional()
   status?: string; // Tambahkan properti ini
+
+  @IsString()
+  @IsOptional()
+  startDate?: string; // Tambahkan properti ini
+
+  @IsString()
+  @IsOptional()
+  endDate?: string; // Tambahkan properti ini
 }
