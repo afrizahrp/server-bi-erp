@@ -9,14 +9,77 @@ import { InvoiceStatusEnum } from '@prisma/client';
 export class sls_InvoiceHdService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // async findAll(
+  //   company_id: string,
+  //   module_id: string,
+  //   paginationDto: sls_PaginationInvoiceHdDto,
+  // ): Promise<{ data: sls_ResponseInvoiceHdDto[]; totalRecords: number }> {
+  //   const { page = 1, limit = 10 } = paginationDto;
+
+  //   const whereCondition: any = { company_id };
+
+  //   const totalRecords = await this.prisma.sls_InvoiceHd.count({
+  //     where: whereCondition,
+  //   });
+
+  //   const invoices = await this.prisma.sls_InvoiceHd.findMany({
+  //     where: whereCondition,
+  //     skip: (page - 1) * limit,
+  //     take: limit,
+  //     orderBy: { createdAt: 'desc' },
+  //   });
+
+  //   const formattedInvoices = invoices.map((invoice) =>
+  //     this.mapToResponseDto(invoice),
+  //   );
+
+  //   return { data: formattedInvoices, totalRecords };
+  // }
+
   async findAll(
     company_id: string,
     module_id: string,
     paginationDto: sls_PaginationInvoiceHdDto,
   ): Promise<{ data: sls_ResponseInvoiceHdDto[]; totalRecords: number }> {
-    const { page = 1, limit = 10 } = paginationDto;
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      customerName,
+      salesPersonName,
+      startDate,
+      endDate,
+    } = paginationDto;
 
     const whereCondition: any = { company_id };
+
+    if (status) {
+      whereCondition.invoice_status = status;
+    }
+
+    if (customerName) {
+      whereCondition.customer_name = {
+        contains: customerName,
+        mode: 'insensitive',
+      };
+    }
+
+    if (salesPersonName) {
+      whereCondition.sales_person_name = {
+        contains: salesPersonName,
+        mode: 'insensitive',
+      };
+    }
+
+    if (startDate || endDate) {
+      whereCondition.invoice_date = {};
+      if (startDate) {
+        whereCondition.invoice_date.gte = new Date(startDate);
+      }
+      if (endDate) {
+        whereCondition.invoice_date.lte = new Date(endDate);
+      }
+    }
 
     const totalRecords = await this.prisma.sls_InvoiceHd.count({
       where: whereCondition,
@@ -81,12 +144,6 @@ export class sls_InvoiceHdService {
     endDate?: string,
   ): Promise<sls_ResponseInvoiceHdDto[]> {
     const whereCondition: any = { company_id };
-
-    // if (status) {
-    //   whereCondition.invoice_status = {
-    //     in: [InvoiceStatusEnum.PAID, InvoiceStatusEnum.UNPAID],
-    //   };
-    // }
 
     if (status) {
       whereCondition.invoice_status = status;
