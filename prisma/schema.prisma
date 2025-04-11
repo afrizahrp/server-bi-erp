@@ -553,7 +553,7 @@ model sls_InvoiceDt {
   spk_id          String?       @db.Char(20)
   delivery_id     String        @db.Char(20)
   trxType         String        @db.Char(3)
-  id              String        @db.Char(20)
+  invoice_id      String        @db.Char(20)
   line_no         Int           @db.SmallInt
   acct_id         String        @db.Char(20)
   description     String        @db.VarChar(250)
@@ -574,16 +574,16 @@ model sls_InvoiceDt {
   updatedBy       String?       @db.Char(10)
   updatedAt       DateTime?
   branch_id       String?       @db.Char(10)
-  sls_InvoiceHd   sls_InvoiceHd @relation(fields: [company_id, id], references: [company_id, id], onDelete: NoAction)
+  sls_InvoiceHd   sls_InvoiceHd @relation(fields: [company_id, invoice_id], references: [company_id, invoice_id], onDelete: NoAction)
 
-  @@id([company_id, id, product_id, acct_id, line_no], map: "pk_sls_Invoicedt")
+  @@id([company_id, invoice_id, product_id, acct_id, line_no], map: "pk_sls_Invoicedt")
 }
 
 model sls_InvoiceHd {
   so_id                String?                     @db.Char(20)
   trxType              String?                     @db.Char(3)
   invoiceType          invoiceTypeEnum             @default(REGULER)
-  id                   String                      @db.Char(20)
+  invoice_id           String                      @db.Char(20)
   invoiceDate          DateTime                    @default(now())
   ref_id               String?                     @db.Char(20)
   tax_id               String?                     @db.Char(20)
@@ -613,7 +613,7 @@ model sls_InvoiceHd {
   branch_id            String?                     @db.Char(10)
   sls_InvoiceDt        sls_InvoiceDt[]
 
-  @@id([company_id, id], map: "pk_sls_InvoiceHd")
+  @@id([company_id, invoice_id], map: "pk_sls_InvoiceHd")
 }
 
 enum invoiceTypeEnum {
