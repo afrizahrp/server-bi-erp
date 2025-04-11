@@ -6,7 +6,7 @@ import {
   IsDate,
   IsEnum,
 } from 'class-validator';
-import { InvoiceStatusEnum } from '@prisma/client';
+import { InvoiceStatusEnum, invoiceTypeEnum } from '@prisma/client';
 
 export class sls_ResponseInvoiceHdDto {
   @IsString()
@@ -17,7 +17,7 @@ export class sls_ResponseInvoiceHdDto {
   so_id?: string;
 
   @IsDate()
-  invoice_date: Date;
+  invoiceDate: Date;
 
   @IsString()
   @IsOptional()
@@ -29,54 +29,57 @@ export class sls_ResponseInvoiceHdDto {
 
   @IsInt()
   @IsOptional()
-  tax_rate?: number;
+  taxRate?: number;
 
   @IsString()
   debtor_id: string;
 
   @IsString()
   @IsOptional()
-  debtor_name?: string;
+  debtorName?: string;
 
   @IsString()
   customer_id: string;
 
   @IsString()
   @IsOptional()
-  customer_name?: string;
+  customerName?: string;
 
   @IsInt()
-  credit_terms?: number;
+  creditTerms?: number;
 
   @IsDate()
   @IsOptional()
-  duedate?: Date;
+  dueDate?: Date;
 
   @IsString()
   @IsOptional()
-  sales_person_id?: string;
+  salesPerson_id?: string;
 
   @IsString()
   @IsOptional()
-  sales_person_name?: string;
+  salesPersonName?: string;
 
   @IsInt()
-  base_amt?: number;
+  base_amount?: number;
 
   @IsInt()
-  dp_amt?: number;
+  dp_amount?: number;
 
   @IsInt()
-  discount_amt?: number;
+  discount_amount?: number;
   @IsInt()
-  total_discount?: number;
+  totalDiscount_amount?: number;
   @IsInt()
-  tax_amt?: number;
+  tax_amount?: number;
   @IsInt()
-  total_delivery_amt?: number;
+  totalDelivery_amount?: number;
   @IsInt()
-  total_amt?: number;
+  total_amount?: number;
 
   @IsEnum(InvoiceStatusEnum)
-  invoice_status: InvoiceStatusEnum;
+  invoiceType: invoiceTypeEnum;
+
+  @IsEnum(InvoiceStatusEnum)
+  invoiceStatus: InvoiceStatusEnum;
 }

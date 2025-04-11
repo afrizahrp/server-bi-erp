@@ -20,33 +20,33 @@ export class sls_ResponseInvoiceDtDto {
 
   @IsString()
   @IsOptional()
-  product_name: string;
+  productName: string;
 
   @IsString()
   @IsOptional()
   uom_id: string;
 
   @IsDecimal()
-  unit_price?: number;
+  unitPrice?: number;
 
   @IsInt()
   qty?: number;
 
   @IsDecimal()
-  selling_price?: number;
+  sellingPrice?: number;
 
   @IsDecimal()
-  base_amt?: number;
+  base_amount?: number;
 
   @IsDecimal()
-  discount_amt?: number;
+  discount_amount?: number;
 
   @IsDecimal()
-  tax_amt?: number;
+  tax_amount?: number;
 
   @IsDecimal()
-  delivery_amt?: number;
+  delivery_amount?: number;
 
   @IsDecimal()
-  total_amt?: number;
+  total_amount?: number;
 }

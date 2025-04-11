@@ -54,30 +54,30 @@ export class sls_InvoiceHdService {
     const whereCondition: any = { company_id };
 
     if (status) {
-      whereCondition.invoice_status = status;
+      whereCondition.invoiceStatus = status;
     }
 
     if (customerName) {
-      whereCondition.customer_name = {
+      whereCondition.customerName = {
         contains: customerName,
         mode: 'insensitive',
       };
     }
 
     if (salesPersonName) {
-      whereCondition.sales_person_name = {
+      whereCondition.salesPersoName = {
         contains: salesPersonName,
         mode: 'insensitive',
       };
     }
 
     if (startDate || endDate) {
-      whereCondition.invoice_date = {};
+      whereCondition.invoiceDate = {};
       if (startDate) {
-        whereCondition.invoice_date.gte = new Date(startDate);
+        whereCondition.invoiceDate.gte = new Date(startDate);
       }
       if (endDate) {
-        whereCondition.invoice_date.lte = new Date(endDate);
+        whereCondition.invoiceDate.lte = new Date(endDate);
       }
     }
 
@@ -120,12 +120,11 @@ export class sls_InvoiceHdService {
       id: dt.id.trim(),
       line_no: dt.line_no,
       product_id: dt.product_id.trim(),
-      product_name: dt.product_name?.trim(),
+      productName: dt.productName?.trim(),
       uom_id: dt.uom_id.trim(),
       qty: dt.qty ? Number(dt.qty) : undefined,
-      unit_price: dt.unit_price ? Number(dt.unit_price) : undefined,
-      discount_amt: dt.discount_amt ? Number(dt.discount_amt) : undefined,
-      total_amt: dt.total_amt ? Number(dt.total_amt) : undefined,
+      discount_amt: dt.discount_amount ? Number(dt.discount_amount) : undefined,
+      total_amount: dt.total_amount ? Number(dt.total_amount) : undefined,
     }));
 
     return {
@@ -146,7 +145,7 @@ export class sls_InvoiceHdService {
     const whereCondition: any = { company_id };
 
     if (status) {
-      whereCondition.invoice_status = status;
+      whereCondition.invoiceStatus = status;
     }
 
     if (customerName) {
@@ -164,12 +163,14 @@ export class sls_InvoiceHdService {
     }
 
     if (startDate || endDate) {
-      whereCondition.invoice_date = {};
+      whereCondition.invoiceDate = {};
+
       if (startDate) {
-        whereCondition.invoice_date.gte = new Date(startDate);
+        whereCondition.invoiceDate.gte = new Date(startDate);
       }
+
       if (endDate) {
-        whereCondition.invoice_date.lte = new Date(endDate);
+        whereCondition.invoiceDate.lte = new Date(endDate);
       }
     }
 
@@ -183,28 +184,29 @@ export class sls_InvoiceHdService {
 
   private mapToResponseDto(invoice: any): sls_ResponseInvoiceHdDto {
     return {
+      invoiceType: invoice.invoiceType,
       id: invoice.id.trim(),
-      so_id: invoice.so_id.trim() ?? undefined,
-      invoice_date: invoice.invoice_date,
-      ref_id: invoice.ref_id.trim() ?? undefined,
-      tax_id: invoice.tax_id.trim() ?? undefined,
-      tax_rate: invoice.tax_rate,
+      so_id: invoice.so_id?.trim() ?? '',
+      invoiceDate: invoice.invoiceDate,
+      ref_id: invoice.ref_id?.trim() ?? '',
+      tax_id: invoice.tax_id?.trim() ?? '',
+      taxRate: invoice.taxRate,
       debtor_id: invoice.debtor_id.trim() ?? undefined,
-      debtor_name: invoice.debtor_name.trim() ?? undefined,
+      debtorName: invoice.debtorName.trim() ?? undefined,
       customer_id: invoice.customer_id.trim() ?? undefined,
-      customer_name: invoice.customer_name.trim() ?? undefined,
-      credit_terms: invoice.credit_terms,
-      duedate: invoice.duedate,
-      sales_person_id: invoice.sales_person_id.trim() ?? undefined,
-      sales_person_name: invoice.sales_person_name.trim() ?? undefined,
-      base_amt: invoice.base_amt,
-      dp_amt: invoice.dp_amt,
-      discount_amt: invoice.discount_amt,
-      total_discount: invoice.total_discount,
-      tax_amt: invoice.tax_amt,
-      total_delivery_amt: invoice.total_delivery_amt,
-      total_amt: invoice.total_amt,
-      invoice_status: invoice.invoice_status,
+      customerName: invoice.customerName?.trim() ?? '',
+      creditTerms: invoice.creditTerms,
+      dueDate: invoice.dueDate,
+      salesPerson_id: invoice.salesPerson_id.trim() ?? '',
+      salesPersonName: invoice.salesPersonName.trim() ?? '',
+      base_amount: invoice.base_amount,
+      dp_amount: invoice.dp_amount,
+      discount_amount: invoice.discount_amount,
+      totalDiscount_amount: invoice.totalDiscount_amount,
+      tax_amount: invoice.tax_amt,
+      totalDelivery_amount: invoice.totalDelivery_amount,
+      total_amount: invoice.total_amount,
+      invoiceStatus: invoice.invoiceStatus,
     };
   }
 }

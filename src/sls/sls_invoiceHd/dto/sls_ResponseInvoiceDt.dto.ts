@@ -5,12 +5,12 @@ export class sls_ResponseInvoiceHdWithDetailDto extends sls_ResponseInvoiceHdDto
     id: string;
     line_no: number;
     product_id: string;
-    product_name?: string;
+    productName?: string;
     uom_id: string;
     qty?: number;
-    unit_price?: number;
-    discount_amt?: number;
-    total_amt?: number;
+    unitPrice?: number;
+    discount_amount?: number;
+    total_amount?: number;
     // tambahkan field lain jika perlu
   }[];
 }

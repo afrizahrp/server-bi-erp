@@ -18,7 +18,7 @@ export class sls_CreateSlsInvoiceHdDto {
 
   @IsDate()
   @IsOptional()
-  invoice_date?: Date;
+  invoiceDate?: Date;
 
   @IsString()
   @IsOptional()
@@ -30,29 +30,29 @@ export class sls_CreateSlsInvoiceHdDto {
 
   @IsInt()
   @IsOptional()
-  tax_rate?: number;
+  taxRate?: number;
 
   @IsString()
   debtor_id: string;
 
   @IsString()
   @IsOptional()
-  debtor_name?: string;
+  debtorName?: string;
 
   @IsString()
   customer_id: string;
 
   @IsString()
   @IsOptional()
-  customer_name?: string;
+  customerName?: string;
 
   @IsInt()
   @IsOptional()
-  credit_terms?: number;
+  creditTerms?: number;
 
   @IsDate()
   @IsOptional()
-  duedate?: Date;
+  dueDate?: Date;
 
   @IsString()
   @IsOptional()
@@ -60,19 +60,19 @@ export class sls_CreateSlsInvoiceHdDto {
 
   @IsString()
   @IsOptional()
-  sales_person_name?: string;
+  salesPersonName?: string;
 
   @IsDecimal()
   @IsOptional()
-  base_amt?: number;
+  base_amount?: number;
 
   @IsDecimal()
   @IsOptional()
-  dp_amt?: number;
+  dp_amount?: number;
 
   @IsDecimal()
   @IsOptional()
-  discount_amt?: number;
+  discount_amount?: number;
 
   @IsDecimal()
   @IsOptional()
@@ -80,19 +80,19 @@ export class sls_CreateSlsInvoiceHdDto {
 
   @IsDecimal()
   @IsOptional()
-  tax_amt?: number;
+  tax_amount?: number;
 
   @IsDecimal()
   @IsOptional()
-  total_delivery_amt?: number;
+  total_delivery_amount?: number;
 
   @IsDecimal()
   @IsOptional()
-  total_amt?: number;
+  total_amount?: number;
 
   @IsEnum(InvoiceStatusEnum)
   @IsOptional()
-  invoice_status?: InvoiceStatusEnum;
+  invoiceStatus?: InvoiceStatusEnum;
 
   @IsString()
   company_id: string;
