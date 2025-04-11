@@ -9,12 +9,12 @@ export class sls_InvoiceDtService {
 
   async findByInvoiceId(
     company_id: string,
-    id: string,
+    invoice_id: string,
   ): Promise<sls_ResponseInvoiceDtDto[]> {
     const details = await this.prisma.sls_InvoiceDt.findMany({
       where: {
         company_id,
-        id,
+        invoice_id,
       },
       orderBy: {
         line_no: 'asc',
@@ -22,7 +22,7 @@ export class sls_InvoiceDtService {
     });
 
     return details.map((item) => ({
-      id: item.id.trim(),
+      invoice_id: item.invoice_id.trim(),
       line_no: item.line_no,
       acct_id: item.acct_id?.trim() ?? undefined,
       description: item.description?.trim() ?? undefined,

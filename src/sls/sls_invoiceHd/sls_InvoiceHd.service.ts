@@ -101,23 +101,23 @@ export class sls_InvoiceHdService {
 
   async findOne(
     company_id: string,
-    id: string,
+    invoice_id: string,
   ): Promise<sls_ResponseInvoiceHdWithDetailDto> {
     const invoice = await this.prisma.sls_InvoiceHd.findUnique({
-      where: { company_id_id: { company_id, id } },
+      where: { company_id_invoice_id: { company_id, invoice_id } },
       include: {
         sls_InvoiceDt: true,
       },
     });
 
     if (!invoice) {
-      throw new NotFoundException(`Invoice with ID ${id} not found`);
+      throw new NotFoundException(`Invoice with ID ${invoice_id} not found`);
     }
 
     const header = this.mapToResponseDto(invoice);
 
     const details = invoice.sls_InvoiceDt.map((dt) => ({
-      id: dt.id.trim(),
+      invoice_id: dt.invoice_id.trim(),
       line_no: dt.line_no,
       product_id: dt.product_id.trim(),
       productName: dt.productName?.trim(),
@@ -185,7 +185,7 @@ export class sls_InvoiceHdService {
   private mapToResponseDto(invoice: any): sls_ResponseInvoiceHdDto {
     return {
       invoiceType: invoice.invoiceType,
-      id: invoice.id.trim(),
+      invoice_id: invoice.invoice_id.trim(),
       so_id: invoice.so_id?.trim() ?? '',
       invoiceDate: invoice.invoiceDate,
       ref_id: invoice.ref_id?.trim() ?? '',

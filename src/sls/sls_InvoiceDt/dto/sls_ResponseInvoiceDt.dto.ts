@@ -2,7 +2,7 @@ import { IsString, IsOptional, IsInt, IsDecimal } from 'class-validator';
 
 export class sls_ResponseInvoiceDtDto {
   @IsString()
-  id: string;
+  invoice_id: string;
 
   @IsInt()
   line_no: number;

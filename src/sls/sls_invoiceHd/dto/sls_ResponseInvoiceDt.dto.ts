@@ -2,7 +2,7 @@ import { sls_ResponseInvoiceHdDto } from './sls_ResponseInvoiceHd.dto';
 
 export class sls_ResponseInvoiceHdWithDetailDto extends sls_ResponseInvoiceHdDto {
   details: {
-    id: string;
+    invoice_id: string;
     line_no: number;
     product_id: string;
     productName?: string;

@@ -10,7 +10,7 @@ import { InvoiceStatusEnum } from '@prisma/client';
 
 export class sls_CreateSlsInvoiceHdDto {
   @IsString()
-  id: string;
+  invoice_id: string;
 
   @IsString()
   @IsOptional()
