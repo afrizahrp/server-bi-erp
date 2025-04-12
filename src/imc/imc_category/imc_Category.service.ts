@@ -215,6 +215,54 @@ export class imc_CategoryService {
     return { data: formattedCategories, totalRecords };
   }
 
+  async findBySearch(
+    company_id: string,
+    searchBy: string,
+    searchTerm: string,
+    paginationDto?: {
+      page?: number;
+      limit?: number;
+      status?: string | string[];
+      categoryType?: string | string[];
+    },
+  ): Promise<{ data: Imc_ResponseCategoryDto[]; totalRecords: number }> {
+    const { page = 1, limit = 20 } = paginationDto || {};
+
+    // Validasi field yang diizinkan untuk dicari
+    const allowedFields = ['id', 'name', 'remarks']; // sesuaikan dengan field tabel kamu
+    const fieldToSearch = allowedFields.includes(searchBy) ? searchBy : 'name';
+
+    const whereCondition: any = {
+      company_id,
+      [fieldToSearch]: {
+        contains: searchTerm,
+        mode: 'insensitive',
+      },
+    };
+
+    const totalRecords = await this.prisma.imc_Category.count({
+      where: whereCondition,
+    });
+
+    const skip = Math.min((page - 1) * limit, totalRecords);
+
+    const categories = await this.prisma.imc_Category.findMany({
+      where: whereCondition,
+      skip,
+      take: limit,
+      include: {
+        categoryType: true,
+      },
+      orderBy: {
+        [fieldToSearch]: 'asc', // urutkan berdasarkan field pencarian
+      },
+    });
+
+    const formattedCategories = categories.map(this.mapToResponseDto);
+
+    return { data: formattedCategories, totalRecords };
+  }
+
   async update(
     id: string,
     company_id: string,

@@ -16,6 +16,7 @@ import { imc_CategoryService } from './imc_Category.service';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Imc_PaginationCategoryDto } from './dto/imc_PaginationCategory.dto';
+import { Imc_SearchCategoryDto } from './dto/imc_SeachCategory.dto';
 
 @Controller(':company_id/:module_id/get-categories')
 export class imc_CategoryController {
@@ -83,15 +84,21 @@ export class imc_CategoryController {
 
   @Public()
   @Get('search')
-  async findByName(
+  async findBySearch(
     @Param('company_id') company_id: string,
-    @Query('name') name: string,
-    @Query() paginationDto: Imc_PaginationCategoryDto,
+    @Query('searchBy') searchBy: string,
+    @Query('searchTerm') searchTerm: string,
+    // @Query() paginationDto: Imc_PaginationCategoryDto,
+    @Query() query: Imc_SearchCategoryDto,
   ): Promise<{ data: any[]; totalRecords: number }> {
-    if (!name) {
-      throw new BadRequestException('Name parameter is required.');
+    if (!searchTerm) {
+      throw new BadRequestException('Search parameter is required.');
     }
-    return this.imc_categoryService.findByName(company_id, name, paginationDto);
+    return this.imc_categoryService.findBySearch(
+      company_id,
+      searchBy,
+      searchTerm,
+    );
   }
 
   @Public()
