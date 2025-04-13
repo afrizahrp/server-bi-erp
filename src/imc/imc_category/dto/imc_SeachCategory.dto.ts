@@ -1,5 +1,4 @@
-// imc_SearchCategory.dto.ts
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class Imc_SearchCategoryDto {
@@ -10,16 +9,22 @@ export class Imc_SearchCategoryDto {
   searchTerm: string;
 
   @IsOptional()
+  @IsString({ each: true })
+  @Type(() => String)
+  status?: string | string[];
+
+  @IsOptional()
+  @IsString({ each: true })
+  @Type(() => String)
+  categoryType?: string | string[];
+
+  @IsOptional()
   @Type(() => Number)
+  @IsNumber()
   page?: number;
 
   @IsOptional()
   @Type(() => Number)
+  @IsNumber()
   limit?: number;
-
-  @IsOptional()
-  status?: string | string[];
-
-  @IsOptional()
-  categoryType?: string | string[];
 }

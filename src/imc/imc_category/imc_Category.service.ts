@@ -13,6 +13,7 @@ import { Imc_ResponseCategoryDto } from './dto/imc_ResponseCategory.dto';
 import { Imc_PaginationCategoryDto } from './dto/imc_PaginationCategory.dto';
 
 import { WebsiteDisplayStatus } from '@prisma/client';
+import { Imc_SearchCategoryDto } from './dto/imc_SeachCategory.dto';
 
 @Injectable()
 export class imc_CategoryService {
@@ -219,27 +220,32 @@ export class imc_CategoryService {
     company_id: string,
     searchBy: string,
     searchTerm: string,
-    paginationDto?: {
-      page?: number;
-      limit?: number;
-      status?: string | string[];
-      categoryType?: string | string[];
-    },
+    paginationDto?: Imc_SearchCategoryDto,
   ): Promise<{ data: Imc_ResponseCategoryDto[]; totalRecords: number }> {
-    const { page = 1, limit = 20 } = paginationDto || {};
+    const { page = 1, limit = 20, status, categoryType } = paginationDto || {};
 
-    // Validasi field yang diizinkan untuk dicari
-    const allowedFields = ['id', 'name', 'remarks']; // sesuaikan dengan field tabel kamu
-    const fieldToSearch = allowedFields.includes(searchBy) ? searchBy : 'name';
-
+    // Base kondisi pencarian
     const whereCondition: any = {
       company_id,
-      [fieldToSearch]: {
+      [searchBy]: {
         contains: searchTerm,
         mode: 'insensitive',
       },
     };
 
+    // Tambahkan filter status jika ada
+    if (status) {
+      whereCondition.status = Array.isArray(status) ? { in: status } : status;
+    }
+
+    // Tambahkan filter categoryType jika ada
+    if (categoryType) {
+      whereCondition.categoryTypeId = Array.isArray(categoryType)
+        ? { in: categoryType }
+        : categoryType;
+    }
+
+    // Hitung total data
     const totalRecords = await this.prisma.imc_Category.count({
       where: whereCondition,
     });
@@ -254,7 +260,7 @@ export class imc_CategoryService {
         categoryType: true,
       },
       orderBy: {
-        [fieldToSearch]: 'asc', // urutkan berdasarkan field pencarian
+        name: 'asc',
       },
     });
 
