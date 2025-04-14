@@ -25,7 +25,7 @@ export class Imc_ResponseProductStockCardDto {
   floor_id: string;
   shelf_id: string;
   row_id: string;
-  batch_no: string;
+  batch_no_item: string;
   mExpired_dt: string;
   yExpired_dt: string;
   product_cd?: string;

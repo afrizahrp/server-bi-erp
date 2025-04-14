@@ -82,23 +82,36 @@ export class imc_CategoryController {
     return { data: rawData ?? [] };
   }
 
+  // @Public()
+  // @Get('search')
+  // async findBySearch(
+  //   @Param('company_id') company_id: string,
+  //   @Query('searchBy') searchBy: string,
+  //   @Query('searchTerm') searchTerm: string,
+  //   // @Query() paginationDto: Imc_PaginationCategoryDto,
+  //   @Query() query: Imc_SearchCategoryDto,
+  // ): Promise<{ data: any[]; totalRecords: number }> {
+  //   if (!searchTerm) {
+  //     throw new BadRequestException('Search parameter is required.');
+  //   }
+  //   return this.imc_categoryService.findBySearch(
+  //     company_id,
+  //     searchBy,
+  //     searchTerm,
+  //   );
+  // }
+
   @Public()
   @Get('search')
-  async findBySearch(
+  async findByName(
     @Param('company_id') company_id: string,
-    @Query('searchBy') searchBy: string,
-    @Query('searchTerm') searchTerm: string,
-    // @Query() paginationDto: Imc_PaginationCategoryDto,
-    @Query() query: Imc_SearchCategoryDto,
+    @Query('name') name: string,
+    @Query() paginationDto: Imc_PaginationCategoryDto,
   ): Promise<{ data: any[]; totalRecords: number }> {
-    if (!searchTerm) {
-      throw new BadRequestException('Search parameter is required.');
+    if (!name) {
+      throw new BadRequestException('Name parameter is required.');
     }
-    return this.imc_categoryService.findBySearch(
-      company_id,
-      searchBy,
-      searchTerm,
-    );
+    return this.imc_categoryService.findByName(company_id, name, paginationDto);
   }
 
   @Public()

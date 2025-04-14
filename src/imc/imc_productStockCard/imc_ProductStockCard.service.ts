@@ -64,7 +64,7 @@ export class imc_ProductStockCardService {
   ): Promise<Imc_ResponseProductStockCardDto> {
     const stockCard = await this.prisma.imc_ProductStockCard.findUnique({
       where: {
-        product_id_floor_id_shelf_id_row_id_mExpired_dt_yExpired_dt_doc_id_mutation_id_srn_seq_warehouse_id_company_id:
+        product_id_floor_id_shelf_id_row_id_mExpired_dt_yExpired_dt_doc_id_mutation_id_srn_seq_batch_no_item_warehouse_id_company_id:
           {
             product_id,
             floor_id: 'default_floor_id',
@@ -75,6 +75,7 @@ export class imc_ProductStockCardService {
             doc_id,
             mutation_id: 'default_mutation_id',
             srn_seq: 0,
+            batch_no_item: 'default_batch_no_item', // Assuming this is a required field
             warehouse_id: 'default_warehouse_id',
             company_id: 'default_company_id',
           },
@@ -96,7 +97,7 @@ export class imc_ProductStockCardService {
   ): Promise<Imc_ResponseProductStockCardDto> {
     const stockCard = await this.prisma.imc_ProductStockCard.findUnique({
       where: {
-        product_id_floor_id_shelf_id_row_id_mExpired_dt_yExpired_dt_doc_id_mutation_id_srn_seq_warehouse_id_company_id:
+        product_id_floor_id_shelf_id_row_id_mExpired_dt_yExpired_dt_doc_id_mutation_id_srn_seq_batch_no_item_warehouse_id_company_id:
           {
             product_id,
             floor_id: 'default_floor_id',
@@ -107,6 +108,7 @@ export class imc_ProductStockCardService {
             doc_id,
             mutation_id: 'default_mutation_id',
             srn_seq: 0,
+            batch_no_item: 'default_batch_no_item', // Assuming this is a required field
             warehouse_id: 'default_warehouse_id',
             company_id: 'default_company_id',
           },
@@ -119,7 +121,7 @@ export class imc_ProductStockCardService {
     }
     const updatedStockCard = await this.prisma.imc_ProductStockCard.update({
       where: {
-        product_id_floor_id_shelf_id_row_id_mExpired_dt_yExpired_dt_doc_id_mutation_id_srn_seq_warehouse_id_company_id:
+        product_id_floor_id_shelf_id_row_id_mExpired_dt_yExpired_dt_doc_id_mutation_id_srn_seq_batch_no_item_warehouse_id_company_id:
           {
             product_id,
             floor_id: 'default_floor_id',
@@ -130,6 +132,7 @@ export class imc_ProductStockCardService {
             doc_id,
             mutation_id: 'default_mutation_id',
             srn_seq: 0,
+            batch_no_item: 'default_batch_no_item', // Assuming this is a required field
             warehouse_id: 'default_warehouse_id',
             company_id: 'default_company_id',
           },
@@ -167,7 +170,7 @@ export class imc_ProductStockCardService {
       floor_id: stockCard.floor_id,
       shelf_id: stockCard.shelf_id,
       row_id: stockCard.row_id,
-      batch_no: stockCard.batch_no,
+      batch_no_item: stockCard.batch_no_item,
       mExpired_dt: stockCard.mExpired_dt,
       yExpired_dt: stockCard.yExpired_dt,
       product_cd: stockCard.product_cd,

@@ -91,7 +91,7 @@ export class Imc_CreateProductStockCardDto {
   row_id: string;
 
   @IsString()
-  batch_no: string;
+  batch_no_item: string;
 
   @IsString()
   mExpired_dt: string;

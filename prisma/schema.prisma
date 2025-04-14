@@ -397,7 +397,7 @@ model imc_ProductStockCard {
   floor_id                String                 @db.Char(5)
   shelf_id                String                 @db.Char(15)
   row_id                  String                 @db.Char(15)
-  batch_no                String                 @db.Char(20)
+  batch_no_item           String                 @db.Char(20)
   mExpired_dt             String                 @db.Char(10)
   yExpired_dt             String                 @db.Char(4)
   product_cd              String?                @db.Char(20)
@@ -411,7 +411,7 @@ model imc_ProductStockCard {
   company_id              String                 @db.Char(5)
   branch_id               String                 @db.Char(10)
 
-  @@id([product_id, floor_id, shelf_id, row_id, mExpired_dt, yExpired_dt, doc_id, mutation_id, srn_seq, warehouse_id, company_id])
+  @@id([product_id, floor_id, shelf_id, row_id, mExpired_dt, yExpired_dt, doc_id, mutation_id, srn_seq, batch_no_item, warehouse_id, company_id])
 }
 
 model imc_ProductDesc {
@@ -576,7 +576,7 @@ model sls_InvoiceDt {
   branch_id       String?       @db.Char(10)
   sls_InvoiceHd   sls_InvoiceHd @relation(fields: [company_id, invoice_id], references: [company_id, invoice_id], onDelete: NoAction)
 
-  @@id([company_id, invoice_id, product_id, acct_id, line_no], map: "pk_sls_Invoicedt")
+  @@id([company_id, invoice_id, delivery_id, product_id, acct_id, line_no], map: "pk_sls_Invoicedt")
 }
 
 model sls_InvoiceHd {
