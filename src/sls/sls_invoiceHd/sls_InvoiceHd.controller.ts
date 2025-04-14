@@ -50,11 +50,11 @@ export class sls_InvoiceHdController {
   }
 
   @Public()
-  @Get('invoiceTypes')
+  @Get('invoiceType')
   async getCategoryTypes(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
-    @Query('invoiceTypes') invoiceType?: string,
+    @Query('invoiceType') invoiceType?: string,
     @Query('status') status?: string,
   ) {
     const rawData = await this.sls_invoiceHdService.findAllInvoiceType(
