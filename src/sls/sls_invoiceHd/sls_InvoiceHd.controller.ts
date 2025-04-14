@@ -34,6 +34,39 @@ export class sls_InvoiceHdController {
   }
 
   @Public()
+  @Get('statuses')
+  async getCategoryStatuses(
+    @Param('company_id') company_id: string,
+    @Param('module_id') module_id: string,
+    @Query('invoiceType') invoiceType?: string,
+  ) {
+    const rawData = await this.sls_invoiceHdService.findAllInvoiceStatuses(
+      company_id,
+      module_id,
+      invoiceType, // Kirim filter categoryType jika ada
+    );
+
+    return { data: rawData ?? [] };
+  }
+
+  @Public()
+  @Get('invoiceTypes')
+  async getCategoryTypes(
+    @Param('company_id') company_id: string,
+    @Param('module_id') module_id: string,
+    @Query('invoiceTypes') invoiceType?: string,
+    @Query('status') status?: string,
+  ) {
+    const rawData = await this.sls_invoiceHdService.findAllInvoiceType(
+      company_id,
+      module_id,
+      { invoiceType, status },
+    );
+
+    return { data: rawData ?? [] };
+  }
+
+  @Public()
   @Get('filter')
   async filterInvoices(
     @Param('company_id') company_id: string,

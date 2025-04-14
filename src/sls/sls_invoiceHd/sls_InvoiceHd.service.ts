@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma.service';
 import { sls_PaginationInvoiceHdDto } from './dto/sls_PaginationInvoiceHd.dto';
 import { sls_ResponseInvoiceHdDto } from './dto/sls_ResponseInvoiceHd.dto';
 import { sls_ResponseInvoiceHdWithDetailDto } from './dto/sls_ResponseInvoiceDt.dto';
-import { InvoiceStatusEnum } from '@prisma/client';
+import { InvoiceStatusEnum, InvoiceTypeEnum } from '@prisma/client';
 
 @Injectable()
 export class sls_InvoiceHdService {
@@ -131,6 +131,108 @@ export class sls_InvoiceHdService {
       ...header,
       details,
     };
+  }
+
+  async findAllInvoiceStatuses(
+    company_id: string,
+    module_id: string,
+    invoiceType?: string,
+  ) {
+    const whereCondition: any = { company_id };
+
+    whereCondition.invoiceStatus = {
+      in: [
+        InvoiceStatusEnum.UNPAID,
+        InvoiceStatusEnum.PAID,
+        InvoiceStatusEnum.DUE_SOON,
+        InvoiceStatusEnum.OVERDUE,
+        InvoiceStatusEnum.RETURNED,
+      ],
+    };
+
+    whereCondition.invoiceType = {
+      in: [
+        InvoiceTypeEnum.REGULER,
+        InvoiceTypeEnum.DP,
+        InvoiceTypeEnum.SERVICE,
+        InvoiceTypeEnum.PROFITSHARE,
+      ],
+    };
+
+    const statuses = await this.prisma.sls_InvoiceHd.groupBy({
+      by: ['invoiceStatus'],
+      where: whereCondition,
+      _count: { _all: true },
+    });
+
+    if (!statuses || statuses.length === 0) {
+      throw new NotFoundException(`No statuses found for the given criteria`);
+    }
+
+    const sortedStatuses = statuses.sort((a, b) => {
+      if (a.invoiceStatus === 'UNPAID') return -1; // Prioritaskan 'UNPAID'
+      if (b.invoiceStatus === 'PAID') return 1;
+      return a.invoiceStatus.localeCompare(b.invoiceStatus); // Urutkan alfabetis untuk status lainnya
+    });
+
+    return sortedStatuses.map((s) => ({
+      id: s.invoiceStatus,
+      name: this.getInvoiceStatusName(s.invoiceStatus), // Gunakan fungsi untuk mendapatkan nama
+      count: s._count._all.toString(), // Konversi count ke string
+    }));
+  }
+
+  async findAllInvoiceType(
+    company_id: string,
+    module_id: string,
+    filters?: { invoiceType?: string; status?: string },
+  ) {
+    // Buat kondisi where secara dinamis
+    const whereCondition: any = { company_id };
+
+    if (filters?.invoiceType) {
+      whereCondition.type = filters.invoiceType;
+    }
+    if (filters?.status) {
+      whereCondition.invoiceStatus = filters.status;
+    }
+
+    const types = await this.prisma.sls_InvoiceHd.groupBy({
+      by: ['invoiceType'],
+      where: whereCondition,
+      _count: {
+        _all: true,
+      },
+    });
+
+    return types.map((s) => ({
+      id: s.invoiceType,
+      name: this.getInvoiceTypeName(s.invoiceType),
+      count: s._count._all.toString(), // Ubah angka ke string agar sesuai respons frontend
+    }));
+  }
+
+  private getInvoiceStatusName(invoiceStatus: string): string {
+    const invoiceStatusMap: Record<string, string> = {
+      UNPAID: 'UNPAID',
+      PAID: 'PAID',
+      DUE_SOON: 'DUE_SOON',
+      OVERDUE: 'OVERDUE',
+      RETURNED: 'RETURNED',
+    };
+
+    return invoiceStatusMap[invoiceStatus] || 'Unknown';
+  }
+
+  private getInvoiceTypeName(invoiceType: string): string {
+    const invoiceTypeMap: Record<string, string> = {
+      '0': 'REGULER',
+      '1': 'DP',
+      '2': 'SERVICE',
+      '3': 'PROFITSHARE',
+    };
+
+    return invoiceTypeMap[invoiceType] || 'Unknown';
   }
 
   async filterInvoices(
