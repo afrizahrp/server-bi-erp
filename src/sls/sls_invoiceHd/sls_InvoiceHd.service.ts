@@ -133,6 +133,76 @@ export class sls_InvoiceHdService {
     };
   }
 
+  async filterInvoicesBySalesPerson(
+    company_id: string,
+    module_id: string,
+    salesPersonName: string,
+  ): Promise<sls_ResponseInvoiceHdDto[]> {
+    const whereCondition: any = { company_id };
+
+    if (salesPersonName) {
+      whereCondition.salesPersonName = {
+        contains: salesPersonName,
+        mode: 'insensitive',
+      };
+    }
+
+    const invoices = await this.prisma.sls_InvoiceHd.findMany({
+      where: whereCondition,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return invoices.map((invoice) => this.mapToResponseDto(invoice));
+  }
+
+  async findAllInvoicesBySalesPersonName(
+    company_id: string,
+    module_id: string,
+  ): Promise<{ salesPersonName: string; count: string }[]> {
+    const whereCondition: any = { company_id };
+
+    const salesPersons = await this.prisma.sls_InvoiceHd.groupBy({
+      by: ['salesPersonName'], // Kelompokkan berdasarkan salesPersonName
+      where: whereCondition,
+      _count: { _all: true }, // Hitung jumlah invoice untuk setiap salesPersonName
+    });
+
+    if (!salesPersons || salesPersons.length === 0) {
+      throw new NotFoundException(
+        `No sales persons found for the given criteria`,
+      );
+    }
+
+    return salesPersons.map((s) => ({
+      id: s.salesPersonName?.trim() || 'Unknown', // Display 'Unknown' if salesPersonName is null
+      salesPersonName: s.salesPersonName?.trim() || 'Unknown', // Display 'Unknown' if salesPersonName is null
+      count: s._count._all.toString(), // Convert count to string
+    }));
+  }
+
+  async findAllInvoicesByCustomerName(
+    company_id: string,
+    module_id: string,
+  ): Promise<{ salesPersonName: string; count: string }[]> {
+    const whereCondition: any = { company_id };
+
+    const customers = await this.prisma.sls_InvoiceHd.groupBy({
+      by: ['customerName'], // Kelompokkan berdasarkan salesPersonName
+      where: whereCondition,
+      _count: { _all: true }, // Hitung jumlah invoice untuk setiap salesPersonName
+    });
+
+    if (!customers || customers.length === 0) {
+      throw new NotFoundException(`No customers found for the given criteria`);
+    }
+
+    return customers.map((s) => ({
+      id: s.customerName?.trim() || 'Unknown', // Display 'Unknown' if salesPersonName is null
+      salesPersonName: s.customerName?.trim() || 'Unknown', // Display 'Unknown' if salesPersonName is null
+      count: s._count._all.toString(), // Convert count to string
+    }));
+  }
+
   async findAllInvoiceStatuses(
     company_id: string,
     module_id: string,

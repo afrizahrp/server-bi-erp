@@ -34,6 +34,38 @@ export class sls_InvoiceHdController {
   }
 
   @Public()
+  @Get('salesPersonName')
+  async getSalesPersonName(
+    @Param('company_id') company_id: string,
+    @Param('module_id') module_id: string,
+    @Query('salesPersonName') salesPersonName?: string,
+  ) {
+    const rawData =
+      await this.sls_invoiceHdService.findAllInvoicesBySalesPersonName(
+        company_id,
+        module_id,
+      );
+
+    return { data: rawData ?? [] };
+  }
+
+  @Public()
+  @Get('customerName')
+  async getCustomerName(
+    @Param('company_id') company_id: string,
+    @Param('module_id') module_id: string,
+    @Query('customerName') customerName?: string,
+  ) {
+    const rawData =
+      await this.sls_invoiceHdService.findAllInvoicesByCustomerName(
+        company_id,
+        module_id,
+      );
+
+    return { data: rawData ?? [] };
+  }
+
+  @Public()
   @Get('statuses')
   async getCategoryStatuses(
     @Param('company_id') company_id: string,
