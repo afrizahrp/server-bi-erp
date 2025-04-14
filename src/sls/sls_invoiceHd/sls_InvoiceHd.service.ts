@@ -214,10 +214,10 @@ export class sls_InvoiceHdService {
 
   private getInvoiceTypeName(invoiceType: string): string {
     const invoiceTypeMap: Record<string, string> = {
-      '0': 'REGULER',
-      '1': 'DP',
-      '2': 'SERVICE',
-      '3': 'PROFITSHARE',
+      REGULER: 'REGULER',
+      DP: 'DP',
+      SERVICE: 'SERVICE',
+      PROFITSHARE: 'PROFITSHARE',
     };
 
     return invoiceTypeMap[invoiceType] || 'Unknown';
