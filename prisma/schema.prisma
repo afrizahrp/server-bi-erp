@@ -523,7 +523,7 @@ model cms_Billboard {
   section       Int?                   @db.SmallInt
   contentURL    String?                @db.VarChar(250)
   content_id    String?                @db.VarChar(50)
-  isImage       Boolean?
+  isImage       Boolean? // true = image,  false = video
   iStatus       MasterRecordStatusEnum @default(Active)
   iShowedStatus WebsiteDisplayStatus   @default(HIDDEN)
   remarks       String?                @db.VarChar(250)
@@ -537,6 +537,43 @@ model cms_Billboard {
   @@id([company_id, id], map: "pk_cms_Billboards")
 }
 
+enum MasterRecordStatusEnum {
+  InActive @map("0")
+  Active   @map("1")
+}
+
+enum TransactionRecordStatusEnum {
+  DRAFT    @map("0")
+  APPROVED @map("1")
+  PENDING  @map("2")
+  CANCEL   @map("3")
+}
+
+enum InvoicePaidStatusEnum {
+  UNPAID   @map("0")
+  PAID     @map("1")
+  RETURNED @map("4")
+}
+
+enum InvoiceDueDateStatusEnum {
+  DUE     @map("0")
+  OVERDUE @map("1")
+}
+
+enum WebsiteDisplayStatus {
+  HIDDEN @map("0")
+  SHOW   @map("1")
+}
+
+model sls_SalesPerson {
+  id            String          @db.Char(10)
+  name          String?         @db.VarChar(50)
+  company_id    String          @db.Char(5)
+  sls_InvoiceHd sls_InvoiceHd[]
+
+  @@id([company_id, id], map: "pk_sls_SalesPerson")
+}
+
 model sls_Customer {
   id          String  @db.Char(20)
   name        String? @db.VarChar(150)
@@ -548,7 +585,7 @@ model sls_Customer {
 
 model sls_InvoiceDt {
   po_id           String?       @db.Char(80)
-  ecat_id         String?       @db.Char(20)
+  ecatalog_id     String?       @db.Char(30)
   so_id           String?       @db.Char(20)
   spk_id          String?       @db.Char(20)
   delivery_id     String        @db.Char(20)
@@ -580,10 +617,12 @@ model sls_InvoiceDt {
 }
 
 model sls_InvoiceHd {
+  po_id                String?                     @db.Char(80)
+  ecatalog_id          String?                     @db.Char(20)
   so_id                String?                     @db.Char(20)
   trxType              String?                     @db.Char(3)
   invoiceType          InvoiceTypeEnum             @default(REGULER)
-  PoType               InvoieFromPOtypeEnum        @default(REGULER)
+  PoType               InvoieFromPOtypeEnum        @default(NON_ECATALOG)
   invoice_id           String                      @db.Char(20)
   invoiceDate          DateTime                    @default(now())
   ref_id               String?                     @db.Char(20)
@@ -605,7 +644,8 @@ model sls_InvoiceHd {
   totalDelivery_amount Decimal?                    @db.Decimal(21, 4)
   total_amount         Decimal?                    @db.Decimal(21, 4)
   trxStatus            TransactionRecordStatusEnum @default(APPROVED)
-  invoiceStatus        InvoiceStatusEnum           @default(UNPAID)
+  // invoiceStatus        InvoiceStatusEnum           @default(UNPAID)
+  paidStatus           InvoicePaidStatusEnum       @default(UNPAID)
   company_id           String                      @db.Char(5)
   createdBy            String?                     @db.Char(10)
   createdAt            DateTime?                   @default(now())
@@ -620,51 +660,10 @@ model sls_InvoiceHd {
 
 enum InvoiceTypeEnum {
   REGULER     @map("0")
-  DP          @map("1")
-  SERVICE     @map("2")
-  PROFITSHARE @map("3")
+  NON_REGULER @map("1")
 }
 
 enum InvoieFromPOtypeEnum {
-  REGULER  @map("0")
-  ECATALOG @map("1")
-}
-
-model sls_SalesPerson {
-  id            String          @db.Char(10)
-  name          String          @db.VarChar(50)
-  company_id    String          @db.Char(5)
-  sls_InvoiceHd sls_InvoiceHd[]
-
-  @@id([company_id, id], map: "pk_sls_SalesPerson")
-}
-
-enum MasterRecordStatusEnum {
-  InActive @map("0")
-  Active   @map("1")
-}
-
-enum TransactionRecordStatusEnum {
-  DRAFT    @map("0")
-  APPROVED @map("1")
-  PENDING  @map("2")
-  CANCEL   @map("3")
-}
-
-enum WebsiteDisplayStatus {
-  HIDDEN @map("0")
-  SHOW   @map("1")
-}
-
-enum InvoiceStatusEnum {
-  UNPAID   @map("0")
-  PAID     @map("1")
-  DUE_SOON @map("2")
-  OVERDUE  @map("3")
-  RETURNED @map("4")
-}
-
-enum InvoiceDueDateStatusEnum {
-  DUE     @map("0")
-  OVERDUE @map("1")
+  ECATALOG     @map("0")
+  NON_ECATALOG @map("1")
 }
