@@ -595,8 +595,8 @@ model sls_InvoiceHd {
   customerName         String?                     @db.VarChar(150)
   creditTerms          Int?                        @db.SmallInt
   dueDate              DateTime?                   @db.Date
-  salesPerson_id       String?                     @db.Char(10)
-  salesPersonName      String?                     @db.VarChar(50)
+  salesPerson_id       String                      @db.Char(10)
+  salesPersonName      String                      @db.VarChar(50)
   base_amount          Decimal?                    @db.Decimal(21, 4)
   dp_amount            Decimal?                    @db.Decimal(21, 4)
   discount_amount      Decimal?                    @db.Decimal(21, 4)
@@ -613,6 +613,7 @@ model sls_InvoiceHd {
   updatedAt            DateTime?
   branch_id            String?                     @db.Char(10)
   sls_InvoiceDt        sls_InvoiceDt[]
+  // salesPerson          sls_SalesPerson?            @relation(fields: [company_id, salesPerson_id], references: [company_id, id], onDelete: NoAction)
 
   @@id([company_id, invoice_id], map: "pk_sls_InvoiceHd")
 }
@@ -630,9 +631,10 @@ enum InvoieFromPOtypeEnum {
 }
 
 model sls_SalesPerson {
-  id         String  @db.Char(10)
-  name       String? @db.VarChar(50)
-  company_id String  @db.Char(5)
+  id         String @db.Char(10)
+  name       String @db.VarChar(50)
+  company_id String @db.Char(5)
+  // sls_InvoiceHd sls_InvoiceHd[]
 
   @@id([company_id, id], map: "pk_sls_SalesPerson")
 }

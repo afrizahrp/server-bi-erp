@@ -158,13 +158,16 @@ export class sls_InvoiceHdService {
   async findAllInvoicesBySalesPersonName(
     company_id: string,
     module_id: string,
-  ): Promise<{ salesPersonName: string; count: string }[]> {
+  ): Promise<
+    { salesPerson_id: string; salesPersonName: string; count: string }[]
+  > {
     const whereCondition: any = { company_id };
 
+    // Ambil data salesPerson_id dan hitung jumlah invoice
     const salesPersons = await this.prisma.sls_InvoiceHd.groupBy({
-      by: ['salesPersonName'], // Kelompokkan berdasarkan salesPersonName
+      by: ['salesPerson_id'], // Kelompokkan berdasarkan salesPerson_id
       where: whereCondition,
-      _count: { _all: true }, // Hitung jumlah invoice untuk setiap salesPersonName
+      _count: { _all: true }, // Hitung jumlah invoice untuk setiap salesPerson_id
     });
 
     if (!salesPersons || salesPersons.length === 0) {
@@ -173,11 +176,34 @@ export class sls_InvoiceHdService {
       );
     }
 
-    return salesPersons.map((s) => ({
-      id: s.salesPersonName?.trim() || 'Unknown', // Display 'Unknown' if salesPersonName is null
-      salesPersonName: s.salesPersonName?.trim() || 'Unknown', // Display 'Unknown' if salesPersonName is null
-      count: s._count._all.toString(), // Convert count to string
-    }));
+    // Ambil data salesPersonName dari tabel sa_salesPerson
+    const salesPersonDetails = await this.prisma.sls_SalesPerson.findMany({
+      where: {
+        id: {
+          in: salesPersons
+            .map((s) => s.salesPerson_id)
+            .filter((id): id is string => id !== null),
+        }, // Include only relevant salesPerson_id
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    // Gabungkan data salesPersonName dengan hasil groupBy
+    return salesPersons
+      .map((s) => {
+        const salesPersonDetail = salesPersonDetails.find(
+          (sp) => sp.id === s.salesPerson_id,
+        );
+        return {
+          salesPerson_id: s.salesPerson_id?.trim() || 'Unknown',
+          salesPersonName: salesPersonDetail?.name?.trim() || 'Unknown',
+          count: s._count._all.toString(), // Konversi count ke string
+        };
+      })
+      .filter((s) => s.salesPersonName !== 'Unknown'); // Hapus data dengan salesPersonName "Unknown"
   }
 
   async findAllInvoicesByCustomerName(
@@ -316,8 +342,14 @@ export class sls_InvoiceHdService {
   ): Promise<sls_ResponseInvoiceHdDto[]> {
     const whereCondition: any = { company_id };
 
+    // if (status) {
+    //   whereCondition.invoiceStatus = status;
+    // }
+
     if (status) {
-      whereCondition.invoiceStatus = status;
+      whereCondition.invoiceStatus = {
+        in: status.split(','), // Ubah string "PAID,UNPAID" menjadi array ["PAID", "UNPAID"]
+      };
     }
 
     if (customerName) {
