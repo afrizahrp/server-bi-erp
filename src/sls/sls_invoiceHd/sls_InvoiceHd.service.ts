@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma.service';
 import { sls_PaginationInvoiceHdDto } from './dto/sls_PaginationInvoiceHd.dto';
 import { sls_ResponseInvoiceHdDto } from './dto/sls_ResponseInvoiceHd.dto';
 import { sls_ResponseInvoiceHdWithDetailDto } from './dto/sls_ResponseInvoiceDt.dto';
-import { InvoiceStatusEnum, InvoiceTypeEnum } from '@prisma/client';
+import { InvoicePaidStatusEnum, InvoiceTypeEnum } from '@prisma/client';
 
 @Injectable()
 export class sls_InvoiceHdService {
@@ -54,7 +54,7 @@ export class sls_InvoiceHdService {
     const whereCondition: any = { company_id };
 
     if (status) {
-      whereCondition.invoiceStatus = status;
+      whereCondition.paidStatus = status;
     }
 
     if (customerName) {
@@ -158,16 +158,13 @@ export class sls_InvoiceHdService {
   async findAllInvoicesBySalesPersonName(
     company_id: string,
     module_id: string,
-  ): Promise<
-    { salesPerson_id: string; salesPersonName: string; count: string }[]
-  > {
+  ): Promise<{ id: string; name: string; count: number }[]> {
     const whereCondition: any = { company_id };
 
-    // Ambil data salesPerson_id dan hitung jumlah invoice
     const salesPersons = await this.prisma.sls_InvoiceHd.groupBy({
-      by: ['salesPerson_id'], // Kelompokkan berdasarkan salesPerson_id
+      by: ['salesPerson_id'],
       where: whereCondition,
-      _count: { _all: true }, // Hitung jumlah invoice untuk setiap salesPerson_id
+      _count: { _all: true },
     });
 
     if (!salesPersons || salesPersons.length === 0) {
@@ -176,14 +173,13 @@ export class sls_InvoiceHdService {
       );
     }
 
-    // Ambil data salesPersonName dari tabel sa_salesPerson
     const salesPersonDetails = await this.prisma.sls_SalesPerson.findMany({
       where: {
         id: {
           in: salesPersons
             .map((s) => s.salesPerson_id)
             .filter((id): id is string => id !== null),
-        }, // Include only relevant salesPerson_id
+        },
       },
       select: {
         id: true,
@@ -191,19 +187,18 @@ export class sls_InvoiceHdService {
       },
     });
 
-    // Gabungkan data salesPersonName dengan hasil groupBy
     return salesPersons
       .map((s) => {
-        const salesPersonDetail = salesPersonDetails.find(
+        const detail = salesPersonDetails.find(
           (sp) => sp.id === s.salesPerson_id,
         );
         return {
-          salesPerson_id: s.salesPerson_id?.trim() || 'Unknown',
-          salesPersonName: salesPersonDetail?.name?.trim() || 'Unknown',
-          count: s._count._all.toString(), // Konversi count ke string
+          id: s.salesPerson_id?.trim() || 'Unknown',
+          name: detail?.name?.trim() || 'Unknown',
+          count: s._count._all, // langsung return number
         };
       })
-      .filter((s) => s.salesPersonName !== 'Unknown'); // Hapus data dengan salesPersonName "Unknown"
+      .filter((s) => s.name !== 'Unknown');
   }
 
   async findAllInvoicesByCustomerName(
@@ -229,34 +224,27 @@ export class sls_InvoiceHdService {
     }));
   }
 
-  async findAllInvoiceStatuses(
+  async findAllPaidInvoiceStatus(
     company_id: string,
     module_id: string,
     invoiceType?: string,
   ) {
     const whereCondition: any = { company_id };
 
-    whereCondition.invoiceStatus = {
+    whereCondition.paidStatus = {
       in: [
-        InvoiceStatusEnum.UNPAID,
-        InvoiceStatusEnum.PAID,
-        InvoiceStatusEnum.DUE_SOON,
-        InvoiceStatusEnum.OVERDUE,
-        InvoiceStatusEnum.RETURNED,
+        InvoicePaidStatusEnum.UNPAID,
+        InvoicePaidStatusEnum.PAID,
+        InvoicePaidStatusEnum.RETURNED,
       ],
     };
 
     whereCondition.invoiceType = {
-      in: [
-        InvoiceTypeEnum.REGULER,
-        InvoiceTypeEnum.DP,
-        InvoiceTypeEnum.SERVICE,
-        InvoiceTypeEnum.PROFITSHARE,
-      ],
+      in: [InvoiceTypeEnum.REGULER, InvoiceTypeEnum.NON_REGULER],
     };
 
     const statuses = await this.prisma.sls_InvoiceHd.groupBy({
-      by: ['invoiceStatus'],
+      by: ['paidStatus'],
       where: whereCondition,
       _count: { _all: true },
     });
@@ -266,14 +254,14 @@ export class sls_InvoiceHdService {
     }
 
     const sortedStatuses = statuses.sort((a, b) => {
-      if (a.invoiceStatus === 'UNPAID') return -1; // Prioritaskan 'UNPAID'
-      if (b.invoiceStatus === 'PAID') return 1;
-      return a.invoiceStatus.localeCompare(b.invoiceStatus); // Urutkan alfabetis untuk status lainnya
+      if (a.paidStatus === 'UNPAID') return -1; // Prioritaskan 'UNPAID'
+      if (b.paidStatus === 'PAID') return 1;
+      return a.paidStatus.localeCompare(b.paidStatus); // Urutkan alfabetis untuk status lainnya
     });
 
     return sortedStatuses.map((s) => ({
-      id: s.invoiceStatus,
-      name: this.getInvoiceStatusName(s.invoiceStatus), // Gunakan fungsi untuk mendapatkan nama
+      id: s.paidStatus,
+      name: this.getInvoiceStatusName(s.paidStatus), // Gunakan fungsi untuk mendapatkan nama
       count: s._count._all.toString(), // Konversi count ke string
     }));
   }
@@ -290,7 +278,7 @@ export class sls_InvoiceHdService {
       whereCondition.type = filters.invoiceType;
     }
     if (filters?.status) {
-      whereCondition.invoiceStatus = filters.status;
+      whereCondition.paidStatus = filters.status;
     }
 
     const types = await this.prisma.sls_InvoiceHd.groupBy({
@@ -311,24 +299,20 @@ export class sls_InvoiceHdService {
   private getInvoiceTypeName(invoiceType: string): string {
     const invoiceTypeMap: Record<string, string> = {
       REGULER: 'REGULER',
-      DP: 'DP',
-      SERVICE: 'SERVICE',
-      PROFITSHARE: 'PROFITSHARE',
+      DP: 'NON_REGULER',
     };
 
     return invoiceTypeMap[invoiceType] || 'Unknown';
   }
 
-  private getInvoiceStatusName(invoiceStatus: string): string {
-    const invoiceStatusMap: Record<string, string> = {
+  private getInvoiceStatusName(paidStatus: string): string {
+    const paidStatusMap: Record<string, string> = {
       UNPAID: 'UNPAID',
       PAID: 'PAID',
-      DUE_SOON: 'DUE_SOON',
-      OVERDUE: 'OVERDUE',
       RETURNED: 'RETURNED',
     };
 
-    return invoiceStatusMap[invoiceStatus] || 'Unknown';
+    return paidStatusMap[paidStatus] || 'Unknown';
   }
 
   async filterInvoices(
@@ -347,7 +331,7 @@ export class sls_InvoiceHdService {
     // }
 
     if (status) {
-      whereCondition.invoiceStatus = {
+      whereCondition.paidStatus = {
         in: status.split(','), // Ubah string "PAID,UNPAID" menjadi array ["PAID", "UNPAID"]
       };
     }
@@ -410,7 +394,7 @@ export class sls_InvoiceHdService {
       tax_amount: invoice.tax_amt,
       totalDelivery_amount: invoice.totalDelivery_amount,
       total_amount: invoice.total_amount,
-      invoiceStatus: invoice.invoiceStatus,
+      paidStatus: invoice.paidStatus,
     };
   }
 }

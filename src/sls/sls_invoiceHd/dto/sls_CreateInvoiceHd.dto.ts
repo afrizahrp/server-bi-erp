@@ -6,9 +6,17 @@ import {
   IsDate,
   IsEnum,
 } from 'class-validator';
-import { InvoiceStatusEnum } from '@prisma/client';
+import { InvoicePaidStatusEnum } from '@prisma/client';
 
 export class sls_CreateSlsInvoiceHdDto {
+  @IsString()
+  @IsOptional()
+  po_id: string;
+
+  @IsString()
+  @IsOptional()
+  ecatalog_id: string;
+
   @IsString()
   invoice_id: string;
 
@@ -90,9 +98,9 @@ export class sls_CreateSlsInvoiceHdDto {
   @IsOptional()
   total_amount?: number;
 
-  @IsEnum(InvoiceStatusEnum)
+  @IsEnum(InvoicePaidStatusEnum)
   @IsOptional()
-  invoiceStatus?: InvoiceStatusEnum;
+  paidStatus?: InvoicePaidStatusEnum;
 
   @IsString()
   company_id: string;

@@ -72,7 +72,7 @@ export class sls_InvoiceHdController {
     @Param('module_id') module_id: string,
     @Query('invoiceType') invoiceType?: string,
   ) {
-    const rawData = await this.sls_invoiceHdService.findAllInvoiceStatuses(
+    const rawData = await this.sls_invoiceHdService.findAllPaidInvoiceStatus(
       company_id,
       module_id,
       invoiceType, // Kirim filter categoryType jika ada
