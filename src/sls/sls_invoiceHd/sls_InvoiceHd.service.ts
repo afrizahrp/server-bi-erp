@@ -51,21 +51,29 @@ export class sls_InvoiceHdService {
       endDate,
     } = paginationDto;
 
-    const whereCondition: any = { company_id };
+    // Limit default max 100
+    const safeLimit = Math.min(Number(limit) || 10, 100);
+    const offset = (Number(page) - 1) * safeLimit;
+
+    const whereCondition: any = {
+      company_id,
+    };
 
     if (status) {
-      whereCondition.paidStatus = status;
+      whereCondition.paidStatus = {
+        in: status.split(','),
+      };
     }
 
     if (customerName) {
-      whereCondition.customerName = {
+      whereCondition.customer_name = {
         contains: customerName,
         mode: 'insensitive',
       };
     }
 
     if (salesPersonName) {
-      whereCondition.salesPersoName = {
+      whereCondition.salesPersonName = {
         contains: salesPersonName,
         mode: 'insensitive',
       };
@@ -73,24 +81,25 @@ export class sls_InvoiceHdService {
 
     if (startDate || endDate) {
       whereCondition.invoiceDate = {};
+
       if (startDate) {
         whereCondition.invoiceDate.gte = new Date(startDate);
       }
+
       if (endDate) {
         whereCondition.invoiceDate.lte = new Date(endDate);
       }
     }
 
-    const totalRecords = await this.prisma.sls_InvoiceHd.count({
-      where: whereCondition,
-    });
-
-    const invoices = await this.prisma.sls_InvoiceHd.findMany({
-      where: whereCondition,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-    });
+    const [totalRecords, invoices] = await Promise.all([
+      this.prisma.sls_InvoiceHd.count({ where: whereCondition }),
+      this.prisma.sls_InvoiceHd.findMany({
+        where: whereCondition,
+        skip: offset,
+        take: safeLimit,
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
 
     const formattedInvoices = invoices.map((invoice) =>
       this.mapToResponseDto(invoice),
@@ -344,7 +353,7 @@ export class sls_InvoiceHdService {
     }
 
     if (salesPersonName) {
-      whereCondition.sales_person_name = {
+      whereCondition.salesPersonName = {
         contains: salesPersonName,
         mode: 'insensitive',
       };
