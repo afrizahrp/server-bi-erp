@@ -9,33 +9,6 @@ import { InvoicePaidStatusEnum, InvoiceTypeEnum } from '@prisma/client';
 export class sls_InvoiceHdService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // async findAll(
-  //   company_id: string,
-  //   module_id: string,
-  //   paginationDto: sls_PaginationInvoiceHdDto,
-  // ): Promise<{ data: sls_ResponseInvoiceHdDto[]; totalRecords: number }> {
-  //   const { page = 1, limit = 10 } = paginationDto;
-
-  //   const whereCondition: any = { company_id };
-
-  //   const totalRecords = await this.prisma.sls_InvoiceHd.count({
-  //     where: whereCondition,
-  //   });
-
-  //   const invoices = await this.prisma.sls_InvoiceHd.findMany({
-  //     where: whereCondition,
-  //     skip: (page - 1) * limit,
-  //     take: limit,
-  //     orderBy: { createdAt: 'desc' },
-  //   });
-
-  //   const formattedInvoices = invoices.map((invoice) =>
-  //     this.mapToResponseDto(invoice),
-  //   );
-
-  //   return { data: formattedInvoices, totalRecords };
-  // }
-
   async findAll(
     company_id: string,
     module_id: string,
@@ -45,30 +18,40 @@ export class sls_InvoiceHdService {
       page = 1,
       limit = 10,
       status,
-      customerName,
       salesPersonName,
       startDate,
       endDate,
+      searchBy,
+      searchTerm,
     } = paginationDto;
 
     // Limit default max 100
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
+    const allowedSearchFields = ['invoice_id', 'customerName']; // contoh
 
-    const whereCondition: any = {
+    const whereCondition: Record<string, any> = {
       company_id,
     };
+
+    if (
+      searchBy &&
+      typeof searchTerm === 'string' &&
+      searchTerm.trim() !== ''
+    ) {
+      const searchWords = searchTerm.trim().split(/\s+/);
+
+      whereCondition.AND = searchWords.map((word) => ({
+        [searchBy]: {
+          contains: word,
+          mode: 'insensitive',
+        },
+      }));
+    }
 
     if (status) {
       whereCondition.paidStatus = {
         in: status.split(','),
-      };
-    }
-
-    if (customerName) {
-      whereCondition.customer_name = {
-        contains: customerName,
-        mode: 'insensitive',
       };
     }
 
@@ -196,7 +179,8 @@ export class sls_InvoiceHdService {
       },
     });
 
-    return salesPersons
+    // Gabungkan data salesPersonName dengan hasil groupBy
+    const result = salesPersons
       .map((s) => {
         const detail = salesPersonDetails.find(
           (sp) => sp.id === s.salesPerson_id,
@@ -204,10 +188,13 @@ export class sls_InvoiceHdService {
         return {
           id: s.salesPerson_id?.trim() || 'Unknown',
           name: detail?.name?.trim() || 'Unknown',
-          count: s._count._all, // langsung return number
+          count: s._count._all, // Langsung return number
         };
       })
-      .filter((s) => s.name !== 'Unknown');
+      .filter((s) => s.name !== 'Unknown'); // Hapus data dengan name "Unknown"
+
+    // Urutkan berdasarkan count secara descending
+    return result.sort((a, b) => b.count - a.count);
   }
 
   async findAllInvoicesByCustomerName(
@@ -346,7 +333,7 @@ export class sls_InvoiceHdService {
     }
 
     if (customerName) {
-      whereCondition.customer_name = {
+      whereCondition.customerName = {
         contains: customerName,
         mode: 'insensitive',
       };

@@ -32,4 +32,12 @@ export class sls_PaginationInvoiceHdDto {
   @IsString()
   @IsOptional()
   endDate?: string; // Tambahkan properti ini
+
+  @IsOptional()
+  @IsString()
+  searchBy?: string;
+
+  @IsOptional()
+  @IsString()
+  searchTerm?: string;
 }
