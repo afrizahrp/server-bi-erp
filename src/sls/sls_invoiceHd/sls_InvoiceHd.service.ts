@@ -16,7 +16,7 @@ export class sls_InvoiceHdService {
   ): Promise<{ data: sls_ResponseInvoiceHdDto[]; totalRecords: number }> {
     const {
       page = 1,
-      limit = 10,
+      limit = 20,
       status,
       salesPersonName,
       startDate,
@@ -28,10 +28,14 @@ export class sls_InvoiceHdService {
     // Limit default max 100
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
-    const allowedSearchFields = ['invoice_id', 'customerName']; // contoh
+    // const allowedSearchFields = ['invoice_id', 'customerName']; // contoh
 
     const whereCondition: Record<string, any> = {
       company_id,
+    };
+
+    whereCondition.total_amount = {
+      gt: 10000, // 'gt' berarti 'greater than'
     };
 
     if (
@@ -55,12 +59,33 @@ export class sls_InvoiceHdService {
       };
     }
 
-    if (salesPersonName) {
-      whereCondition.salesPersonName = {
-        contains: salesPersonName,
-        mode: 'insensitive',
-      };
+    if (typeof salesPersonName === 'string' && salesPersonName.trim() !== '') {
+      const parsedSalesPerson = salesPersonName
+        .split(',')
+        .map((name) => name.trim())
+        .filter((name) => name !== '');
+
+      if (parsedSalesPerson.length > 0) {
+        whereCondition.AND = whereCondition.AND || [];
+
+        whereCondition.AND.push({
+          OR: parsedSalesPerson.map((name) => ({
+            salesPersonName: {
+              contains: name,
+              mode: 'insensitive',
+            },
+          })),
+        });
+      }
     }
+
+    // if (salesPersonName) {
+    //   whereCondition.salesPersonName = {
+    //     in: salesPersonName.split(','),
+    //   };
+    // }
+
+    // console.log('salesPersonName:', salesPersonName!.split(','));
 
     if (startDate || endDate) {
       whereCondition.invoiceDate = {};
@@ -73,14 +98,17 @@ export class sls_InvoiceHdService {
         whereCondition.invoiceDate.lte = new Date(endDate);
       }
     }
-
+    const orderField = paginationDto.orderBy ?? 'invoiceDate';
+    const orderDirection = paginationDto.orderDir === 'asc' ? 'asc' : 'desc';
     const [totalRecords, invoices] = await Promise.all([
       this.prisma.sls_InvoiceHd.count({ where: whereCondition }),
       this.prisma.sls_InvoiceHd.findMany({
         where: whereCondition,
         skip: offset,
         take: safeLimit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: {
+          [orderField]: orderDirection,
+        },
       }),
     ]);
 
@@ -150,8 +178,27 @@ export class sls_InvoiceHdService {
   async findAllInvoicesBySalesPersonName(
     company_id: string,
     module_id: string,
+    customerName?: string,
+    paidStatus?: string, // Tambahkan parameter untuk filter paidStatus
   ): Promise<{ id: string; name: string; count: number }[]> {
     const whereCondition: any = { company_id };
+
+    whereCondition.total_amount = {
+      gt: 10000, // 'gt' berarti 'greater than'
+    };
+
+    if (customerName) {
+      whereCondition.customerName = {
+        contains: customerName,
+        mode: 'insensitive',
+      };
+    }
+
+    if (paidStatus) {
+      whereCondition.paidStatus = {
+        in: paidStatus.split(','), // Ubah string "PAID,UNPAID" menjadi array ["PAID", "UNPAID"]
+      };
+    }
 
     const salesPersons = await this.prisma.sls_InvoiceHd.groupBy({
       by: ['salesPerson_id'],
@@ -186,7 +233,7 @@ export class sls_InvoiceHdService {
           (sp) => sp.id === s.salesPerson_id,
         );
         return {
-          id: s.salesPerson_id?.trim() || 'Unknown',
+          id: detail?.name?.trim() || 'Unknown',
           name: detail?.name?.trim() || 'Unknown',
           count: s._count._all, // Langsung return number
         };
@@ -227,6 +274,10 @@ export class sls_InvoiceHdService {
   ) {
     const whereCondition: any = { company_id };
 
+    whereCondition.total_amount = {
+      gt: 10000, // 'gt' berarti 'greater than'
+    };
+
     whereCondition.paidStatus = {
       in: [
         InvoicePaidStatusEnum.UNPAID,
@@ -249,10 +300,18 @@ export class sls_InvoiceHdService {
       throw new NotFoundException(`No statuses found for the given criteria`);
     }
 
+    const statusPriority = {
+      UNPAID: 0,
+      PAID: 1,
+      RETURNED: 2,
+      OTHER: 3, // fallback
+    };
+
     const sortedStatuses = statuses.sort((a, b) => {
-      if (a.paidStatus === 'UNPAID') return -1; // Prioritaskan 'UNPAID'
-      if (b.paidStatus === 'PAID') return 1;
-      return a.paidStatus.localeCompare(b.paidStatus); // Urutkan alfabetis untuk status lainnya
+      const aPriority = statusPriority[a.paidStatus] ?? statusPriority.OTHER;
+      const bPriority = statusPriority[b.paidStatus] ?? statusPriority.OTHER;
+
+      return aPriority - bPriority;
     });
 
     return sortedStatuses.map((s) => ({
@@ -369,8 +428,8 @@ export class sls_InvoiceHdService {
   private mapToResponseDto(invoice: any): sls_ResponseInvoiceHdDto {
     return {
       invoiceType: invoice.invoiceType,
+      po_id: invoice.po_id?.trim() ?? '',
       invoice_id: invoice.invoice_id.trim(),
-      so_id: invoice.so_id?.trim() ?? '',
       invoiceDate: invoice.invoiceDate,
       ref_id: invoice.ref_id?.trim() ?? '',
       tax_id: invoice.tax_id?.trim() ?? '',

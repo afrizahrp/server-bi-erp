@@ -644,7 +644,6 @@ model sls_InvoiceHd {
   totalDelivery_amount Decimal?                    @db.Decimal(21, 4)
   total_amount         Decimal?                    @db.Decimal(21, 4)
   trxStatus            TransactionRecordStatusEnum @default(APPROVED)
-  // invoiceStatus        InvoiceStatusEnum           @default(UNPAID)
   paidStatus           InvoicePaidStatusEnum       @default(UNPAID)
   company_id           String                      @db.Char(5)
   createdBy            String?                     @db.Char(10)

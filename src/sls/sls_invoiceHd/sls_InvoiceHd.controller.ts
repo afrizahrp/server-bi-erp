@@ -38,12 +38,15 @@ export class sls_InvoiceHdController {
   async getSalesPersonName(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
-    @Query('salesPersonName') salesPersonName?: string,
+    @Query('customerName') customerName?: string,
+    @Query('paidStatus') paidStatus?: string, // Tambahkan query parameter paidStatus
   ) {
     const rawData =
       await this.sls_invoiceHdService.findAllInvoicesBySalesPersonName(
         company_id,
         module_id,
+        customerName,
+        paidStatus, // Kirim paidStatus ke service
       );
 
     return { data: rawData ?? [] };

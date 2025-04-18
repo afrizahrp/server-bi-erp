@@ -14,7 +14,7 @@ export class sls_ResponseInvoiceHdDto {
 
   @IsString()
   @IsOptional()
-  so_id?: string;
+  po_id?: string;
 
   @IsDate()
   invoiceDate: Date;

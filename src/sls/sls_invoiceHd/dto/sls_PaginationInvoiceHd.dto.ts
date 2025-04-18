@@ -1,4 +1,10 @@
-import { IsString, IsNumber, IsOptional, IsPositive } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsEnum,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 export class sls_PaginationInvoiceHdDto {
   @Type(() => Number)
@@ -40,4 +46,11 @@ export class sls_PaginationInvoiceHdDto {
   @IsOptional()
   @IsString()
   searchTerm?: string;
+
+  @IsOptional()
+  orderBy?: string;
+
+  @IsOptional()
+  @IsEnum(['asc', 'desc'])
+  orderDir?: 'asc' | 'desc';
 }
