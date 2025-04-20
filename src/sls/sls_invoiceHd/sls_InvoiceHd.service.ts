@@ -3,7 +3,10 @@ import { PrismaService } from 'src/prisma.service';
 import { sls_PaginationInvoiceHdDto } from './dto/sls_PaginationInvoiceHd.dto';
 import { sls_ResponseInvoiceHdDto } from './dto/sls_ResponseInvoiceHd.dto';
 import { sls_ResponseInvoiceHdWithDetailDto } from './dto/sls_ResponseInvoiceDt.dto';
-import { InvoicePaidStatusEnum, InvoiceTypeEnum } from '@prisma/client';
+import { format, startOfMonth, endOfMonth, parse } from 'date-fns';
+import moment from 'moment';
+
+import { InvoicePaidStatusEnum } from '@prisma/client';
 
 @Injectable()
 export class sls_InvoiceHdService {
@@ -19,10 +22,12 @@ export class sls_InvoiceHdService {
       limit = 20,
       status,
       salesPersonName,
-      startDate,
-      endDate,
+      startPeriod,
+      endPeriod,
       searchBy,
       searchTerm,
+      // startDate,
+      // endDate,
     } = paginationDto;
 
     // Limit default max 100
@@ -79,25 +84,90 @@ export class sls_InvoiceHdService {
       }
     }
 
-    // if (salesPersonName) {
-    //   whereCondition.salesPersonName = {
-    //     in: salesPersonName.split(','),
-    //   };
-    // }
+    if (startPeriod) {
+      try {
+        console.log('startPeriod:', startPeriod); // Debug input
+        const formattedStartPeriod = startPeriod.replace(
+          /(\w{3})[-]?(\d{4})/,
+          '$1-$2', // Tambahkan tanda pemisah jika tidak ada
+        );
+        console.log('formattedStartPeriod:', formattedStartPeriod); // Debug hasil format
 
-    // console.log('salesPersonName:', salesPersonName!.split(','));
+        const parsedStart: Date = moment(
+          formattedStartPeriod,
+          'MMM-YYYY',
+          true,
+        ).toDate();
 
-    if (startDate || endDate) {
-      whereCondition.invoiceDate = {};
+        console.log('parsedStart:', parsedStart); // Debug hasil parsing
 
-      if (startDate) {
-        whereCondition.invoiceDate.gte = new Date(startDate);
-      }
+        if (isNaN(parsedStart.getTime())) {
+          throw new Error(); // Jika parsing gagal
+        }
 
-      if (endDate) {
-        whereCondition.invoiceDate.lte = new Date(endDate);
+        const startOfPeriod = startOfMonth(parsedStart);
+        whereCondition.invoiceDate.gte = startOfPeriod;
+      } catch (error) {
+        throw new Error(
+          'Invalid startPeriod format. Use MMM-yyyy (e.g., Jan-2025)',
+        );
       }
     }
+
+    if (endPeriod) {
+      try {
+        console.log('endPeriod:', endPeriod); // Debug input
+        const formattedEndPeriod = endPeriod.replace(
+          /(\w{3})[-]?(\d{4})/,
+          '$1-$2', // Tambahkan tanda pemisah jika tidak ada
+        );
+        console.log('formattedEndPeriod:', formattedEndPeriod); // Debug hasil format
+
+        const parsedEnd: Date = moment(
+          formattedEndPeriod,
+          'MMM-YYYY',
+          true,
+        ).toDate();
+
+        console.log('parsedEnd:', parsedEnd); // Debug hasil parsing
+
+        if (isNaN(parsedEnd.getTime())) {
+          throw new Error(); // Jika parsing gagal
+        }
+
+        const endOfPeriod = startOfMonth(parsedEnd);
+        whereCondition.invoiceDate.gte = endOfPeriod;
+      } catch (error) {
+        throw new Error(
+          'Invalid endPeriod format. Use MMM-yyyy (e.g., Jan-2025)',
+        );
+      }
+    }
+
+    // Handle startDate and endDate (existing logic)
+    // if (startDate || endDate) {
+    //   whereCondition.invoiceDate = whereCondition.invoiceDate || {};
+
+    //   if (startDate) {
+    //     whereCondition.invoiceDate.gte = new Date(startDate);
+    //   }
+
+    //   if (endDate) {
+    //     whereCondition.invoiceDate.lte = new Date(endDate);
+    //   }
+    // }
+
+    // if (startDate || endDate) {
+    //   whereCondition.invoiceDate = {};
+
+    //   if (startDate) {
+    //     whereCondition.invoiceDate.gte = new Date(startDate);
+    //   }
+
+    //   if (endDate) {
+    //     whereCondition.invoiceDate.lte = new Date(endDate);
+    //   }
+    // }
     const orderField = paginationDto.orderBy ?? 'invoiceDate';
     const orderDirection = paginationDto.orderDir === 'asc' ? 'asc' : 'desc';
     const [totalRecords, invoices] = await Promise.all([
@@ -106,6 +176,10 @@ export class sls_InvoiceHdService {
         where: whereCondition,
         skip: offset,
         take: safeLimit,
+        include: {
+          sls_InvoiceType: true,
+          sls_InvoicePoType: true,
+        },
         orderBy: {
           [orderField]: orderDirection,
         },
@@ -142,9 +216,14 @@ export class sls_InvoiceHdService {
       product_id: dt.product_id.trim(),
       productName: dt.productName?.trim(),
       uom_id: dt.uom_id.trim(),
-      qty: dt.qty ? Number(dt.qty) : undefined,
-      discount_amt: dt.discount_amount ? Number(dt.discount_amount) : undefined,
-      total_amount: dt.total_amount ? Number(dt.total_amount) : undefined,
+      unitPrice: dt.unitPrice ? Number(dt.unitPrice) : 0,
+      qty: dt.qty ? Number(dt.qty) : 0,
+      sellingPrice: dt.sellingPrice ? Number(dt.sellingPrice) : 0,
+      base_amount: dt.base_amount ? Number(dt.base_amount) : 0,
+      discount_amount: dt.discount_amount ? Number(dt.discount_amount) : 0,
+      delivery_amount: dt.delivery_amount ? Number(dt.delivery_amount) : 0,
+      tax_amount: dt.tax_amount ? Number(dt.tax_amount) : 0,
+      total_amount: dt.total_amount ? Number(dt.total_amount) : 0,
     }));
 
     return {
@@ -175,28 +254,28 @@ export class sls_InvoiceHdService {
     return invoices.map((invoice) => this.mapToResponseDto(invoice));
   }
 
-  async findAllInvoicesBySalesPersonName(
+  async filterAllInvoicesBySalesPersonName(
     company_id: string,
     module_id: string,
-    customerName?: string,
-    paidStatus?: string, // Tambahkan parameter untuk filter paidStatus
+    // customerName?: string,
+    paidStatus?: string,
   ): Promise<{ id: string; name: string; count: number }[]> {
     const whereCondition: any = { company_id };
 
     whereCondition.total_amount = {
-      gt: 10000, // 'gt' berarti 'greater than'
+      gt: 10000,
     };
 
-    if (customerName) {
-      whereCondition.customerName = {
-        contains: customerName,
-        mode: 'insensitive',
-      };
-    }
+    // if (customerName) {
+    //   whereCondition.customerName = {
+    //     contains: customerName,
+    //     mode: 'insensitive',
+    //   };
+    // }
 
     if (paidStatus) {
       whereCondition.paidStatus = {
-        in: paidStatus.split(','), // Ubah string "PAID,UNPAID" menjadi array ["PAID", "UNPAID"]
+        in: paidStatus.split(','),
       };
     }
 
@@ -226,57 +305,42 @@ export class sls_InvoiceHdService {
       },
     });
 
-    // Gabungkan data salesPersonName dengan hasil groupBy
-    const result = salesPersons
+    const salesPersonList = salesPersons
       .map((s) => {
         const detail = salesPersonDetails.find(
           (sp) => sp.id === s.salesPerson_id,
         );
         return {
+          // id: s.salesPerson_id?.trim(),
           id: detail?.name?.trim() || 'Unknown',
           name: detail?.name?.trim() || 'Unknown',
-          count: s._count._all, // Langsung return number
+          count: s._count._all,
         };
       })
-      .filter((s) => s.name !== 'Unknown'); // Hapus data dengan name "Unknown"
+      .filter((s) => s.name !== 'Unknown');
 
-    // Urutkan berdasarkan count secara descending
-    return result.sort((a, b) => b.count - a.count);
+    return salesPersonList.sort((a, b) => b.count - a.count);
   }
 
-  async findAllInvoicesByCustomerName(
+  async filterAllPaidInvoiceStatus(
     company_id: string,
     module_id: string,
-  ): Promise<{ salesPersonName: string; count: string }[]> {
-    const whereCondition: any = { company_id };
-
-    const customers = await this.prisma.sls_InvoiceHd.groupBy({
-      by: ['customerName'], // Kelompokkan berdasarkan salesPersonName
-      where: whereCondition,
-      _count: { _all: true }, // Hitung jumlah invoice untuk setiap salesPersonName
-    });
-
-    if (!customers || customers.length === 0) {
-      throw new NotFoundException(`No customers found for the given criteria`);
-    }
-
-    return customers.map((s) => ({
-      id: s.customerName?.trim() || 'Unknown', // Display 'Unknown' if salesPersonName is null
-      salesPersonName: s.customerName?.trim() || 'Unknown', // Display 'Unknown' if salesPersonName is null
-      count: s._count._all.toString(), // Convert count to string
-    }));
-  }
-
-  async findAllPaidInvoiceStatus(
-    company_id: string,
-    module_id: string,
-    invoiceType?: string,
-  ) {
+    salesPersonName?: string[],
+  ): Promise<{ id: string; name: string; count: number }[]> {
     const whereCondition: any = { company_id };
 
     whereCondition.total_amount = {
-      gt: 10000, // 'gt' berarti 'greater than'
+      gt: 10000,
     };
+
+    if (salesPersonName) {
+      whereCondition.salesPerson = {
+        name: {
+          contains: salesPersonName,
+          mode: 'insensitive',
+        },
+      };
+    }
 
     whereCondition.paidStatus = {
       in: [
@@ -284,10 +348,6 @@ export class sls_InvoiceHdService {
         InvoicePaidStatusEnum.PAID,
         InvoicePaidStatusEnum.RETURNED,
       ],
-    };
-
-    whereCondition.invoiceType = {
-      in: [InvoiceTypeEnum.REGULER, InvoiceTypeEnum.NON_REGULER],
     };
 
     const statuses = await this.prisma.sls_InvoiceHd.groupBy({
@@ -303,7 +363,7 @@ export class sls_InvoiceHdService {
     const statusPriority = {
       UNPAID: 0,
       PAID: 1,
-      RETURNED: 2,
+      RETURNED: 4,
       OTHER: 3, // fallback
     };
 
@@ -317,47 +377,8 @@ export class sls_InvoiceHdService {
     return sortedStatuses.map((s) => ({
       id: s.paidStatus,
       name: this.getInvoiceStatusName(s.paidStatus), // Gunakan fungsi untuk mendapatkan nama
-      count: s._count._all.toString(), // Konversi count ke string
+      count: s._count._all,
     }));
-  }
-
-  async findAllInvoiceType(
-    company_id: string,
-    module_id: string,
-    filters?: { invoiceType?: string; status?: string },
-  ) {
-    // Buat kondisi where secara dinamis
-    const whereCondition: any = { company_id };
-
-    if (filters?.invoiceType) {
-      whereCondition.type = filters.invoiceType;
-    }
-    if (filters?.status) {
-      whereCondition.paidStatus = filters.status;
-    }
-
-    const types = await this.prisma.sls_InvoiceHd.groupBy({
-      by: ['invoiceType'],
-      where: whereCondition,
-      _count: {
-        _all: true,
-      },
-    });
-
-    return types.map((s) => ({
-      id: s.invoiceType,
-      name: this.getInvoiceTypeName(s.invoiceType),
-      count: s._count._all.toString(), // Ubah angka ke string agar sesuai respons frontend
-    }));
-  }
-
-  private getInvoiceTypeName(invoiceType: string): string {
-    const invoiceTypeMap: Record<string, string> = {
-      REGULER: 'REGULER',
-      DP: 'NON_REGULER',
-    };
-
-    return invoiceTypeMap[invoiceType] || 'Unknown';
   }
 
   private getInvoiceStatusName(paidStatus: string): string {
@@ -370,64 +391,129 @@ export class sls_InvoiceHdService {
     return paidStatusMap[paidStatus] || 'Unknown';
   }
 
-  async filterInvoices(
+  async filterAllInvoicesByInvoiceTypeName(
     company_id: string,
     module_id: string,
-    status?: string,
-    customerName?: string,
-    salesPersonName?: string,
-    startDate?: string,
-    endDate?: string,
-  ): Promise<sls_ResponseInvoiceHdDto[]> {
+    paidStatus?: string, // Tambahkan parameter untuk filter paidStatus
+  ): Promise<{ id: string; name: string; count: number }[]> {
     const whereCondition: any = { company_id };
 
-    // if (status) {
-    //   whereCondition.invoiceStatus = status;
-    // }
+    whereCondition.total_amount = {
+      gt: 10000, // 'gt' berarti 'greater than'
+    };
 
-    if (status) {
+    if (paidStatus) {
       whereCondition.paidStatus = {
-        in: status.split(','), // Ubah string "PAID,UNPAID" menjadi array ["PAID", "UNPAID"]
+        in: paidStatus.split(','), // Ubah string "PAID,UNPAID" menjadi array ["PAID", "UNPAID"]
       };
     }
 
-    if (customerName) {
-      whereCondition.customerName = {
-        contains: customerName,
-        mode: 'insensitive',
-      };
-    }
-
-    if (salesPersonName) {
-      whereCondition.salesPersonName = {
-        contains: salesPersonName,
-        mode: 'insensitive',
-      };
-    }
-
-    if (startDate || endDate) {
-      whereCondition.invoiceDate = {};
-
-      if (startDate) {
-        whereCondition.invoiceDate.gte = new Date(startDate);
-      }
-
-      if (endDate) {
-        whereCondition.invoiceDate.lte = new Date(endDate);
-      }
-    }
-
-    const invoices = await this.prisma.sls_InvoiceHd.findMany({
+    const invoiceTypes = await this.prisma.sls_InvoiceHd.groupBy({
+      by: ['invoiceType_id'],
       where: whereCondition,
-      orderBy: { createdAt: 'desc' },
+      _count: { _all: true },
     });
 
-    return invoices.map((invoice) => this.mapToResponseDto(invoice));
+    if (!invoiceTypes || invoiceTypes.length === 0) {
+      throw new NotFoundException(
+        `No sales persons found for the given criteria`,
+      );
+    }
+
+    const invoiceTypeDetails = await this.prisma.sls_InvoiceType.findMany({
+      where: {
+        id: {
+          in: invoiceTypes
+            .map((s) => s.invoiceType_id)
+            .filter((id) => id !== null),
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    const invoiceTypeNameList = invoiceTypes
+      .map((s) => {
+        const detail = invoiceTypeDetails.find(
+          (sp) => sp.id === s.invoiceType_id,
+        );
+        return {
+          id: detail?.name?.trim() || 'Unknown',
+          name: detail?.name?.trim() || 'Unknown',
+          count: s._count._all, // Langsung return number
+        };
+      })
+      .filter((s) => s.name !== 'Unknown'); // Hapus data dengan name "Unknown"
+
+    // Urutkan berdasarkan count secara descending
+    return invoiceTypeNameList.sort((a, b) => b.count - a.count);
+  }
+
+  async filterAllInvoicesByPoInvoiceTypeName(
+    company_id: string,
+    module_id: string,
+    paidStatus?: string, // Tambahkan parameter untuk filter paidStatus
+  ): Promise<{ id: string; name: string; count: number }[]> {
+    const whereCondition: any = { company_id };
+
+    whereCondition.total_amount = {
+      gt: 10000, // 'gt' berarti 'greater than'
+    };
+
+    if (paidStatus) {
+      whereCondition.paidStatus = {
+        in: paidStatus.split(','), // Ubah string "PAID,UNPAID" menjadi array ["PAID", "UNPAID"]
+      };
+    }
+
+    const invoiceTypes = await this.prisma.sls_InvoiceHd.groupBy({
+      by: ['poType_id'],
+      where: whereCondition,
+      _count: { _all: true },
+    });
+
+    if (!invoiceTypes || invoiceTypes.length === 0) {
+      throw new NotFoundException(
+        `No sales persons found for the given criteria`,
+      );
+    }
+
+    const invoicePoTypes = await this.prisma.sls_InvoicePoType.findMany({
+      where: {
+        id: {
+          in: invoiceTypes.map((s) => s.poType_id).filter((id) => id !== null),
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    const invoicePoTypeNameList = invoiceTypes
+      .map((s) => {
+        const detail = invoicePoTypes.find((sp) => sp.id === s.poType_id);
+        return {
+          id: detail?.name?.trim() || 'Unknown',
+          name: detail?.name?.trim() || 'Unknown',
+          count: s._count._all, // Langsung return number
+        };
+      })
+      .filter((s) => s.name !== 'Unknown'); // Hapus data dengan name "Unknown"
+
+    // Urutkan berdasarkan count secara descending
+    return invoicePoTypeNameList.sort((a, b) => b.count - a.count);
   }
 
   private mapToResponseDto(invoice: any): sls_ResponseInvoiceHdDto {
     return {
-      invoiceType: invoice.invoiceType,
+      invoiceType_id: invoice.invoiceType,
+      invoiceTypeName: invoice.sls_InvoiceType?.name ?? undefined,
+      invoicePoTypeName: invoice.sls_InvoicePoType?.name ?? undefined,
+      poType_id: invoice.poType,
+      eCatalog_id: invoice.eCatalog_id?.trim() ?? undefined,
       po_id: invoice.po_id?.trim() ?? '',
       invoice_id: invoice.invoice_id.trim(),
       invoiceDate: invoice.invoiceDate,

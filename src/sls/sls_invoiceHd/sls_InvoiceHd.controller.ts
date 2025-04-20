@@ -42,27 +42,11 @@ export class sls_InvoiceHdController {
     @Query('paidStatus') paidStatus?: string, // Tambahkan query parameter paidStatus
   ) {
     const rawData =
-      await this.sls_invoiceHdService.findAllInvoicesBySalesPersonName(
+      await this.sls_invoiceHdService.filterAllInvoicesBySalesPersonName(
         company_id,
         module_id,
-        customerName,
+        // customerName,
         paidStatus, // Kirim paidStatus ke service
-      );
-
-    return { data: rawData ?? [] };
-  }
-
-  @Public()
-  @Get('customerName')
-  async getCustomerName(
-    @Param('company_id') company_id: string,
-    @Param('module_id') module_id: string,
-    @Query('customerName') customerName?: string,
-  ) {
-    const rawData =
-      await this.sls_invoiceHdService.findAllInvoicesByCustomerName(
-        company_id,
-        module_id,
       );
 
     return { data: rawData ?? [] };
@@ -73,53 +57,68 @@ export class sls_InvoiceHdController {
   async getCategoryStatuses(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
-    @Query('invoiceType') invoiceType?: string,
+    @Query('salesPersonName') salesPersonName?: string[],
   ) {
-    const rawData = await this.sls_invoiceHdService.findAllPaidInvoiceStatus(
+    const rawData = await this.sls_invoiceHdService.filterAllPaidInvoiceStatus(
       company_id,
       module_id,
-      invoiceType, // Kirim filter categoryType jika ada
+      salesPersonName, // Kirim filter categoryType jika ada
     );
 
     return { data: rawData ?? [] };
   }
 
   @Public()
-  @Get('invoiceType')
-  async getCategoryTypes(
+  @Get('invoiceTypeName')
+  async getInvoiceTypeName(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
-    @Query('invoiceType') invoiceType?: string,
-    @Query('status') status?: string,
+    @Query('customerName') customerName?: string,
   ) {
-    const rawData = await this.sls_invoiceHdService.findAllInvoiceType(
-      company_id,
-      module_id,
-      { invoiceType, status },
-    );
+    const rawData =
+      await this.sls_invoiceHdService.filterAllInvoicesByInvoiceTypeName(
+        company_id,
+        module_id,
+        customerName,
+      );
 
     return { data: rawData ?? [] };
   }
 
   @Public()
-  @Get('filter')
-  async filterInvoices(
+  @Get('invoicePoTypeName')
+  async getInvoicePoTypeName(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
-    @Query('status') status: string,
-    @Query('customerName') customerName: string,
-    @Query('salesPersonName') salesPersonName: string,
-    @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
-  ): Promise<sls_ResponseInvoiceHdDto[]> {
-    return this.sls_invoiceHdService.filterInvoices(
-      company_id,
-      module_id,
-      status,
-      customerName,
-      salesPersonName,
-      startDate,
-      endDate,
-    );
+  ) {
+    const rawData =
+      await this.sls_invoiceHdService.filterAllInvoicesByPoInvoiceTypeName(
+        company_id,
+        module_id,
+      );
+
+    return { data: rawData ?? [] };
   }
+
+  // @Public()
+  // @Get('filter')
+  // async filterInvoices(
+  //   @Param('company_id') company_id: string,
+  //   @Param('module_id') module_id: string,
+  //   @Query('status') status: string,
+  //   @Query('customerName') customerName: string,
+  //   @Query('salesPersonName') salesPersonName: string,
+  //   @Query('startDate') startDate: string,
+  //   @Query('endDate') endDate: string,
+  // ): Promise<sls_ResponseInvoiceHdDto[]> {
+  //   return this.sls_invoiceHdService.filterInvoices(
+  //     company_id,
+  //     module_id,
+  //     status,
+  //     customerName,
+  //     salesPersonName,
+  //     startDate,
+  //     endDate,
+  //   );
+  // }
 }

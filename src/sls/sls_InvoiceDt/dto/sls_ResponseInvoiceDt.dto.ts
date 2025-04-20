@@ -30,13 +30,13 @@ export class sls_ResponseInvoiceDtDto {
   unitPrice?: number;
 
   @IsInt()
-  qty?: number;
+  qty: number;
 
   @IsDecimal()
-  sellingPrice?: number;
+  sellingPrice: number;
 
   @IsDecimal()
-  base_amount?: number;
+  base_amount: number;
 
   @IsDecimal()
   discount_amount?: number;
@@ -45,7 +45,7 @@ export class sls_ResponseInvoiceDtDto {
   tax_amount?: number;
 
   @IsDecimal()
-  delivery_amount?: number;
+  delivery_amount: number;
 
   @IsDecimal()
   total_amount?: number;

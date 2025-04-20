@@ -575,58 +575,68 @@ model sls_SalesPerson {
 }
 
 model sls_Customer {
-  id          String  @db.Char(20)
-  name        String? @db.VarChar(150)
-  creditTerms Int?    @db.SmallInt
-  company_id  String  @db.Char(5)
+  id            String          @db.Char(20)
+  name          String          @db.VarChar(150)
+  address1      String          @db.VarChar(250)
+  address2      String          @db.VarChar(250)
+  address3      String          @db.VarChar(250)
+  city          String          @db.VarChar(50)
+  district      String          @db.VarChar(50)
+  province      String          @db.VarChar(50)
+  creditTerms   Int             @db.SmallInt
+  company_id    String          @db.Char(5)
+  sls_InvoiceHd sls_InvoiceHd[]
 
   @@id([company_id, id], map: "pk_sls_Customer")
 }
 
 model sls_InvoiceDt {
-  po_id           String?       @db.Char(80)
-  ecatalog_id     String?       @db.Char(30)
-  so_id           String?       @db.Char(20)
-  spk_id          String?       @db.Char(20)
-  delivery_id     String        @db.Char(20)
-  trxType         String        @db.Char(3)
-  invoice_id      String        @db.Char(20)
-  line_no         Int           @db.SmallInt
-  acct_id         String        @db.Char(20)
-  description     String        @db.VarChar(250)
-  product_id      String        @db.Char(20)
-  productName     String        @db.VarChar(250)
-  uom_id          String        @db.Char(10)
-  unitPrice       Decimal       @db.Decimal(21, 4)
-  qty             Decimal       @db.Decimal(12, 4)
-  sellingPrice    Decimal       @db.Decimal(21, 4)
-  base_amount     Decimal       @db.Decimal(21, 4)
-  discount_amount Decimal       @db.Decimal(21, 4)
-  tax_amount      Decimal       @db.Decimal(21, 4)
-  delivery_amount Decimal       @db.Decimal(21, 4)
-  total_amount    Decimal       @db.Decimal(21, 4)
-  company_id      String        @db.Char(5)
-  createdBy       String?       @db.Char(10)
-  createdAt       DateTime?     @default(now())
-  updatedBy       String?       @db.Char(10)
+  po_id           String?        @db.Char(80)
+  ecatalog_id     String?        @db.Char(30)
+  so_id           String?        @db.Char(20)
+  spk_id          String?        @db.Char(20)
+  delivery_id     String         @db.Char(20)
+  trxType         String         @db.Char(3)
+  invoice_id      String         @db.Char(20)
+  line_no         Int            @db.SmallInt
+  acct_id         String         @db.Char(20)
+  description     String         @db.VarChar(250)
+  product_id      String         @db.Char(20)
+  productName     String         @db.VarChar(250)
+  uom_id          String         @db.Char(10)
+  brand_id        String         @db.Char(10)
+  brandName       String         @db.VarChar(50)
+  unitPrice       Decimal        @db.Decimal(21, 4)
+  qty             Decimal        @db.Decimal(12, 4)
+  sellingPrice    Decimal        @db.Decimal(21, 4)
+  base_amount     Decimal        @db.Decimal(21, 4)
+  discount_amount Decimal        @db.Decimal(21, 4)
+  tax_amount      Decimal        @db.Decimal(21, 4)
+  delivery_amount Decimal        @db.Decimal(21, 4)
+  total_amount    Decimal        @db.Decimal(21, 4)
+  company_id      String         @db.Char(5)
+  createdBy       String?        @db.Char(10)
+  createdAt       DateTime?      @default(now())
+  updatedBy       String?        @db.Char(10)
   updatedAt       DateTime?
-  branch_id       String?       @db.Char(10)
-  sls_InvoiceHd   sls_InvoiceHd @relation(fields: [company_id, invoice_id], references: [company_id, invoice_id], onDelete: NoAction)
+  branch_id       String?        @db.Char(10)
+  // // sls_InvoiceHd   sls_InvoiceHd @relation(fields: [company_id, invoice_id], references: [company_id, invoice_id], onDelete: NoAction)
+  sls_InvoiceHd   sls_InvoiceHd? @relation(fields: [company_id, invoice_id], references: [company_id, invoice_id])
 
   @@id([company_id, invoice_id, delivery_id, product_id, acct_id, line_no], map: "pk_sls_Invoicedt")
 }
 
 model sls_InvoiceHd {
   po_id                String?                     @db.Char(80)
-  ecatalog_id          String?                     @db.Char(20)
+  ecatalog_id          String?                     @db.Char(60)
   so_id                String?                     @db.Char(20)
   trxType              String?                     @db.Char(3)
-  invoiceType          InvoiceTypeEnum             @default(REGULER)
-  PoType               InvoieFromPOtypeEnum        @default(NON_ECATALOG)
+  invoiceType_id       Int                         @db.SmallInt
+  poType_id            Int                         @db.SmallInt
   invoice_id           String                      @db.Char(20)
   invoiceDate          DateTime                    @default(now())
-  ref_id               String?                     @db.Char(20)
-  tax_id               String?                     @db.Char(20)
+  ref_id               String?                     @db.Char(100)
+  tax_id               String?                     @db.Char(10)
   taxRate              Int?                        @db.SmallInt
   debtor_id            String                      @db.Char(20)
   debtorName           String?                     @db.VarChar(150)
@@ -651,18 +661,40 @@ model sls_InvoiceHd {
   updatedBy            String?                     @db.Char(10)
   updatedAt            DateTime?
   branch_id            String?                     @db.Char(10)
-  sls_InvoiceDt        sls_InvoiceDt[]
+  customer             sls_Customer                @relation(fields: [company_id, customer_id], references: [company_id, id], onDelete: NoAction)
   salesPerson          sls_SalesPerson             @relation(fields: [company_id, salesPerson_id], references: [company_id, id], onDelete: NoAction)
+
+  sls_InvoiceDt     sls_InvoiceDt[]
+  sls_InvoiceType   sls_InvoiceType?   @relation(fields: [company_id, invoiceType_id], references: [company_id, id])
+  sls_InvoicePoType sls_InvoicePoType? @relation(fields: [company_id, poType_id], references: [company_id, id])
 
   @@id([company_id, invoice_id], map: "pk_sls_InvoiceHd")
 }
 
-enum InvoiceTypeEnum {
-  REGULER     @map("0")
-  NON_REGULER @map("1")
+model sls_InvoiceType {
+  id            Int             @db.SmallInt
+  name          String          @db.VarChar(50)
+  company_id    String          @db.Char(5)
+  sls_InvoiceHd sls_InvoiceHd[]
+
+  @@id([company_id, id])
 }
 
-enum InvoieFromPOtypeEnum {
-  ECATALOG     @map("0")
-  NON_ECATALOG @map("1")
+model sls_InvoicePoType {
+  id         Int             @db.SmallInt
+  name       String          @db.VarChar(50)
+  company_id String          @db.Char(5)
+  invoiceHd  sls_InvoiceHd[]
+
+  @@id([company_id, id])
+}
+
+model sys_TaxScheme {
+  id               String @db.Char(10)
+  name             String @db.VarChar(50)
+  taxRate          Int    @db.SmallInt
+  includeOrExclude Int
+  company_id       String @db.Char(5)
+
+  @@id([company_id, id], map: "pk_sys_TaxScheme")
 }
