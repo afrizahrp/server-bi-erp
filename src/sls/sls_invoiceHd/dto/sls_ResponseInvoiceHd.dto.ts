@@ -99,4 +99,8 @@ export class sls_ResponseInvoiceHdDto {
 
   @IsEnum(InvoicePaidStatusEnum)
   paidStatus: InvoicePaidStatusEnum;
+
+  @IsString()
+  @IsOptional()
+  monthYear?: string;
 }
