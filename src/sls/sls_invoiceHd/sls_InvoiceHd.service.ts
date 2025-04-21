@@ -3,10 +3,14 @@ import { PrismaService } from 'src/prisma.service';
 import { sls_PaginationInvoiceHdDto } from './dto/sls_PaginationInvoiceHd.dto';
 import { sls_ResponseInvoiceHdDto } from './dto/sls_ResponseInvoiceHd.dto';
 import { sls_ResponseInvoiceHdWithDetailDto } from './dto/sls_ResponseInvoiceDt.dto';
-import { format, startOfMonth, endOfMonth, parse } from 'date-fns';
-import moment from 'moment';
 
 import { InvoicePaidStatusEnum } from '@prisma/client';
+
+import { format, isValid, startOfMonth, endOfMonth, parse } from 'date-fns';
+
+import { zonedTimeToUtc } from 'date-fns-tz';
+
+const zone = 'Asia/Jakarta';
 
 @Injectable()
 export class sls_InvoiceHdService {
@@ -31,7 +35,7 @@ export class sls_InvoiceHdService {
     } = paginationDto;
 
     // Limit default max 100
-    const safeLimit = Math.min(Number(limit) || 10, 100);
+    const safeLimit = Math.min(Number(limit) || 10, 1000);
     const offset = (Number(page) - 1) * safeLimit;
     // const allowedSearchFields = ['invoice_id', 'customerName']; // contoh
 
@@ -84,64 +88,85 @@ export class sls_InvoiceHdService {
       }
     }
 
+    const normalizeMonthYear = (input: string): string => {
+      const match = input.match(/^([a-zA-Z]{3})[-]?(\d{4})$/);
+      if (!match) return input;
+      const month =
+        match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+      const year = match[2];
+      return `${month}-${year}`;
+    };
+
     if (startPeriod) {
-      try {
-        console.log('startPeriod:', startPeriod); // Debug input
-        const formattedStartPeriod = startPeriod.replace(
-          /(\w{3})[-]?(\d{4})/,
-          '$1-$2', // Tambahkan tanda pemisah jika tidak ada
-        );
-        console.log('formattedStartPeriod:', formattedStartPeriod); // Debug hasil format
+      console.log('startPeriod:', startPeriod);
 
-        const parsedStart: Date = moment(
-          formattedStartPeriod,
-          'MMM-YYYY',
-          true,
-        ).toDate();
+      const formattedStartPeriod = normalizeMonthYear(startPeriod);
 
-        console.log('parsedStart:', parsedStart); // Debug hasil parsing
+      const parsedStartLocal = parse(
+        `${formattedStartPeriod}-01`,
+        'MMM-yyyy-dd',
+        new Date(),
+      );
+      console.log('parsedStartLocal:', parsedStartLocal.toString());
 
-        if (isNaN(parsedStart.getTime())) {
-          throw new Error(); // Jika parsing gagal
-        }
-
-        const startOfPeriod = startOfMonth(parsedStart);
-        whereCondition.invoiceDate.gte = startOfPeriod;
-      } catch (error) {
+      if (!isValid(parsedStartLocal)) {
         throw new Error(
           'Invalid startPeriod format. Use MMM-yyyy (e.g., Jan-2025)',
         );
       }
+
+      // Set zona waktu UTC langsung
+      const parsedStart = new Date(
+        Date.UTC(
+          parsedStartLocal.getFullYear(),
+          parsedStartLocal.getMonth(),
+          parsedStartLocal.getDate(),
+        ),
+      );
+
+      console.log('Start UTC:', parsedStart.toISOString());
+
+      // Update whereCondition menggunakan waktu UTC yang sudah disesuaikan
+      whereCondition.invoiceDate = {
+        ...(whereCondition.invoiceDate ?? {}),
+        gte: parsedStart,
+      };
     }
 
     if (endPeriod) {
-      try {
-        console.log('endPeriod:', endPeriod); // Debug input
-        const formattedEndPeriod = endPeriod.replace(
-          /(\w{3})[-]?(\d{4})/,
-          '$1-$2', // Tambahkan tanda pemisah jika tidak ada
-        );
-        console.log('formattedEndPeriod:', formattedEndPeriod); // Debug hasil format
+      console.log('endPeriod:', endPeriod);
 
-        const parsedEnd: Date = moment(
-          formattedEndPeriod,
-          'MMM-YYYY',
-          true,
-        ).toDate();
+      const formattedEndPeriod = normalizeMonthYear(endPeriod);
 
-        console.log('parsedEnd:', parsedEnd); // Debug hasil parsing
+      const parsedEndLocal = parse(
+        `${formattedEndPeriod}-01`,
+        'MMM-yyyy-dd',
+        new Date(),
+      );
+      console.log('parsedEndLocal:', parsedEndLocal.toString());
 
-        if (isNaN(parsedEnd.getTime())) {
-          throw new Error(); // Jika parsing gagal
-        }
-
-        const endOfPeriod = startOfMonth(parsedEnd);
-        whereCondition.invoiceDate.gte = endOfPeriod;
-      } catch (error) {
+      if (!isValid(parsedEndLocal)) {
         throw new Error(
-          'Invalid endPeriod format. Use MMM-yyyy (e.g., Jan-2025)',
+          'Invalid endPeriod format. Use MMM-yyyy (e.g., Feb-2025)',
         );
       }
+
+      // Set zona waktu UTC langsung dan hitung tanggal terakhir bulan
+      const parsedEnd = new Date(
+        Date.UTC(
+          parsedEndLocal.getFullYear(),
+          parsedEndLocal.getMonth() + 1, // Pindahkan ke bulan berikutnya
+          0, // 0 hari di bulan berikutnya berarti tanggal terakhir bulan sebelumnya
+        ),
+      );
+
+      console.log('End UTC:', parsedEnd.toISOString());
+
+      // Update whereCondition dengan tanggal terakhir bulan UTC
+      whereCondition.invoiceDate = {
+        ...(whereCondition.invoiceDate ?? {}),
+        lte: parsedEnd,
+      };
     }
 
     // Handle startDate and endDate (existing logic)
