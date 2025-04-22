@@ -23,15 +23,15 @@ export class sls_ResponseInvoiceHdDto {
 
   @IsOptional()
   @IsString()
-  invoiceTypeName?: string; // Tambahkan properti ini
+  invoiceType?: string; // Tambahkan properti ini
 
   @IsOptional()
   @IsString()
-  invoicePoTypeName?: string; // Tambahkan properti ini
+  poType?: string; // Tambahkan properti ini
 
   @IsString()
   @IsOptional()
-  eCatalog_id?: string; // Tambahkan properti ini
+  ecatalog_id?: string; // Tambahkan properti ini
 
   @IsString()
   invoice_id: string;

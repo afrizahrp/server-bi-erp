@@ -719,12 +719,19 @@ export class sls_InvoiceHdService {
 
   private mapToResponseDto(invoice: any): sls_ResponseInvoiceHdDto {
     return {
-      invoiceType_id: invoice.invoiceType,
-      invoiceTypeName: invoice.sls_InvoiceType?.name ?? undefined,
-      invoicePoTypeName: invoice.sls_InvoicePoType?.name ?? undefined,
       poType_id: invoice.poType,
-      eCatalog_id: invoice.eCatalog_id?.trim() ?? undefined,
-      po_id: invoice.po_id?.trim() ?? '',
+      invoiceType_id: invoice.invoiceType,
+      poType: invoice.po_id?.trim() // Periksa apakah po_id tidak kosong
+        ? (invoice.sls_InvoicePoType?.name ?? undefined)
+        : undefined, // Hanya tampilkan poType jika po_id tidak kosong
+      invoiceType: invoice.sls_InvoiceType?.name ?? undefined,
+      ecatalog_id: invoice.ecatalog_id?.trim() ?? undefined,
+      po_id:
+        invoice.poType_id === 1 && invoice.company_id !== 'BIS' // Tambahkan kondisi baru
+          ? (invoice.ecatalog_id?.trim() ?? '') // Jika poType_id = 1 dan company_id <> 'BIS', gunakan ecatalog_id
+          : invoice.company_id !== 'BIS'
+            ? (invoice.ecatalog_id?.trim() ?? '') // Jika company_id <> 'BIS', gunakan ecatalog_id
+            : (invoice.po_id?.trim() ?? ''), // Jika tidak, gunakan po_id
       invoice_id: invoice.invoice_id.trim(),
       invoiceDate: invoice.invoiceDate,
       ref_id: invoice.ref_id?.trim() ?? '',
@@ -751,7 +758,7 @@ export class sls_InvoiceHdService {
           ? format(invoice.invoiceDate, 'MMM yyyy', {
               useAdditionalWeekYearTokens: false,
             })
-          : 'N/A', // Penanganan untuk invoiceDate null atau tidak valid //
+          : 'N/A', // Penanganan untuk invoiceDate null atau tidak valid
     };
   }
 }
