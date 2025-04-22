@@ -3,220 +3,15 @@ import { PrismaService } from 'src/prisma.service';
 import { sls_PaginationInvoiceHdDto } from './dto/sls_PaginationInvoiceHd.dto';
 import { sls_ResponseInvoiceHdDto } from './dto/sls_ResponseInvoiceHd.dto';
 import { sls_ResponseInvoiceHdWithDetailDto } from './dto/sls_ResponseInvoiceDt.dto';
-
+import { getMonthYearPeriod } from 'src/utils/date/getMonthYearPeriod';
 import { InvoicePaidStatusEnum } from '@prisma/client';
-
-import { format, isValid, startOfMonth, endOfMonth, parse } from 'date-fns';
-
-import { zonedTimeToUtc } from 'date-fns-tz';
+import { format, isValid } from 'date-fns';
 
 const zone = 'Asia/Jakarta';
 
 @Injectable()
 export class sls_InvoiceHdService {
   constructor(private readonly prisma: PrismaService) {}
-
-  // async findAll(
-  //   company_id: string,
-  //   module_id: string,
-  //   paginationDto: sls_PaginationInvoiceHdDto,
-  // ): Promise<{ data: sls_ResponseInvoiceHdDto[]; totalRecords: number }> {
-  //   const {
-  //     page = 1,
-  //     limit = 20,
-  //     status,
-  //     salesPersonName,
-  //     startPeriod,
-  //     endPeriod,
-  //     searchBy,
-  //     searchTerm,
-  //     // startDate,
-  //     // endDate,
-  //   } = paginationDto;
-
-  //   // Limit default max 100
-  //   const safeLimit = Math.min(Number(limit) || 10, 1000);
-  //   const offset = (Number(page) - 1) * safeLimit;
-  //   // const allowedSearchFields = ['invoice_id', 'customerName']; // contoh
-
-  //   const whereCondition: Record<string, any> = {
-  //     company_id,
-  //   };
-
-  //   whereCondition.total_amount = {
-  //     gt: 10000, // 'gt' berarti 'greater than'
-  //   };
-
-  //   if (
-  //     searchBy &&
-  //     typeof searchTerm === 'string' &&
-  //     searchTerm.trim() !== ''
-  //   ) {
-  //     const searchWords = searchTerm.trim().split(/\s+/);
-
-  //     whereCondition.AND = searchWords.map((word) => ({
-  //       [searchBy]: {
-  //         contains: word,
-  //         mode: 'insensitive',
-  //       },
-  //     }));
-  //   }
-
-  //   if (status) {
-  //     whereCondition.paidStatus = {
-  //       in: status.split(','),
-  //     };
-  //   }
-
-  //   if (typeof salesPersonName === 'string' && salesPersonName.trim() !== '') {
-  //     const parsedSalesPerson = salesPersonName
-  //       .split(',')
-  //       .map((name) => name.trim())
-  //       .filter((name) => name !== '');
-
-  //     if (parsedSalesPerson.length > 0) {
-  //       whereCondition.AND = whereCondition.AND || [];
-
-  //       whereCondition.AND.push({
-  //         OR: parsedSalesPerson.map((name) => ({
-  //           salesPersonName: {
-  //             contains: name,
-  //             mode: 'insensitive',
-  //           },
-  //         })),
-  //       });
-  //     }
-  //   }
-
-  //   const normalizeMonthYear = (input: string): string => {
-  //     const match = input.match(/^([a-zA-Z]{3})[-]?(\d{4})$/);
-  //     if (!match) return input;
-  //     const month =
-  //       match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
-  //     const year = match[2];
-  //     return `${month}-${year}`;
-  //   };
-
-  //   if (startPeriod) {
-  //     console.log('startPeriod:', startPeriod);
-
-  //     const formattedStartPeriod = normalizeMonthYear(startPeriod);
-
-  //     const parsedStartLocal = parse(
-  //       `${formattedStartPeriod}-01`,
-  //       'MMM-yyyy-dd',
-  //       new Date(),
-  //     );
-  //     console.log('parsedStartLocal:', parsedStartLocal.toString());
-
-  //     if (!isValid(parsedStartLocal)) {
-  //       throw new Error(
-  //         'Invalid startPeriod format. Use MMM-yyyy (e.g., Jan-2025)',
-  //       );
-  //     }
-
-  //     // Set zona waktu UTC langsung
-  //     const parsedStart = new Date(
-  //       Date.UTC(
-  //         parsedStartLocal.getFullYear(),
-  //         parsedStartLocal.getMonth(),
-  //         parsedStartLocal.getDate(),
-  //       ),
-  //     );
-
-  //     console.log('Start UTC:', parsedStart.toISOString());
-
-  //     // Update whereCondition menggunakan waktu UTC yang sudah disesuaikan
-  //     whereCondition.invoiceDate = {
-  //       ...(whereCondition.invoiceDate ?? {}),
-  //       gte: parsedStart,
-  //     };
-  //   }
-
-  //   if (endPeriod) {
-  //     console.log('endPeriod:', endPeriod);
-
-  //     const formattedEndPeriod = normalizeMonthYear(endPeriod);
-
-  //     const parsedEndLocal = parse(
-  //       `${formattedEndPeriod}-01`,
-  //       'MMM-yyyy-dd',
-  //       new Date(),
-  //     );
-  //     console.log('parsedEndLocal:', parsedEndLocal.toString());
-
-  //     if (!isValid(parsedEndLocal)) {
-  //       throw new Error(
-  //         'Invalid endPeriod format. Use MMM-yyyy (e.g., Feb-2025)',
-  //       );
-  //     }
-
-  //     // Set zona waktu UTC langsung dan hitung tanggal terakhir bulan
-  //     const parsedEnd = new Date(
-  //       Date.UTC(
-  //         parsedEndLocal.getFullYear(),
-  //         parsedEndLocal.getMonth() + 1, // Pindahkan ke bulan berikutnya
-  //         0, // 0 hari di bulan berikutnya berarti tanggal terakhir bulan sebelumnya
-  //       ),
-  //     );
-
-  //     console.log('End UTC:', parsedEnd.toISOString());
-
-  //     // Update whereCondition dengan tanggal terakhir bulan UTC
-  //     whereCondition.invoiceDate = {
-  //       ...(whereCondition.invoiceDate ?? {}),
-  //       lte: parsedEnd,
-  //     };
-  //   }
-
-  //   // Handle startDate and endDate (existing logic)
-  //   // if (startDate || endDate) {
-  //   //   whereCondition.invoiceDate = whereCondition.invoiceDate || {};
-
-  //   //   if (startDate) {
-  //   //     whereCondition.invoiceDate.gte = new Date(startDate);
-  //   //   }
-
-  //   //   if (endDate) {
-  //   //     whereCondition.invoiceDate.lte = new Date(endDate);
-  //   //   }
-  //   // }
-
-  //   // if (startDate || endDate) {
-  //   //   whereCondition.invoiceDate = {};
-
-  //   //   if (startDate) {
-  //   //     whereCondition.invoiceDate.gte = new Date(startDate);
-  //   //   }
-
-  //   //   if (endDate) {
-  //   //     whereCondition.invoiceDate.lte = new Date(endDate);
-  //   //   }
-  //   // }
-  //   const orderField = paginationDto.orderBy ?? 'invoiceDate';
-  //   const orderDirection = paginationDto.orderDir === 'asc' ? 'asc' : 'desc';
-  //   const [totalRecords, invoices] = await Promise.all([
-  //     this.prisma.sls_InvoiceHd.count({ where: whereCondition }),
-  //     this.prisma.sls_InvoiceHd.findMany({
-  //       where: whereCondition,
-  //       skip: offset,
-  //       take: safeLimit,
-  //       include: {
-  //         sls_InvoiceType: true,
-  //         sls_InvoicePoType: true,
-  //       },
-  //       orderBy: {
-  //         [orderField]: orderDirection,
-  //       },
-  //     }),
-  //   ]);
-
-  //   const formattedInvoices = invoices.map((invoice) =>
-  //     this.mapToResponseDto(invoice),
-  //   );
-
-  //   return { data: formattedInvoices, totalRecords };
-  // }
 
   async findAll(
     company_id: string,
@@ -226,26 +21,24 @@ export class sls_InvoiceHdService {
     const {
       page = 1,
       limit = 20,
-      status,
-      salesPersonName,
       startPeriod,
       endPeriod,
+      status,
+      poType,
+      salesPersonName,
       searchBy,
       searchTerm,
     } = paginationDto;
 
-    // Limit default max 1000
     const safeLimit = Math.min(Number(limit) || 10, 1000);
     const offset = (Number(page) - 1) * safeLimit;
 
     const whereCondition: Record<string, any> = {
       company_id,
-      total_amount: {
-        gt: 10000,
-      },
+      total_amount: { gt: 10000 },
     };
 
-    // Pencarian berdasarkan searchBy dan searchTerm
+    // Search
     if (
       searchBy &&
       typeof searchTerm === 'string' &&
@@ -260,19 +53,30 @@ export class sls_InvoiceHdService {
       }));
     }
 
-    // Filter berdasarkan status
+    // poType filter
+    if (poType && poType.length > 0) {
+      whereCondition.sls_InvoicePoType = {
+        name: {
+          contains: poType,
+          mode: 'insensitive',
+        },
+      };
+    }
+
+    // Status filter
     if (status) {
       whereCondition.paidStatus = {
         in: status.split(','),
       };
     }
 
-    // Filter berdasarkan salesPersonName
+    // Sales person filter
     if (typeof salesPersonName === 'string' && salesPersonName.trim() !== '') {
       const parsedSalesPerson = salesPersonName
         .split(',')
         .map((name) => name.trim())
         .filter((name) => name !== '');
+
       if (parsedSalesPerson.length > 0) {
         whereCondition.AND = whereCondition.AND || [];
         whereCondition.AND.push({
@@ -286,99 +90,19 @@ export class sls_InvoiceHdService {
       }
     }
 
-    // Normalisasi format bulan-tahun
-    const normalizeMonthYear = (input: string): string => {
-      const match = input.match(/^([a-zA-Z]{3})[- ]?(\d{4})$/);
-      if (!match) return input;
-      const month =
-        match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
-      const year = match[2];
-      return `${month}-${year}`;
-    };
-
-    // Validasi rentang startPeriod dan endPeriod
-    if (startPeriod && endPeriod) {
-      const formattedStartPeriod = normalizeMonthYear(startPeriod);
-      const formattedEndPeriod = normalizeMonthYear(endPeriod);
-      const parsedStart = parse(
-        `${formattedStartPeriod}-01`,
-        'MMM-yyyy-dd',
-        new Date(),
-      );
-      const parsedEnd = parse(
-        `${formattedEndPeriod}-01`,
-        'MMM-yyyy-dd',
-        new Date(),
-      );
-      if (!isValid(parsedStart) || !isValid(parsedEnd)) {
-        throw new Error('Invalid period format. Use MMM-yyyy (e.g., Jan-2023)');
-      }
-      if (parsedEnd < parsedStart) {
-        throw new Error('endPeriod cannot be earlier than startPeriod');
-      }
-    }
-
-    // Filter startPeriod
-    if (startPeriod) {
-      console.log('startPeriod:', startPeriod);
-      const formattedStartPeriod = normalizeMonthYear(startPeriod);
-      const parsedStartLocal = parse(
-        `${formattedStartPeriod}-01`,
-        'MMM-yyyy-dd',
-        new Date(),
-      );
-      console.log('parsedStartLocal:', parsedStartLocal.toString());
-      if (!isValid(parsedStartLocal)) {
-        throw new Error(
-          'Invalid startPeriod format. Use MMM-yyyy (e.g., Jan-2023)',
-        );
-      }
-      const parsedStart = new Date(
-        Date.UTC(
-          parsedStartLocal.getFullYear(),
-          parsedStartLocal.getMonth(),
-          1,
-        ),
-      );
-      console.log('Start UTC:', parsedStart.toISOString());
+    // Gunakan helper untuk invoiceDate
+    const { gte, lte } = getMonthYearPeriod(startPeriod, endPeriod);
+    if (gte || lte) {
       whereCondition.invoiceDate = {
-        ...(whereCondition.invoiceDate ?? {}),
-        gte: parsedStart,
+        ...(gte && { gte }),
+        ...(lte && { lte }),
       };
     }
 
-    // Filter endPeriod
-    if (endPeriod) {
-      console.log('endPeriod:', endPeriod);
-      const formattedEndPeriod = normalizeMonthYear(endPeriod);
-      const parsedEndLocal = parse(
-        `${formattedEndPeriod}-01`,
-        'MMM-yyyy-dd',
-        new Date(),
-      );
-      console.log('parsedEndLocal:', parsedEndLocal.toString());
-      if (!isValid(parsedEndLocal)) {
-        throw new Error(
-          'Invalid endPeriod format. Use MMM-yyyy (e.g., Jan-2023)',
-        );
-      }
-      const parsedEnd = new Date(
-        Date.UTC(
-          parsedEndLocal.getFullYear(),
-          parsedEndLocal.getMonth() + 1,
-          0,
-        ),
-      );
-      console.log('End UTC:', parsedEnd.toISOString());
-      whereCondition.invoiceDate = {
-        ...(whereCondition.invoiceDate ?? {}),
-        lte: parsedEnd,
-      };
-    }
-
-    // Eksekusi kueri
+    // Query execution
     const orderField = paginationDto.orderBy ?? 'invoiceDate';
     const orderDirection = paginationDto.orderDir === 'asc' ? 'asc' : 'desc';
+
     const [totalRecords, invoices] = await Promise.all([
       this.prisma.sls_InvoiceHd.count({ where: whereCondition }),
       this.prisma.sls_InvoiceHd.findMany({
@@ -395,7 +119,6 @@ export class sls_InvoiceHdService {
       }),
     ]);
 
-    // Format respons
     const formattedInvoices = invoices.map((invoice) =>
       this.mapToResponseDto(invoice),
     );
@@ -442,32 +165,12 @@ export class sls_InvoiceHdService {
     };
   }
 
-  async filterInvoicesBySalesPerson(
+  async filterBySalesPerson(
     company_id: string,
     module_id: string,
-    salesPersonName: string,
-  ): Promise<sls_ResponseInvoiceHdDto[]> {
-    const whereCondition: any = { company_id };
-
-    if (salesPersonName) {
-      whereCondition.salesPersonName = {
-        contains: salesPersonName,
-        mode: 'insensitive',
-      };
-    }
-
-    const invoices = await this.prisma.sls_InvoiceHd.findMany({
-      where: whereCondition,
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return invoices.map((invoice) => this.mapToResponseDto(invoice));
-  }
-
-  async filterAllInvoicesBySalesPersonName(
-    company_id: string,
-    module_id: string,
-    // customerName?: string,
+    startPeriod?: string,
+    endPeriod?: string,
+    poType?: string[],
     paidStatus?: string,
   ): Promise<{ id: string; name: string; count: number }[]> {
     const whereCondition: any = { company_id };
@@ -476,16 +179,26 @@ export class sls_InvoiceHdService {
       gt: 10000,
     };
 
-    // if (customerName) {
-    //   whereCondition.customerName = {
-    //     contains: customerName,
-    //     mode: 'insensitive',
-    //   };
-    // }
+    if (poType && poType.length > 0) {
+      whereCondition.sls_InvoicePoType = {
+        name: {
+          in: poType,
+          mode: 'insensitive',
+        },
+      };
+    }
 
     if (paidStatus) {
       whereCondition.paidStatus = {
         in: paidStatus.split(','),
+      };
+    }
+
+    const { gte, lte } = getMonthYearPeriod(startPeriod, endPeriod);
+    if (gte || lte) {
+      whereCondition.invoiceDate = {
+        ...(gte && { gte }),
+        ...(lte && { lte }),
       };
     }
 
@@ -532,33 +245,56 @@ export class sls_InvoiceHdService {
     return salesPersonList.sort((a, b) => b.count - a.count);
   }
 
-  async filterAllPaidInvoiceStatus(
+  async filterByPaidStatus(
     company_id: string,
     module_id: string,
+    startPeriod?: string,
+    endPeriod?: string,
+    poType?: string[],
     salesPersonName?: string[],
   ): Promise<{ id: string; name: string; count: number }[]> {
-    const whereCondition: any = { company_id };
-
-    whereCondition.total_amount = {
-      gt: 10000,
+    const whereCondition: any = {
+      company_id,
+      total_amount: { gt: 10000 },
+      paidStatus: {
+        in: [
+          InvoicePaidStatusEnum.UNPAID,
+          InvoicePaidStatusEnum.PAID,
+          InvoicePaidStatusEnum.RETURNED,
+        ],
+      },
     };
 
-    if (salesPersonName) {
-      whereCondition.salesPerson = {
+    // poType filter
+    if (poType && poType.length > 0) {
+      whereCondition.sls_InvoicePoType = {
         name: {
-          contains: salesPersonName,
+          in: poType,
           mode: 'insensitive',
         },
       };
     }
 
-    whereCondition.paidStatus = {
-      in: [
-        InvoicePaidStatusEnum.UNPAID,
-        InvoicePaidStatusEnum.PAID,
-        InvoicePaidStatusEnum.RETURNED,
-      ],
-    };
+    // Sales person filter
+    if (salesPersonName && salesPersonName.length > 0) {
+      whereCondition.OR = salesPersonName.map((name) => ({
+        salesPerson: {
+          name: {
+            contains: name,
+            mode: 'insensitive',
+          },
+        },
+      }));
+    }
+
+    // Gunakan helper untuk invoiceDate
+    const { gte, lte } = getMonthYearPeriod(startPeriod, endPeriod);
+    if (gte || lte) {
+      whereCondition.invoiceDate = {
+        ...(gte && { gte }),
+        ...(lte && { lte }),
+      };
+    }
 
     const statuses = await this.prisma.sls_InvoiceHd.groupBy({
       by: ['paidStatus'],
@@ -574,24 +310,23 @@ export class sls_InvoiceHdService {
       UNPAID: 0,
       PAID: 1,
       RETURNED: 4,
-      OTHER: 3, // fallback
+      OTHER: 3,
     };
 
     const sortedStatuses = statuses.sort((a, b) => {
       const aPriority = statusPriority[a.paidStatus] ?? statusPriority.OTHER;
       const bPriority = statusPriority[b.paidStatus] ?? statusPriority.OTHER;
-
       return aPriority - bPriority;
     });
 
     return sortedStatuses.map((s) => ({
       id: s.paidStatus,
-      name: this.getInvoiceStatusName(s.paidStatus), // Gunakan fungsi untuk mendapatkan nama
+      name: this.getPaidStatusName(s.paidStatus),
       count: s._count._all,
     }));
   }
 
-  private getInvoiceStatusName(paidStatus: string): string {
+  private getPaidStatusName(paidStatus: string): string {
     const paidStatusMap: Record<string, string> = {
       UNPAID: 'UNPAID',
       PAID: 'PAID',
@@ -601,10 +336,13 @@ export class sls_InvoiceHdService {
     return paidStatusMap[paidStatus] || 'Unknown';
   }
 
-  async filterAllInvoicesByInvoiceTypeName(
+  async filterByPoType(
     company_id: string,
     module_id: string,
-    paidStatus?: string, // Tambahkan parameter untuk filter paidStatus
+    startPeriod?: string,
+    endPeriod?: string,
+    paidStatus?: string | string[], // Accepts either a string or an array of strings
+    salesPersonName?: string[],
   ): Promise<{ id: string; name: string; count: number }[]> {
     const whereCondition: any = { company_id };
 
@@ -613,78 +351,38 @@ export class sls_InvoiceHdService {
     };
 
     if (paidStatus) {
-      whereCondition.paidStatus = {
-        in: paidStatus.split(','), // Ubah string "PAID,UNPAID" menjadi array ["PAID", "UNPAID"]
-      };
+      // Cek apakah paidStatus berupa string, jika iya, pisahkan dengan split
+      whereCondition.paidStatus = Array.isArray(paidStatus)
+        ? { in: paidStatus } // Jika sudah array, langsung pakai
+        : { in: paidStatus.split(',') }; // Jika string, split jadi array
     }
 
-    const invoiceTypes = await this.prisma.sls_InvoiceHd.groupBy({
-      by: ['invoiceType_id'],
-      where: whereCondition,
-      _count: { _all: true },
-    });
-
-    if (!invoiceTypes || invoiceTypes.length === 0) {
-      throw new NotFoundException(
-        `No sales persons found for the given criteria`,
-      );
-    }
-
-    const invoiceTypeDetails = await this.prisma.sls_InvoiceType.findMany({
-      where: {
-        id: {
-          in: invoiceTypes
-            .map((s) => s.invoiceType_id)
-            .filter((id) => id !== null),
+    // Sales person filter
+    if (salesPersonName && salesPersonName.length > 0) {
+      whereCondition.salesPerson = {
+        name: {
+          contains: salesPersonName.join(','),
+          mode: 'insensitive',
         },
-      },
-      select: {
-        id: true,
-        name: true,
-      },
-    });
-
-    const invoiceTypeNameList = invoiceTypes
-      .map((s) => {
-        const detail = invoiceTypeDetails.find(
-          (sp) => sp.id === s.invoiceType_id,
-        );
-        return {
-          id: detail?.name?.trim() || 'Unknown',
-          name: detail?.name?.trim() || 'Unknown',
-          count: s._count._all, // Langsung return number
-        };
-      })
-      .filter((s) => s.name !== 'Unknown'); // Hapus data dengan name "Unknown"
-
-    // Urutkan berdasarkan count secara descending
-    return invoiceTypeNameList.sort((a, b) => b.count - a.count);
-  }
-
-  async filterAllInvoicesByPoInvoiceTypeName(
-    company_id: string,
-    module_id: string,
-    paidStatus?: string, // Tambahkan parameter untuk filter paidStatus
-  ): Promise<{ id: string; name: string; count: number }[]> {
-    const whereCondition: any = { company_id };
-
-    whereCondition.total_amount = {
-      gt: 10000, // 'gt' berarti 'greater than'
-    };
-
-    if (paidStatus) {
-      whereCondition.paidStatus = {
-        in: paidStatus.split(','), // Ubah string "PAID,UNPAID" menjadi array ["PAID", "UNPAID"]
       };
     }
 
-    const invoiceTypes = await this.prisma.sls_InvoiceHd.groupBy({
+    // Gunakan helper untuk invoiceDate
+    const { gte, lte } = getMonthYearPeriod(startPeriod, endPeriod);
+    if (gte || lte) {
+      whereCondition.invoiceDate = {
+        ...(gte && { gte }),
+        ...(lte && { lte }),
+      };
+    }
+
+    const poTypes = await this.prisma.sls_InvoiceHd.groupBy({
       by: ['poType_id'],
       where: whereCondition,
       _count: { _all: true },
     });
 
-    if (!invoiceTypes || invoiceTypes.length === 0) {
+    if (!poTypes || poTypes.length === 0) {
       throw new NotFoundException(
         `No sales persons found for the given criteria`,
       );
@@ -693,7 +391,7 @@ export class sls_InvoiceHdService {
     const invoicePoTypes = await this.prisma.sls_InvoicePoType.findMany({
       where: {
         id: {
-          in: invoiceTypes.map((s) => s.poType_id).filter((id) => id !== null),
+          in: poTypes.map((s) => s.poType_id).filter((id) => id !== null),
         },
       },
       select: {
@@ -702,7 +400,7 @@ export class sls_InvoiceHdService {
       },
     });
 
-    const invoicePoTypeNameList = invoiceTypes
+    const poTypeList = poTypes
       .map((s) => {
         const detail = invoicePoTypes.find((sp) => sp.id === s.poType_id);
         return {
@@ -714,7 +412,7 @@ export class sls_InvoiceHdService {
       .filter((s) => s.name !== 'Unknown'); // Hapus data dengan name "Unknown"
 
     // Urutkan berdasarkan count secara descending
-    return invoicePoTypeNameList.sort((a, b) => b.count - a.count);
+    return poTypeList.sort((a, b) => b.count - a.count);
   }
 
   private mapToResponseDto(invoice: any): sls_ResponseInvoiceHdDto {
