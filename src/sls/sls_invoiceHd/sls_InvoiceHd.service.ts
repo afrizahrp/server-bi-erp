@@ -3,8 +3,9 @@ import { PrismaService } from 'src/prisma.service';
 import { sls_PaginationInvoiceHdDto } from './dto/sls_PaginationInvoiceHd.dto';
 import { sls_ResponseInvoiceHdDto } from './dto/sls_ResponseInvoiceHd.dto';
 import { sls_ResponseInvoiceHdWithDetailDto } from './dto/sls_ResponseInvoiceDt.dto';
-import { getMonthYearPeriod } from 'src/utils/date/getMonthYearPeriod';
 import { slsInvoiceHdWherecondition } from '../helper/sls_InvoiceHd_wherecondition';
+import { buildSearchCondition } from 'src/utils/query-operator/buildSearchConditon';
+import { sortFieldBy } from 'src/utils/query-operator/sortFieldBy';
 
 const zone = 'Asia/Jakarta';
 
@@ -17,17 +18,25 @@ export class sls_InvoiceHdService {
     module_id: string,
     paginationDto: sls_PaginationInvoiceHdDto,
   ): Promise<{ data: sls_ResponseInvoiceHdDto[]; totalRecords: number }> {
-    const {
-      page = 1,
-      limit = 20,
-      startPeriod,
-      endPeriod,
-      paidStatus,
-      poType,
-      salesPersonName,
-      searchBy,
-      searchTerm,
-    } = paginationDto;
+    const { page = 1, limit = 20, searchBy, searchTerm } = paginationDto;
+
+    const allowedSortFields = [
+      'invoice_id',
+      'invoiceDate',
+      'customerName',
+      'po_id',
+      'poType_id',
+      'salesPersonName',
+      'total_amount',
+      'paidStatus_id',
+    ];
+
+    const searchCondition = buildSearchCondition(searchBy, searchTerm);
+    const orderByCondition = sortFieldBy(
+      allowedSortFields,
+      paginationDto.orderBy,
+      paginationDto.orderDir,
+    );
 
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
@@ -44,19 +53,29 @@ export class sls_InvoiceHdService {
       },
     );
 
+    const searchConditions = buildSearchCondition(searchBy, searchTerm);
+    if (searchConditions) {
+      if (whereCondition.AND) {
+        whereCondition.AND = [...whereCondition.AND, ...searchConditions];
+      } else {
+        whereCondition.AND = searchConditions;
+      }
+    }
+
+    // // Menambahkan pencarian jika ada searchBy dan searchTerm
+
     const [totalRecords, invoices] = await Promise.all([
       this.prisma.sls_InvoiceHd.count({ where: whereCondition }),
       this.prisma.sls_InvoiceHd.findMany({
         where: whereCondition,
+        orderBy: orderByCondition,
         skip: offset,
         take: safeLimit,
         include: {
           sys_PaidStatus: true,
           sls_InvoicePoType: true,
           salesPerson: true,
-        },
-        orderBy: {
-          invoiceDate: 'desc',
+          customer: true,
         },
       }),
     ]);
@@ -79,13 +98,13 @@ export class sls_InvoiceHdService {
     const {
       page = 1,
       limit = 20,
-      startPeriod,
-      endPeriod,
-      paidStatus,
-      poType,
-      salesPersonName,
-      searchBy,
-      searchTerm,
+      // startPeriod,
+      // endPeriod,
+      // paidStatus,
+      // poType,
+      // salesPersonName,
+      // searchBy,
+      // searchTerm,
     } = paginationDto;
 
     const safeLimit = Math.min(Number(limit) || 10, 100);
@@ -103,8 +122,6 @@ export class sls_InvoiceHdService {
       },
     );
 
-    console.log('whereCondition:', JSON.stringify(whereCondition, null, 2));
-
     const paidStatusData = await this.prisma.sls_InvoiceHd.groupBy({
       by: ['paidStatus_id'],
       where: whereCondition,
@@ -113,10 +130,10 @@ export class sls_InvoiceHdService {
       },
     });
 
-    const paidStatusIds = paidStatusData
-      .map((item) => item.paidStatus_id)
-      .filter(Boolean);
+    // Ambil semua paidStatus_id yang digunakan
+    const paidStatusIds = paidStatusData.map((item) => item.paidStatus_id);
 
+    // Ambil nama paid status dari table master
     const paidStatusDetails = await this.prisma.sys_PaidStatus.findMany({
       where: {
         id: { in: paidStatusIds },
@@ -127,15 +144,19 @@ export class sls_InvoiceHdService {
       },
     });
 
+    // Buat mapping cepat dari id -> name
+    const paidStatusMap = new Map(
+      paidStatusDetails.map((ps) => [ps.id, ps.name.trim()]),
+    );
+
     const formattedData = paidStatusData
       .map((item) => {
-        const details = paidStatusDetails.find(
-          (ps) => ps.id === item.paidStatus_id,
-        );
-        const paidStatusName = details?.name?.trim() || 'UNKNOWN'; // Gunakan name sebagai id dan name
+        const name =
+          paidStatusMap.get(item.paidStatus_id) ||
+          item.paidStatus_id?.toString();
         return {
-          id: paidStatusName, // Sama dengan name untuk FE
-          name: paidStatusName,
+          id: name.toString(),
+          name: name.toString(),
           count: item._count._all,
         };
       })
@@ -158,13 +179,13 @@ export class sls_InvoiceHdService {
     const {
       page = 1,
       limit = 20,
-      startPeriod,
-      endPeriod,
-      paidStatus,
-      poType,
-      salesPersonName,
-      searchBy,
-      searchTerm,
+      // startPeriod,
+      // endPeriod,
+      // paidStatus,
+      // poType,
+      // salesPersonName,
+      // searchBy,
+      // searchTerm,
     } = paginationDto;
 
     const safeLimit = Math.min(Number(limit) || 10, 100);
@@ -219,35 +240,30 @@ export class sls_InvoiceHdService {
     const {
       page = 1,
       limit = 20,
-      startPeriod,
-      endPeriod,
-      paidStatus,
-      poType,
-      salesPersonName,
-      searchBy,
-      searchTerm,
+      // startPeriod,
+      // endPeriod,
+      // paidStatus,
+      // poType,
+      // salesPersonName,
+      // searchBy,
+      // searchTerm,
     } = paginationDto;
 
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
 
-    // Gunakan slsInvoiceHdWherecondition
     const whereCondition = slsInvoiceHdWherecondition(
       company_id,
       paginationDto,
       {
         requiredFilters: {
-          paidStatus: false,
+          paidStatus: true,
           poType: false,
           salesPersonName: true,
         },
       },
     );
 
-    // Logging untuk debug
-    console.log('whereCondition:', JSON.stringify(whereCondition, null, 2));
-
-    // Query untuk agregasi berdasarkan poType_id
     const poTypeData = await this.prisma.sls_InvoiceHd.groupBy({
       by: ['poType_id'],
       where: whereCondition,
@@ -256,9 +272,10 @@ export class sls_InvoiceHdService {
       },
     });
 
-    // Ambil detail poType berdasarkan poType_id
-    const poTypeIds = poTypeData.map((item) => item.poType_id).filter(Boolean);
+    // Ambil semua poType_id yang digunakan
+    const poTypeIds = poTypeData.map((item) => item.poType_id);
 
+    // Ambil nama poType dari table master
     const poTypeDetails = await this.prisma.sls_InvoicePoType.findMany({
       where: {
         id: { in: poTypeIds },
@@ -269,21 +286,23 @@ export class sls_InvoiceHdService {
       },
     });
 
-    // Format hasil, urutkan, dan terapkan paginasi
+    // Mapping relasi id -> name
+    const poTypeMap = new Map(
+      poTypeDetails.map((pt) => [pt.id, pt.name.trim()]),
+    );
+
     const formattedData = poTypeData
       .map((item) => {
-        const details = poTypeDetails.find((pt) => pt.id === item.poType_id);
-        const poTypeName = details?.name?.trim() || 'UNKNOWN'; // Gunakan name sebagai id dan name
+        const name = poTypeMap.get(item.poType_id) || item.poType_id; // fallback ke ID kalau aneh
         return {
-          id: poTypeName, // Sama dengan name untuk FE
-          name: poTypeName,
+          id: name.toString(),
+          name: name.toString(),
           count: item._count._all,
         };
       })
       .sort((a, b) => b.count - a.count)
       .slice(offset, offset + safeLimit);
 
-    // Hitung total records
     const totalRecords = poTypeData.length;
 
     return { data: formattedData, totalRecords };

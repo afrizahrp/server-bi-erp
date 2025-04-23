@@ -11,15 +11,8 @@ export function slsInvoiceHdWherecondition(
     additionalConditions?: Record<string, any>;
   } = {},
 ): Record<string, any> {
-  const {
-    paidStatus,
-    poType,
-    salesPersonName,
-    startPeriod,
-    endPeriod,
-    searchBy,
-    searchTerm,
-  } = paginationDto;
+  const { paidStatus, poType, salesPersonName, startPeriod, endPeriod } =
+    paginationDto;
   const { requiredFilters = {}, additionalConditions = {} } = options;
 
   const whereCondition: Record<string, any> = {
@@ -68,15 +61,15 @@ export function slsInvoiceHdWherecondition(
   }
 
   // Search
-  if (searchBy && typeof searchTerm === 'string' && searchTerm.trim() !== '') {
-    const searchWords = searchTerm.trim().split(/\s+/);
-    whereCondition.AND = searchWords.map((word) => ({
-      [searchBy]: {
-        contains: word,
-        mode: 'insensitive',
-      },
-    }));
-  }
+  // if (searchBy && typeof searchTerm === 'string' && searchTerm.trim() !== '') {
+  //   const searchWords = searchTerm.trim().split(/\s+/);
+  //   whereCondition.AND = searchWords.map((word) => ({
+  //     [searchBy]: {
+  //       contains: word,
+  //       mode: 'insensitive',
+  //     },
+  //   }));
+  // }
 
   return whereCondition;
 }
