@@ -21,7 +21,7 @@ export class sls_InvoiceHdService {
       limit = 20,
       startPeriod,
       endPeriod,
-      status,
+      paidStatus,
       poType,
       salesPersonName,
       searchBy,
@@ -36,6 +36,70 @@ export class sls_InvoiceHdService {
       total_amount: { gt: 10000 },
     };
 
+    // Filter by paidStatus
+    if (paidStatus) {
+      // Tentukan nama kolom yang benar berdasarkan skema database
+      const paidStatusColumn = 'name'; // Ganti dengan 'paidStatus' jika kolomnya bernama paidStatus
+
+      if (Array.isArray(paidStatus)) {
+        // Jika paidStatus adalah array
+        if (paidStatus.length > 0) {
+          whereCondition.sys_PaidStatus = {
+            [paidStatusColumn]: {
+              in: paidStatus,
+              mode: 'insensitive',
+            },
+          };
+        }
+      } else {
+        // Jika paidStatus adalah string tunggal
+        whereCondition.sys_PaidStatus = {
+          [paidStatusColumn]: {
+            equals: paidStatus,
+            mode: 'insensitive',
+          },
+        };
+      }
+    }
+
+    // Filter by poType
+    if (poType) {
+      const poTypeColumn = 'poType'; // Sesuaikan dengan nama kolom di sls_InvoicePoType
+      if (Array.isArray(poType)) {
+        if (poType.length > 0) {
+          whereCondition.sls_InvoicePoType = {
+            [poTypeColumn]: {
+              in: poType,
+              mode: 'insensitive',
+            },
+          };
+        }
+      } else {
+        whereCondition.sls_InvoicePoType = {
+          [poTypeColumn]: {
+            equals: poType,
+            mode: 'insensitive',
+          },
+        };
+      }
+    }
+
+    // Filter by salesPersonName
+    if (salesPersonName) {
+      if (Array.isArray(salesPersonName)) {
+        if (salesPersonName.length > 0) {
+          whereCondition.salesPersonName = {
+            in: salesPersonName,
+            mode: 'insensitive',
+          };
+        }
+      } else {
+        whereCondition.salesPersonName = {
+          contains: salesPersonName,
+          mode: 'insensitive',
+        };
+      }
+    }
     // Search
     if (
       searchBy &&
@@ -73,6 +137,7 @@ export class sls_InvoiceHdService {
         include: {
           sls_InvoiceType: true,
           sls_InvoicePoType: true,
+          sys_PaidStatus: true,
         },
         orderBy: {
           [orderField]: orderDirection,
@@ -130,7 +195,7 @@ export class sls_InvoiceHdService {
         ...(lte && { lte }),
       };
     }
-    console.log(JSON.stringify(whereCondition, null, 2)); // Tambahkan di sini
+    // console.log(JSON.stringify(whereCondition, null, 2)); // Tambahkan di sini
 
     // Group by paidStatus_id
     const paidStatusGroup = await this.prisma.sls_InvoiceHd.groupBy({
@@ -180,11 +245,9 @@ export class sls_InvoiceHdService {
     module_id: string,
     startPeriod?: string,
     endPeriod?: string,
-    poType?: string[],
     paidStatus?: string[], // Nama status seperti ["PAID", "UNPAID"]
+    poType?: string[],
   ): Promise<{ id: string; name: string; count: number }[]> {
-    console.log('Received paidStatus:', paidStatus); // Debug log untuk memastikan bahwa parameter diterima di sini
-
     const whereCondition: any = {
       company_id,
       total_amount: { gt: 10000 },
@@ -200,7 +263,15 @@ export class sls_InvoiceHdService {
       };
     }
 
-    console.log('Where Condition:', whereCondition); // Cek apakah filter sudah diterapkan dengan benar
+    // Filter poType
+    if (poType && poType.length > 0) {
+      whereCondition.sls_InvoicePoType = {
+        name: {
+          in: poType,
+          mode: 'insensitive',
+        },
+      };
+    }
 
     const salesPersons = await this.prisma.sls_InvoiceHd.groupBy({
       by: ['salesPerson_id'],
@@ -209,7 +280,6 @@ export class sls_InvoiceHdService {
     });
 
     // Log hasil dari Prisma untuk memastikan data yang diterima
-    console.log('SalesPersons:', salesPersons);
 
     if (!salesPersons || salesPersons.length === 0) {
       throw new NotFoundException(
@@ -402,6 +472,7 @@ export class sls_InvoiceHdService {
       tax_amount: invoice.tax_amt,
       totalDelivery_amount: invoice.totalDelivery_amount,
       total_amount: invoice.total_amount,
+      paidStatus: invoice.sys_PaidStatus.name.trim() ?? undefined,
     };
   }
 }

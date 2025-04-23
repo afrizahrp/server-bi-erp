@@ -84,7 +84,6 @@ export class sls_InvoiceHdController {
     @Query() query: sls_FilterInvoiceHdDto,
   ) {
     const { startPeriod, endPeriod, paidStatus, poType } = query;
-    console.log('Query Parameters:', query); // Debug log
 
     const rawData = await this.sls_invoiceHdService.filterBySalesPerson(
       company_id,

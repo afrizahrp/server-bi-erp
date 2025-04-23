@@ -73,7 +73,7 @@ export class sls_PaginationInvoiceHdDto {
   )
   @IsString({ each: true })
   @IsOptional()
-  status?: string[];
+  paidStatus?: string[];
 
   @IsString()
   @IsOptional()

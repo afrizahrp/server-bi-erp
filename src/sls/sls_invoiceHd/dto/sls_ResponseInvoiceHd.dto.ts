@@ -117,8 +117,4 @@ export class sls_ResponseInvoiceHdDto {
   @IsString()
   @IsOptional()
   paidStatus?: string; // Tambahkan untuk nama status
-
-  @IsString()
-  @IsOptional()
-  monthYear?: string;
 }
