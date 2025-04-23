@@ -1,4 +1,5 @@
-import { getMonthYearPeriod } from 'src/utils/date/getMonthYearPeriod';
+import { getMonthYearPeriodRange } from 'src/utils/date/getMonthYearPeriodRange';
+import { applyPeriodToWhereCondition } from 'src/utils/date/applyMonthYearPeriodRange';
 import { sls_PaginationInvoiceHdDto } from '../sls_invoiceHd/dto/sls_PaginationInvoiceHd.dto';
 
 export function slsInvoiceHdWherecondition(
@@ -51,14 +52,20 @@ export function slsInvoiceHdWherecondition(
     };
   }
 
+  const periodRange = getMonthYearPeriodRange(startPeriod, endPeriod, {
+    inclusiveEnd: true,
+  });
+
+  applyPeriodToWhereCondition(whereCondition, ['invoiceDate'], periodRange);
+
   // Filter by date period
-  const { gte, lte } = getMonthYearPeriod(startPeriod, endPeriod);
-  if (gte || lte) {
-    whereCondition.invoiceDate = {
-      ...(gte && { gte }),
-      ...(lte && { lte }),
-    };
-  }
+  // const { gte, lte } = getMonthYearPeriod(startPeriod, endPeriod);
+  // if (gte || lte) {
+  //   whereCondition.invoiceDate = {
+  //     ...(gte && { gte }),
+  //     ...(lte && { lte }),
+  //   };
+  // }
 
   // Search
   // if (searchBy && typeof searchTerm === 'string' && searchTerm.trim() !== '') {

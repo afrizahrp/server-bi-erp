@@ -1,9 +1,10 @@
 import { parse, isValid } from 'date-fns';
-import { BadRequestException } from '@nestjs/common'; // ⬅️ Tambahkan ini
+import { BadRequestException } from '@nestjs/common';
 
-export function getMonthYearPeriod(
+export function getMonthYearPeriodRange(
   startPeriod?: string,
   endPeriod?: string,
+  options?: { inclusiveEnd?: boolean },
 ): { gte?: Date; lte?: Date } {
   const normalizeMonthYear = (input: string): string => {
     const match = input.match(/^([a-zA-Z]{3})[- ]?(\d{4})$/);
@@ -19,36 +20,33 @@ export function getMonthYearPeriod(
 
   if (startPeriod) {
     const formattedStart = normalizeMonthYear(startPeriod);
-    const parsedStartLocal = parse(
+    const parsedStart = parse(
       `${formattedStart}-01`,
       'MMM-yyyy-dd',
       new Date(),
     );
-    if (!isValid(parsedStartLocal)) {
+    if (!isValid(parsedStart)) {
       throw new BadRequestException(
         'Invalid startPeriod format. Use MMM-yyyy (e.g., Jan-2023)',
       );
     }
     gte = new Date(
-      Date.UTC(parsedStartLocal.getFullYear(), parsedStartLocal.getMonth(), 1),
+      Date.UTC(parsedStart.getFullYear(), parsedStart.getMonth(), 1),
     );
   }
 
   if (endPeriod) {
     const formattedEnd = normalizeMonthYear(endPeriod);
-    const parsedEndLocal = parse(
-      `${formattedEnd}-01`,
-      'MMM-yyyy-dd',
-      new Date(),
-    );
-    if (!isValid(parsedEndLocal)) {
+    const parsedEnd = parse(`${formattedEnd}-01`, 'MMM-yyyy-dd', new Date());
+    if (!isValid(parsedEnd)) {
       throw new BadRequestException(
         'Invalid endPeriod format. Use MMM-yyyy (e.g., Jan-2023)',
       );
     }
-    lte = new Date(
-      Date.UTC(parsedEndLocal.getFullYear(), parsedEndLocal.getMonth() + 1, 0),
-    );
+
+    lte = options?.inclusiveEnd
+      ? new Date(Date.UTC(parsedEnd.getFullYear(), parsedEnd.getMonth() + 1, 0))
+      : new Date(Date.UTC(parsedEnd.getFullYear(), parsedEnd.getMonth(), 1));
   }
 
   if (gte && lte && lte < gte) {

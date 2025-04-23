@@ -356,12 +356,7 @@ export class sls_InvoiceHdService {
         : undefined, // Hanya tampilkan poType jika po_id tidak kosong
       invoiceType: invoice.sls_InvoiceType?.name ?? undefined,
       ecatalog_id: invoice.ecatalog_id?.trim() ?? undefined,
-      po_id:
-        invoice.poType_id === 1 && invoice.company_id !== 'BIS' // Tambahkan kondisi baru
-          ? (invoice.ecatalog_id?.trim() ?? '') // Jika poType_id = 1 dan company_id <> 'BIS', gunakan ecatalog_id
-          : invoice.company_id !== 'BIS'
-            ? (invoice.ecatalog_id?.trim() ?? '') // Jika company_id <> 'BIS', gunakan ecatalog_id
-            : (invoice.po_id?.trim() ?? ''), // Jika tidak, gunakan po_id
+      po_id: invoice.po_id?.trim() ?? '',
       invoice_id: invoice.invoice_id.trim(),
       invoiceDate: invoice.invoiceDate,
       ref_id: invoice.ref_id?.trim() ?? '',
