@@ -19,6 +19,9 @@ export class sls_FilterInvoiceHdDto {
   poType?: string[];
 
   @IsOptional()
-  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
-  paidStatus?: string[]; // Handling paidStatus as array
+  @Transform(({ value }) => {
+    // Pastikan ini mengubah string menjadi array jika diperlukan
+    return Array.isArray(value) ? value : value ? [value] : [];
+  })
+  paidStatus?: string[];
 }

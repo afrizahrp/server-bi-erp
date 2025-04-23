@@ -35,22 +35,6 @@ export class sls_InvoiceHdController {
   }
 
   @Public()
-  @Get('getSalesPerson')
-  async getSalesPerson(
-    @Param('company_id') company_id: string,
-    @Param('module_id') module_id: string,
-    @Query('paidStatus') paidStatus?: string, // Tambahkan query parameter paidStatus
-  ) {
-    const rawData = await this.sls_invoiceHdService.filterBySalesPerson(
-      company_id,
-      module_id,
-      paidStatus, // Send paidStatus to the service
-    );
-
-    return { data: rawData ?? [] };
-  }
-
-  @Public()
   @Get('getPaidStatus')
   async getPaidStatus(
     @Param('company_id') company_id: string,
@@ -71,26 +55,6 @@ export class sls_InvoiceHdController {
     return { data: rawData ?? [] };
   }
 
-  // @Public()
-  // @Get('getPaidStatus')
-  // async getPaidStatus(
-  //   @Param('company_id') company_id: string,
-  //   @Param('module_id') module_id: string,
-  //   @Query('startPeriod') startPeriod?: string,
-  //   @Query('endPeriod') endPeriod?: string,
-  //   @Query('salesPersonName') salesPersonName?: string,
-  // ) {
-  //   const rawData = await this.sls_invoiceHdService.filterByPaidStatus(
-  //     company_id,
-  //     module_id,
-  //     startPeriod,
-  //     endPeriod,
-  //     salesPersonName ? [salesPersonName] : undefined, // Send salesPersonName as an array if it exists
-  //   );
-
-  //   return { data: rawData ?? [] };
-  // }
-
   @Public()
   @Get('getPoType')
   async getPoType(
@@ -107,6 +71,28 @@ export class sls_InvoiceHdController {
       endPeriod,
       paidStatus,
       salesPersonName,
+    );
+
+    return { data: rawData ?? [] };
+  }
+
+  @Public()
+  @Get('getSalesPerson')
+  async getSalesPerson(
+    @Param('company_id') company_id: string,
+    @Param('module_id') module_id: string,
+    @Query() query: sls_FilterInvoiceHdDto,
+  ) {
+    const { startPeriod, endPeriod, paidStatus, poType } = query;
+    console.log('Query Parameters:', query); // Debug log
+
+    const rawData = await this.sls_invoiceHdService.filterBySalesPerson(
+      company_id,
+      module_id,
+      startPeriod,
+      endPeriod,
+      paidStatus,
+      poType,
     );
 
     return { data: rawData ?? [] };

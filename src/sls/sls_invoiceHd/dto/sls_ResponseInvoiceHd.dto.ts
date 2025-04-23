@@ -2,11 +2,10 @@ import {
   IsString,
   IsOptional,
   IsInt,
-  IsDecimal,
+  IsNumber,
   IsDate,
   IsEnum,
 } from 'class-validator';
-import { InvoicePaidStatusEnum } from '@prisma/client';
 
 export class sls_ResponseInvoiceHdDto {
   @IsString()
@@ -15,23 +14,23 @@ export class sls_ResponseInvoiceHdDto {
 
   @IsInt()
   @IsOptional()
-  invoiceType_id: number; // Tambahkan properti ini
+  invoiceType_id?: number;
 
   @IsInt()
   @IsOptional()
-  poType_id: number;
-
-  @IsOptional()
-  @IsString()
-  invoiceType?: string; // Tambahkan properti ini
-
-  @IsOptional()
-  @IsString()
-  poType?: string; // Tambahkan properti ini
+  poType_id?: number;
 
   @IsString()
   @IsOptional()
-  ecatalog_id?: string; // Tambahkan properti ini
+  invoiceType?: string;
+
+  @IsString()
+  @IsOptional()
+  poType?: string;
+
+  @IsString()
+  @IsOptional()
+  ecatalog_id?: string;
 
   @IsString()
   invoice_id: string;
@@ -52,20 +51,23 @@ export class sls_ResponseInvoiceHdDto {
   taxRate?: number;
 
   @IsString()
-  debtor_id: string;
+  @IsOptional()
+  debtor_id?: string;
 
   @IsString()
   @IsOptional()
   debtorName?: string;
 
   @IsString()
-  customer_id: string;
+  @IsOptional()
+  customer_id?: string;
 
   @IsString()
   @IsOptional()
   customerName?: string;
 
   @IsInt()
+  @IsOptional()
   creditTerms?: number;
 
   @IsDate()
@@ -80,25 +82,41 @@ export class sls_ResponseInvoiceHdDto {
   @IsOptional()
   salesPersonName?: string;
 
-  @IsInt()
+  @IsNumber()
+  @IsOptional()
   base_amount?: number;
 
-  @IsInt()
+  @IsNumber()
+  @IsOptional()
   dp_amount?: number;
 
-  @IsInt()
+  @IsNumber()
+  @IsOptional()
   discount_amount?: number;
-  @IsInt()
+
+  @IsNumber()
+  @IsOptional()
   totalDiscount_amount?: number;
-  @IsInt()
+
+  @IsNumber()
+  @IsOptional()
   tax_amount?: number;
-  @IsInt()
+
+  @IsNumber()
+  @IsOptional()
   totalDelivery_amount?: number;
-  @IsInt()
+
+  @IsNumber()
+  @IsOptional()
   total_amount?: number;
 
-  @IsEnum(InvoicePaidStatusEnum)
-  paidStatus: InvoicePaidStatusEnum;
+  @IsInt()
+  @IsOptional()
+  paidStatus_id?: number;
+
+  @IsString()
+  @IsOptional()
+  paidStatus?: string; // Tambahkan untuk nama status
 
   @IsString()
   @IsOptional()

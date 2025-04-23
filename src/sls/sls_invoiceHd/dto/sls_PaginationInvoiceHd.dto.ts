@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsString,
   IsNumber,
@@ -7,15 +8,15 @@ import {
   IsInt,
   Matches,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+
 export class sls_PaginationInvoiceHdDto {
-  @Type(() => Number)
+  @Transform(({ value }) => Number(value))
   @IsNumber()
   @IsPositive()
   @IsOptional()
   page?: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => Number(value))
   @IsNumber()
   @IsPositive()
   @IsOptional()
@@ -23,59 +24,76 @@ export class sls_PaginationInvoiceHdDto {
 
   @IsString()
   @IsOptional()
-  customerName?: string; // Tambahkan properti ini
+  customerName?: string;
+
+  @Transform(({ value }) =>
+    Array.isArray(value)
+      ? value
+      : value?.split(',').map((v: string) => v.trim()),
+  )
+  @IsString({ each: true })
+  @IsOptional()
+  salesPersonName?: string[];
 
   @IsString()
   @IsOptional()
-  salesPersonName?: string; // Tambahkan properti ini
+  po_id?: string;
 
-  @IsString()
-  @IsOptional()
-  po_id?: string; // Tambahkan properti ini
-
+  @Transform(({ value }) => Number(value))
   @IsInt()
   @IsOptional()
-  invoiceType_id: number; // Tambahkan properti ini
+  invoiceType_id?: number;
 
+  @Transform(({ value }) => Number(value))
   @IsInt()
   @IsOptional()
-  poType_id: number;
-
-  @IsOptional()
-  @IsString()
-  invoiceType?: string; // Tambahkan properti ini
-
-  @IsOptional()
-  @IsString()
-  poType?: string; // Tambahkan properti ini
+  poType_id?: number;
 
   @IsString()
   @IsOptional()
-  ecatalog_id?: string; // Tambahkan properti ini
+  invoiceType?: string;
+
+  @Transform(({ value }) =>
+    Array.isArray(value)
+      ? value
+      : value?.split(',').map((v: string) => v.trim()),
+  )
+  @IsString({ each: true })
+  @IsOptional()
+  poType?: string[];
 
   @IsString()
   @IsOptional()
-  status?: string; // Tambahkan properti ini
+  ecatalog_id?: string;
+
+  @Transform(({ value }) =>
+    Array.isArray(value)
+      ? value
+      : value?.split(',').map((v: string) => v.trim()),
+  )
+  @IsString({ each: true })
+  @IsOptional()
+  status?: string[];
 
   @IsString()
   @IsOptional()
-  startDate?: string; // Tambahkan properti ini
+  startDate?: string;
 
   @IsString()
   @IsOptional()
-  endDate?: string; // Tambahkan properti ini
+  endDate?: string;
 
   @IsOptional()
   @IsString()
   @Matches(/^[A-Za-z]{3}\d{4}$/, {
-    message: 'startPeriod must be in format mmmYYYY (e.g., Jan2025)',
+    message: 'startPeriod must be in format MMMYYYY (e.g., Jan2025)',
   })
   startPeriod?: string;
 
   @IsOptional()
   @IsString()
   @Matches(/^[A-Za-z]{3}\d{4}$/, {
-    message: 'endPeriod must be in format mmmYYYY (e.g., Mar2025)',
+    message: 'endPeriod must be in format MMMYYYY (e.g., Mar2025)',
   })
   endPeriod?: string;
 
@@ -88,6 +106,7 @@ export class sls_PaginationInvoiceHdDto {
   searchTerm?: string;
 
   @IsOptional()
+  @IsString()
   orderBy?: string;
 
   @IsOptional()

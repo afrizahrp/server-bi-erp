@@ -654,7 +654,7 @@ model sls_InvoiceHd {
   totalDelivery_amount Decimal?                    @db.Decimal(21, 4)
   total_amount         Decimal?                    @db.Decimal(21, 4)
   trxStatus            TransactionRecordStatusEnum @default(APPROVED)
-  paidStatus           InvoicePaidStatusEnum       @default(UNPAID)
+  paidStatus_id        Int                         @db.SmallInt
   company_id           String                      @db.Char(5)
   createdBy            String?                     @db.Char(10)
   createdAt            DateTime?                   @default(now())
@@ -663,12 +663,22 @@ model sls_InvoiceHd {
   branch_id            String?                     @db.Char(10)
   customer             sls_Customer                @relation(fields: [company_id, customer_id], references: [company_id, id], onDelete: NoAction)
   salesPerson          sls_SalesPerson             @relation(fields: [company_id, salesPerson_id], references: [company_id, id], onDelete: NoAction)
+  sys_PaidStatus       sys_PaidStatus              @relation(fields: [company_id, paidStatus_id], references: [company_id, id])
 
   sls_InvoiceDt     sls_InvoiceDt[]
   sls_InvoiceType   sls_InvoiceType?   @relation(fields: [company_id, invoiceType_id], references: [company_id, id])
   sls_InvoicePoType sls_InvoicePoType? @relation(fields: [company_id, poType_id], references: [company_id, id])
 
   @@id([company_id, invoice_id], map: "pk_sls_InvoiceHd")
+}
+
+model sys_PaidStatus {
+  id            Int             @db.SmallInt
+  name          String          @db.VarChar(50)
+  company_id    String          @db.Char(5)
+  sls_InvoiceHd sls_InvoiceHd[]
+
+  @@id([company_id, id], map: "pk_sys_PaidStatus")
 }
 
 model sls_InvoiceType {
