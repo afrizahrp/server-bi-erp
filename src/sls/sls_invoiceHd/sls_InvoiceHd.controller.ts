@@ -39,20 +39,15 @@ export class sls_InvoiceHdController {
   async getPaidStatus(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
-    @Query() query: sls_FilterInvoiceHdDto,
+    @Query() query: sls_PaginationInvoiceHdDto,
   ) {
-    const { startPeriod, endPeriod, poType, salesPersonName } = query;
-
     const rawData = await this.sls_invoiceHdService.filterByPaidStatus(
       company_id,
       module_id,
-      startPeriod,
-      endPeriod,
-      poType,
-      salesPersonName,
+      query,
     );
 
-    return { data: rawData ?? [] };
+    return rawData ?? { data: [], totalRecords: 0 };
   }
 
   @Public()
@@ -60,40 +55,29 @@ export class sls_InvoiceHdController {
   async getPoType(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
-    @Query() query: sls_FilterInvoiceHdDto,
+    @Query() query: sls_PaginationInvoiceHdDto,
   ) {
-    const { startPeriod, endPeriod, paidStatus, salesPersonName } = query;
-
     const rawData = await this.sls_invoiceHdService.filterByPoType(
       company_id,
       module_id,
-      startPeriod,
-      endPeriod,
-      paidStatus,
-      salesPersonName,
+      query,
     );
 
-    return { data: rawData ?? [] };
+    return rawData ?? { data: [], totalRecords: 0 };
   }
-
   @Public()
   @Get('getSalesPerson')
   async getSalesPerson(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
-    @Query() query: sls_FilterInvoiceHdDto,
+    @Query() query: sls_PaginationInvoiceHdDto,
   ) {
-    const { startPeriod, endPeriod, paidStatus, poType } = query;
-
-    const rawData = await this.sls_invoiceHdService.filterBySalesPerson(
+    const rawData = await this.sls_invoiceHdService.filterBySalesPersonName(
       company_id,
       module_id,
-      startPeriod,
-      endPeriod,
-      paidStatus,
-      poType,
+      query,
     );
 
-    return { data: rawData ?? [] };
+    return rawData ?? { data: [], totalRecords: 0 };
   }
 }

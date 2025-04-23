@@ -4,6 +4,7 @@ import { sls_PaginationInvoiceHdDto } from './dto/sls_PaginationInvoiceHd.dto';
 import { sls_ResponseInvoiceHdDto } from './dto/sls_ResponseInvoiceHd.dto';
 import { sls_ResponseInvoiceHdWithDetailDto } from './dto/sls_ResponseInvoiceDt.dto';
 import { getMonthYearPeriod } from 'src/utils/date/getMonthYearPeriod';
+import { slsInvoiceHdWherecondition } from '../helper/sls_InvoiceHd_wherecondition';
 
 const zone = 'Asia/Jakarta';
 
@@ -31,102 +32,17 @@ export class sls_InvoiceHdService {
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
 
-    const whereCondition: Record<string, any> = {
+    const whereCondition = slsInvoiceHdWherecondition(
       company_id,
-      total_amount: { gt: 10000 },
-    };
-
-    // Filter by paidStatus
-    if (paidStatus) {
-      // Tentukan nama kolom yang benar berdasarkan skema database
-      const paidStatusColumn = 'name'; // Ganti dengan 'paidStatus' jika kolomnya bernama paidStatus
-
-      if (Array.isArray(paidStatus)) {
-        // Jika paidStatus adalah array
-        if (paidStatus.length > 0) {
-          whereCondition.sys_PaidStatus = {
-            [paidStatusColumn]: {
-              in: paidStatus,
-              mode: 'insensitive',
-            },
-          };
-        }
-      } else {
-        // Jika paidStatus adalah string tunggal
-        whereCondition.sys_PaidStatus = {
-          [paidStatusColumn]: {
-            equals: paidStatus,
-            mode: 'insensitive',
-          },
-        };
-      }
-    }
-
-    // Filter by poType
-    if (poType) {
-      const poTypeColumn = 'poType'; // Sesuaikan dengan nama kolom di sls_InvoicePoType
-      if (Array.isArray(poType)) {
-        if (poType.length > 0) {
-          whereCondition.sls_InvoicePoType = {
-            [poTypeColumn]: {
-              in: poType,
-              mode: 'insensitive',
-            },
-          };
-        }
-      } else {
-        whereCondition.sls_InvoicePoType = {
-          [poTypeColumn]: {
-            equals: poType,
-            mode: 'insensitive',
-          },
-        };
-      }
-    }
-
-    // Filter by salesPersonName
-    if (salesPersonName) {
-      if (Array.isArray(salesPersonName)) {
-        if (salesPersonName.length > 0) {
-          whereCondition.salesPersonName = {
-            in: salesPersonName,
-            mode: 'insensitive',
-          };
-        }
-      } else {
-        whereCondition.salesPersonName = {
-          contains: salesPersonName,
-          mode: 'insensitive',
-        };
-      }
-    }
-    // Search
-    if (
-      searchBy &&
-      typeof searchTerm === 'string' &&
-      searchTerm.trim() !== ''
-    ) {
-      const searchWords = searchTerm.trim().split(/\s+/);
-      whereCondition.AND = searchWords.map((word) => ({
-        [searchBy]: {
-          contains: word,
-          mode: 'insensitive',
+      paginationDto,
+      {
+        requiredFilters: {
+          paidStatus: true,
+          poType: true,
+          salesPersonName: true, // Opsional, sesuaikan dengan kebutuhan
         },
-      }));
-    }
-
-    // Gunakan helper untuk invoiceDate
-    const { gte, lte } = getMonthYearPeriod(startPeriod, endPeriod);
-    if (gte || lte) {
-      whereCondition.invoiceDate = {
-        ...(gte && { gte }),
-        ...(lte && { lte }),
-      };
-    }
-
-    // Query execution
-    const orderField = paginationDto.orderBy ?? 'invoiceDate';
-    const orderDirection = paginationDto.orderDir === 'asc' ? 'asc' : 'desc';
+      },
+    );
 
     const [totalRecords, invoices] = await Promise.all([
       this.prisma.sls_InvoiceHd.count({ where: whereCondition }),
@@ -135,12 +51,12 @@ export class sls_InvoiceHdService {
         skip: offset,
         take: safeLimit,
         include: {
-          sls_InvoiceType: true,
-          sls_InvoicePoType: true,
           sys_PaidStatus: true,
+          sls_InvoicePoType: true,
+          salesPerson: true,
         },
         orderBy: {
-          [orderField]: orderDirection,
+          invoiceDate: 'desc',
         },
       }),
     ]);
@@ -155,67 +71,55 @@ export class sls_InvoiceHdService {
   async filterByPaidStatus(
     company_id: string,
     module_id: string,
-    startPeriod?: string,
-    endPeriod?: string,
-    poType?: string[],
-    salesPersonName?: string[],
-  ): Promise<{ id: string; name: string; count: number }[]> {
-    const whereCondition: any = {
+    paginationDto: sls_PaginationInvoiceHdDto,
+  ): Promise<{
+    data: { id: string; name: string; count: number }[];
+    totalRecords: number;
+  }> {
+    const {
+      page = 1,
+      limit = 20,
+      startPeriod,
+      endPeriod,
+      paidStatus,
+      poType,
+      salesPersonName,
+      searchBy,
+      searchTerm,
+    } = paginationDto;
+
+    const safeLimit = Math.min(Number(limit) || 10, 100);
+    const offset = (Number(page) - 1) * safeLimit;
+
+    const whereCondition = slsInvoiceHdWherecondition(
       company_id,
-      total_amount: { gt: 10000 },
-    };
-
-    // Filter poType
-    if (poType && poType.length > 0) {
-      whereCondition.sls_InvoicePoType = {
-        name: {
-          in: poType,
-          mode: 'insensitive',
+      paginationDto,
+      {
+        requiredFilters: {
+          paidStatus: false,
+          poType: false,
+          salesPersonName: true,
         },
-      };
-    }
+      },
+    );
 
-    // Filter salesPerson
-    if (salesPersonName && salesPersonName.length > 0) {
-      whereCondition.OR = salesPersonName.map((name) => ({
-        salesPerson: {
-          name: {
-            contains: name,
-            mode: 'insensitive',
-          },
-        },
-      }));
-    }
+    console.log('whereCondition:', JSON.stringify(whereCondition, null, 2));
 
-    // Filter periode
-    const { gte, lte } = getMonthYearPeriod(startPeriod, endPeriod);
-    if (gte || lte) {
-      whereCondition.invoiceDate = {
-        ...(gte && { gte }),
-        ...(lte && { lte }),
-      };
-    }
-    // console.log(JSON.stringify(whereCondition, null, 2)); // Tambahkan di sini
-
-    // Group by paidStatus_id
-    const paidStatusGroup = await this.prisma.sls_InvoiceHd.groupBy({
+    const paidStatusData = await this.prisma.sls_InvoiceHd.groupBy({
       by: ['paidStatus_id'],
       where: whereCondition,
-      _count: { _all: true },
+      _count: {
+        _all: true,
+      },
     });
 
-    if (!paidStatusGroup || paidStatusGroup.length === 0) {
-      throw new NotFoundException(`No paid status data found`);
-    }
+    const paidStatusIds = paidStatusData
+      .map((item) => item.paidStatus_id)
+      .filter(Boolean);
 
-    // Ambil nama dari sys_PaidStatus
     const paidStatusDetails = await this.prisma.sys_PaidStatus.findMany({
       where: {
-        id: {
-          in: paidStatusGroup
-            .map((s) => s.paidStatus_id)
-            .filter((id) => id !== null),
-        },
+        id: { in: paidStatusIds },
       },
       select: {
         id: true,
@@ -223,159 +127,141 @@ export class sls_InvoiceHdService {
       },
     });
 
-    // Gabungkan hasil
-    const paidStatusList = paidStatusGroup
-      .map((s) => {
-        const detail = paidStatusDetails.find((d) => d.id === s.paidStatus_id);
-        const name = detail?.name?.trim() || 'Unknown';
+    const formattedData = paidStatusData
+      .map((item) => {
+        const details = paidStatusDetails.find(
+          (ps) => ps.id === item.paidStatus_id,
+        );
+        const paidStatusName = details?.name?.trim() || 'UNKNOWN'; // Gunakan name sebagai id dan name
         return {
-          id: name,
-          name,
-          count: s._count._all,
+          id: paidStatusName, // Sama dengan name untuk FE
+          name: paidStatusName,
+          count: item._count._all,
         };
       })
-      .filter((s) => s.name !== 'Unknown')
-      .sort((a, b) => b.count - a.count);
+      .sort((a, b) => b.count - a.count)
+      .slice(offset, offset + safeLimit);
 
-    return paidStatusList;
+    const totalRecords = paidStatusData.length;
+
+    return { data: formattedData, totalRecords };
   }
 
-  async filterBySalesPerson(
+  async filterBySalesPersonName(
     company_id: string,
     module_id: string,
-    startPeriod?: string,
-    endPeriod?: string,
-    paidStatus?: string[], // Nama status seperti ["PAID", "UNPAID"]
-    poType?: string[],
-  ): Promise<{ id: string; name: string; count: number }[]> {
-    const whereCondition: any = {
+    paginationDto: sls_PaginationInvoiceHdDto,
+  ): Promise<{
+    data: { id: string; name: string; count: number }[];
+    totalRecords: number;
+  }> {
+    const {
+      page = 1,
+      limit = 20,
+      startPeriod,
+      endPeriod,
+      paidStatus,
+      poType,
+      salesPersonName,
+      searchBy,
+      searchTerm,
+    } = paginationDto;
+
+    const safeLimit = Math.min(Number(limit) || 10, 100);
+    const offset = (Number(page) - 1) * safeLimit;
+
+    // Gunakan slsInvoiceHdWherecondition
+    const whereCondition = slsInvoiceHdWherecondition(
       company_id,
-      total_amount: { gt: 10000 },
-    };
-
-    // Filter paidStatus berdasarkan nama (relasi ke sys_PaidStatus)
-    if (paidStatus && paidStatus.length > 0) {
-      whereCondition.sys_PaidStatus = {
-        name: {
-          in: paidStatus, // Menggunakan "in" untuk array
-          mode: 'insensitive',
+      paginationDto,
+      {
+        requiredFilters: {
+          paidStatus: true,
+          poType: true,
+          salesPersonName: false, // salesPersonName opsional
         },
-      };
-    }
+      },
+    );
 
-    // Filter poType
-    if (poType && poType.length > 0) {
-      whereCondition.sls_InvoicePoType = {
-        name: {
-          in: poType,
-          mode: 'insensitive',
-        },
-      };
-    }
-
-    const salesPersons = await this.prisma.sls_InvoiceHd.groupBy({
-      by: ['salesPerson_id'],
+    // Query untuk agregasi tanpa skip, take, atau orderBy
+    const salesPersonData = await this.prisma.sls_InvoiceHd.groupBy({
+      by: ['salesPersonName'],
       where: whereCondition,
-      _count: { _all: true },
-    });
-
-    // Log hasil dari Prisma untuk memastikan data yang diterima
-
-    if (!salesPersons || salesPersons.length === 0) {
-      throw new NotFoundException(
-        `No sales persons found for the given criteria`,
-      );
-    }
-
-    const salesPersonDetails = await this.prisma.sls_SalesPerson.findMany({
-      where: {
-        id: {
-          in: salesPersons
-            .map((s) => s.salesPerson_id)
-            .filter((id): id is string => id !== null),
-        },
-      },
-      select: {
-        id: true,
-        name: true,
+      _count: {
+        _all: true,
       },
     });
 
-    const salesPersonList = salesPersons
-      .map((s) => {
-        const detail = salesPersonDetails.find(
-          (sp) => sp.id === s.salesPerson_id,
-        );
-        return {
-          id: detail?.name?.trim() || 'Unknown',
-          name: detail?.name?.trim() || 'Unknown',
-          count: s._count._all,
-        };
-      })
-      .filter((s) => s.name !== 'Unknown');
+    // Format hasil, urutkan, dan terapkan paginasi
+    const formattedData = salesPersonData
+      .map((item, index) => ({
+        id: `${item.salesPersonName.trim()}`, // Sesuaikan jika ada kolom ID
+        name: item.salesPersonName.trim(),
+        count: item._count._all,
+      }))
+      .sort((a, b) => b.count - a.count) // Urutkan descending berdasarkan count
+      .slice(offset, offset + safeLimit); // Terapkan paginasi di aplikasi
 
-    return salesPersonList.sort((a, b) => b.count - a.count);
+    // Hitung total records
+    const totalRecords = salesPersonData.length;
+
+    return { data: formattedData, totalRecords };
   }
 
   async filterByPoType(
     company_id: string,
     module_id: string,
-    startPeriod?: string,
-    endPeriod?: string,
-    paidStatus?: string | string[], // Accepts either a string or an array of strings
-    salesPersonName?: string[],
-  ): Promise<{ id: string; name: string; count: number }[]> {
-    const whereCondition: any = { company_id };
+    paginationDto: sls_PaginationInvoiceHdDto,
+  ): Promise<{
+    data: { id: string; name: string; count: number }[];
+    totalRecords: number;
+  }> {
+    const {
+      page = 1,
+      limit = 20,
+      startPeriod,
+      endPeriod,
+      paidStatus,
+      poType,
+      salesPersonName,
+      searchBy,
+      searchTerm,
+    } = paginationDto;
 
-    whereCondition.total_amount = {
-      gt: 10000, // 'gt' berarti 'greater than'
-    };
+    const safeLimit = Math.min(Number(limit) || 10, 100);
+    const offset = (Number(page) - 1) * safeLimit;
 
-    // ✅ Filter paidStatus berdasarkan nama (relasi ke sys_PaidStatus)
-    if (paidStatus && paidStatus.length > 0) {
-      whereCondition.sys_PaidStatus = {
-        name: {
-          in: paidStatus,
-          mode: 'insensitive',
+    // Gunakan slsInvoiceHdWherecondition
+    const whereCondition = slsInvoiceHdWherecondition(
+      company_id,
+      paginationDto,
+      {
+        requiredFilters: {
+          paidStatus: false,
+          poType: false,
+          salesPersonName: true,
         },
-      };
-    }
-    // Sales person filter
-    if (salesPersonName && salesPersonName.length > 0) {
-      whereCondition.salesPerson = {
-        name: {
-          contains: salesPersonName.join(','),
-          mode: 'insensitive',
-        },
-      };
-    }
+      },
+    );
 
-    // Gunakan helper untuk invoiceDate
-    const { gte, lte } = getMonthYearPeriod(startPeriod, endPeriod);
-    if (gte || lte) {
-      whereCondition.invoiceDate = {
-        ...(gte && { gte }),
-        ...(lte && { lte }),
-      };
-    }
+    // Logging untuk debug
+    console.log('whereCondition:', JSON.stringify(whereCondition, null, 2));
 
-    const poTypes = await this.prisma.sls_InvoiceHd.groupBy({
+    // Query untuk agregasi berdasarkan poType_id
+    const poTypeData = await this.prisma.sls_InvoiceHd.groupBy({
       by: ['poType_id'],
       where: whereCondition,
-      _count: { _all: true },
+      _count: {
+        _all: true,
+      },
     });
 
-    if (!poTypes || poTypes.length === 0) {
-      throw new NotFoundException(
-        `No sales persons found for the given criteria`,
-      );
-    }
+    // Ambil detail poType berdasarkan poType_id
+    const poTypeIds = poTypeData.map((item) => item.poType_id).filter(Boolean);
 
-    const invoicePoTypes = await this.prisma.sls_InvoicePoType.findMany({
+    const poTypeDetails = await this.prisma.sls_InvoicePoType.findMany({
       where: {
-        id: {
-          in: poTypes.map((s) => s.poType_id).filter((id) => id !== null),
-        },
+        id: { in: poTypeIds },
       },
       select: {
         id: true,
@@ -383,19 +269,24 @@ export class sls_InvoiceHdService {
       },
     });
 
-    const poTypeList = poTypes
-      .map((s) => {
-        const detail = invoicePoTypes.find((sp) => sp.id === s.poType_id);
+    // Format hasil, urutkan, dan terapkan paginasi
+    const formattedData = poTypeData
+      .map((item) => {
+        const details = poTypeDetails.find((pt) => pt.id === item.poType_id);
+        const poTypeName = details?.name?.trim() || 'UNKNOWN'; // Gunakan name sebagai id dan name
         return {
-          id: detail?.name?.trim() || 'Unknown',
-          name: detail?.name?.trim() || 'Unknown',
-          count: s._count._all, // Langsung return number
+          id: poTypeName, // Sama dengan name untuk FE
+          name: poTypeName,
+          count: item._count._all,
         };
       })
-      .filter((s) => s.name !== 'Unknown'); // Hapus data dengan name "Unknown"
+      .sort((a, b) => b.count - a.count)
+      .slice(offset, offset + safeLimit);
 
-    // Urutkan berdasarkan count secara descending
-    return poTypeList.sort((a, b) => b.count - a.count);
+    // Hitung total records
+    const totalRecords = poTypeData.length;
+
+    return { data: formattedData, totalRecords };
   }
 
   async findOne(
@@ -464,7 +355,7 @@ export class sls_InvoiceHdService {
       creditTerms: invoice.creditTerms,
       dueDate: invoice.dueDate,
       salesPerson_id: invoice.salesPerson_id.trim() ?? '',
-      salesPersonName: invoice.salesPersonName.trim() ?? '',
+      salesPersonName: invoice.salesPerson.name.trim() ?? '',
       base_amount: invoice.base_amount,
       dp_amount: invoice.dp_amount,
       discount_amount: invoice.discount_amount,
