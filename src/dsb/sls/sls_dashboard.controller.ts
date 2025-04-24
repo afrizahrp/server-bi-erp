@@ -14,17 +14,12 @@ export class sls_DashboardController {
     @Param('subModule_id') subModule_id: string,
     @Query() dto: sls_dashboardDto,
   ) {
-    const data = await this.salesDashboardService.getSalesDashboard(
+    const result = await this.salesDashboardService.getSalesDashboard(
       company_id, // Gunakan company_id dari DTO
       module_id,
       subModule_id,
       dto,
     );
-    return {
-      company_id,
-      module_id,
-      subModule_id,
-      data,
-    };
+    return { data: result }; // Ini menambahkan "data" ekstra
   }
 }
