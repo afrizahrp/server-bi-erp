@@ -17,7 +17,11 @@ export class sls_InvoiceHdService {
     company_id: string,
     module_id: string,
     paginationDto: sls_PaginationInvoiceHdDto,
-  ): Promise<{ data: sls_ResponseInvoiceHdDto[]; totalRecords: number }> {
+  ): Promise<{
+    data: sls_ResponseInvoiceHdDto[];
+    grandTotal_amount: number;
+    totalRecords: number;
+  }> {
     const { page = 1, limit = 20, searchBy, searchTerm } = paginationDto;
 
     const allowedSortFields = [
@@ -31,7 +35,7 @@ export class sls_InvoiceHdService {
       'paidStatus_id',
     ];
 
-    const searchCondition = buildSearchCondition(searchBy, searchTerm);
+    // const searchCondition = buildSearchCondition(searchBy, searchTerm);
     const orderByCondition = sortFieldBy(
       allowedSortFields,
       paginationDto.orderBy,
@@ -48,7 +52,7 @@ export class sls_InvoiceHdService {
         requiredFilters: {
           paidStatus: true,
           poType: true,
-          salesPersonName: true, // Opsional, sesuaikan dengan kebutuhan
+          salesPersonName: true,
         },
       },
     );
@@ -62,9 +66,8 @@ export class sls_InvoiceHdService {
       }
     }
 
-    // // Menambahkan pencarian jika ada searchBy dan searchTerm
-
-    const [totalRecords, invoices] = await Promise.all([
+    // Jalankan query count, findMany, dan aggregate secara paralel
+    const [totalRecords, invoices, aggregate] = await Promise.all([
       this.prisma.sls_InvoiceHd.count({ where: whereCondition }),
       this.prisma.sls_InvoiceHd.findMany({
         where: whereCondition,
@@ -78,13 +81,23 @@ export class sls_InvoiceHdService {
           customer: true,
         },
       }),
+      this.prisma.sls_InvoiceHd.aggregate({
+        _sum: {
+          total_amount: true, // Agregasi total_amount
+        },
+        where: whereCondition,
+      }),
     ]);
 
     const formattedInvoices = invoices.map((invoice) =>
       this.mapToResponseDto(invoice),
     );
 
-    return { data: formattedInvoices, totalRecords };
+    return {
+      data: formattedInvoices,
+      grandTotal_amount: aggregate._sum.total_amount?.toNumber() || 0, // Return total_amount as grandTotal_amount
+      totalRecords,
+    };
   }
 
   async filterByPaidStatus(
@@ -95,17 +108,7 @@ export class sls_InvoiceHdService {
     data: { id: string; name: string; count: number }[];
     totalRecords: number;
   }> {
-    const {
-      page = 1,
-      limit = 20,
-      // startPeriod,
-      // endPeriod,
-      // paidStatus,
-      // poType,
-      // salesPersonName,
-      // searchBy,
-      // searchTerm,
-    } = paginationDto;
+    const { page = 1, limit = 20 } = paginationDto;
 
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
@@ -176,17 +179,7 @@ export class sls_InvoiceHdService {
     data: { id: string; name: string; count: number }[];
     totalRecords: number;
   }> {
-    const {
-      page = 1,
-      limit = 20,
-      // startPeriod,
-      // endPeriod,
-      // paidStatus,
-      // poType,
-      // salesPersonName,
-      // searchBy,
-      // searchTerm,
-    } = paginationDto;
+    const { page = 1, limit = 20 } = paginationDto;
 
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
@@ -237,17 +230,7 @@ export class sls_InvoiceHdService {
     data: { id: string; name: string; count: number }[];
     totalRecords: number;
   }> {
-    const {
-      page = 1,
-      limit = 20,
-      // startPeriod,
-      // endPeriod,
-      // paidStatus,
-      // poType,
-      // salesPersonName,
-      // searchBy,
-      // searchTerm,
-    } = paginationDto;
+    const { page = 1, limit = 20 } = paginationDto;
 
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
@@ -378,6 +361,7 @@ export class sls_InvoiceHdService {
       totalDelivery_amount: invoice.totalDelivery_amount,
       total_amount: invoice.total_amount,
       paidStatus: invoice.sys_PaidStatus.name.trim() ?? undefined,
+      grandTotal_amount: invoice.grandTotal_amount,
     };
   }
 }

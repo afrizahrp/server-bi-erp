@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsDate,
   IsEnum,
+  IsDecimal,
 } from 'class-validator';
 
 export class sls_ResponseInvoiceHdDto {
@@ -116,5 +117,9 @@ export class sls_ResponseInvoiceHdDto {
 
   @IsString()
   @IsOptional()
-  paidStatus?: string; // Tambahkan untuk nama status
+  paidStatus?: string;
+
+  @IsDecimal()
+  @IsOptional()
+  grandTotal_amount?: number;
 }
