@@ -58,25 +58,5 @@ export function slsInvoiceHdWherecondition(
 
   applyPeriodToWhereCondition(whereCondition, ['invoiceDate'], periodRange);
 
-  // Filter by date period
-  // const { gte, lte } = getMonthYearPeriod(startPeriod, endPeriod);
-  // if (gte || lte) {
-  //   whereCondition.invoiceDate = {
-  //     ...(gte && { gte }),
-  //     ...(lte && { lte }),
-  //   };
-  // }
-
-  // Search
-  // if (searchBy && typeof searchTerm === 'string' && searchTerm.trim() !== '') {
-  //   const searchWords = searchTerm.trim().split(/\s+/);
-  //   whereCondition.AND = searchWords.map((word) => ({
-  //     [searchBy]: {
-  //       contains: word,
-  //       mode: 'insensitive',
-  //     },
-  //   }));
-  // }
-
   return whereCondition;
 }

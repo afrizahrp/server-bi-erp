@@ -7,8 +7,6 @@ import { slsInvoiceHdWherecondition } from '../helper/sls_InvoiceHd_whereconditi
 import { buildSearchCondition } from 'src/utils/query-operator/buildSearchConditon';
 import { sortFieldBy } from 'src/utils/query-operator/sortFieldBy';
 
-const zone = 'Asia/Jakarta';
-
 @Injectable()
 export class sls_InvoiceHdService {
   constructor(private readonly prisma: PrismaService) {}
@@ -299,6 +297,10 @@ export class sls_InvoiceHdService {
       where: { company_id_invoice_id: { company_id, invoice_id } },
       include: {
         sls_InvoiceDt: true,
+        salesPerson: true,
+        sys_PaidStatus: true,
+        sls_InvoicePoType: true,
+        customer: true,
       },
     });
 
@@ -352,7 +354,7 @@ export class sls_InvoiceHdService {
       creditTerms: invoice.creditTerms,
       dueDate: invoice.dueDate,
       salesPerson_id: invoice.salesPerson_id.trim() ?? '',
-      salesPersonName: invoice.salesPerson.name.trim() ?? '',
+      salesPersonName: invoice.salesPerson?.name.trim() ?? '',
       base_amount: invoice.base_amount,
       dp_amount: invoice.dp_amount,
       discount_amount: invoice.discount_amount,
