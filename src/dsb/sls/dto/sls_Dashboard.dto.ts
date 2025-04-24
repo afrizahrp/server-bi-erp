@@ -1,23 +1,21 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsString, IsOptional } from 'class-validator';
 
 export class sls_dashboardDto {
+  @IsString()
+  startPeriod: string;
+
+  @IsString()
+  endPeriod: string;
+
+  @IsString()
   @IsOptional()
-  @IsString({ each: true })
-  paidStatus?: string | string[];
+  paidStatus?: string;
+
+  @IsString()
+  @IsOptional()
+  poType?: string;
 
   @IsOptional()
-  @IsString({ each: true })
-  poType?: string | string[];
-
-  @IsOptional()
-  @IsString({ each: true })
+  @IsString({ each: true }) // Validasi tiap elemen di array
   salesPersonName?: string | string[];
-
-  @IsOptional()
-  @IsString()
-  startPeriod?: string;
-
-  @IsOptional()
-  @IsString()
-  endPeriod?: string;
 }

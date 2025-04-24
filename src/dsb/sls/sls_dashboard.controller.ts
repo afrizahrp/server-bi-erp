@@ -12,14 +12,21 @@ export class sls_DashboardController {
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
-    @Query() dto: sls_dashboardDto,
+    @Query() query: sls_dashboardDto,
   ) {
-    const result = await this.salesDashboardService.getSalesDashboard(
-      company_id, // Gunakan company_id dari DTO
+    // const result = await this.salesDashboardService.getSalesDashboard(
+    //   company_id, // Gunakan company_id dari DTO
+    //   module_id,
+    //   subModule_id,
+    //   dto,
+    // );
+    console.log('Query params received:', JSON.stringify(query)); // Tambah log
+
+    return this.salesDashboardService.getSalesDashboard(
+      company_id,
       module_id,
       subModule_id,
-      dto,
+      query,
     );
-    return { data: result }; // Ini menambahkan "data" ekstra
   }
 }

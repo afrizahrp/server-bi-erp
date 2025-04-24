@@ -6,9 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { sls_dashboardDto } from './dto/sls_dashboard.dto';
-import { slsInvoiceHdWherecondition } from 'src/sls/helper/sls_InvoiceHd_wherecondition';
 import { format, parse, startOfMonth, endOfMonth } from 'date-fns';
-import { SlsInvoiceFilter } from 'src/sls/helper/sls_filter';
 
 @Injectable()
 export class sls_DashboardService {
@@ -23,6 +21,9 @@ export class sls_DashboardService {
     dto: sls_dashboardDto,
   ) {
     const { startPeriod, endPeriod, paidStatus, poType, salesPersonName } = dto;
+
+    // Log raw input
+    this.logger.debug(`Raw DTO input: ${JSON.stringify(dto)}`);
 
     // Validasi startPeriod dan endPeriod
     if (!startPeriod || !endPeriod) {
@@ -54,40 +55,58 @@ export class sls_DashboardService {
       throw new NotFoundException(`Company ID ${company_id} not found`);
     }
 
-    // // Validasi module_id
-    // const moduleExists = await this.prisma.sls_InvoiceHd.findFirst({
-    //   where: { module_id },
-    // });
-    // if (!moduleExists) {
-    //   this.logger.warn(`Module ID not found: ${module_id}`);
-    //   throw new NotFoundException(`Module ID ${module_id} not found`);
-    // }
+    // Log filter input
+    this.logger.debug(
+      `Filter input: paidStatus=${paidStatus}, poType=${poType}, salesPersonName=${JSON.stringify(salesPersonName)}`,
+    );
 
-    const filter: SlsInvoiceFilter = {
-      paidStatus,
-      poType,
-      salesPersonName,
-      startPeriod,
-      endPeriod,
-    };
+    // Validasi filter
+    if (paidStatus) {
+      const paidStatusExists = await this.prisma.sys_PaidStatus.findFirst({
+        where: {
+          company_id,
+          name: { equals: paidStatus, mode: 'insensitive' },
+        },
+      });
+      if (!paidStatusExists) {
+        this.logger.warn(`Invalid paidStatus: ${paidStatus}`);
+        throw new BadRequestException(`Invalid paidStatus: ${paidStatus}`);
+      }
+    }
+    if (poType) {
+      const poTypeExists = await this.prisma.sls_InvoicePoType.findFirst({
+        where: { company_id, name: { equals: poType, mode: 'insensitive' } },
+      });
+      if (!poTypeExists) {
+        this.logger.warn(`Invalid poType: ${poType}`);
+        throw new BadRequestException(`Invalid poType: ${poType}`);
+      }
+    }
+    if (salesPersonName) {
+      const salesPersonNames = Array.isArray(salesPersonName)
+        ? salesPersonName
+        : [salesPersonName];
+      for (const name of salesPersonNames) {
+        const salesPersonExists = await this.prisma.sls_InvoiceHd.findFirst({
+          where: {
+            company_id,
+            salesPersonName: { equals: name, mode: 'insensitive' },
+            invoiceDate: {
+              gte: new Date(startOfMonth(startDate)),
+              lte: new Date(endOfMonth(endDate)),
+            },
+          },
+        });
+        if (!salesPersonExists) {
+          this.logger.warn(`Invalid salesPersonName: ${name}`);
+          throw new BadRequestException(
+            `Invalid salesPersonName: ${name} for the given period`,
+          );
+        }
+      }
+    }
 
-    this.logger.debug(`Input filter: ${JSON.stringify(filter)}`);
-
-    const whereCondition = slsInvoiceHdWherecondition(company_id, filter, {
-      requiredFilters: {
-        paidStatus: true,
-        poType: true,
-        salesPersonName: true,
-      },
-      additionalConditions: {
-        module_id,
-        // subModule_id, // Aktifkan jika ada di database
-      },
-    });
-
-    this.logger.debug(`Where condition: ${JSON.stringify(whereCondition)}`);
-
-    // Hitung rentang tanggal (awal dan akhir bulan)
+    // Hitung rentang tanggal
     const formattedStartPeriod = format(startOfMonth(startDate), 'yyyy-MM-dd');
     const formattedEndPeriod = format(endOfMonth(endDate), 'yyyy-MM-dd');
 
@@ -95,68 +114,41 @@ export class sls_DashboardService {
       `Formatted periods: ${formattedStartPeriod} to ${formattedEndPeriod}`,
     );
 
-    // Tentukan jenis pengelompokan
-    const startYear = startDate.getFullYear();
-    const endYear = endDate.getFullYear();
-    const startMonth = startDate.getMonth();
-    const endMonth = endDate.getMonth();
-    const isSameYear = startYear === endYear;
-    const isSameMonth = startMonth === endMonth;
-
-    // Query raw dengan parameterisasi dan type casting
-    const queryParams: any[] = [
+    // Coba pakai Prisma query biasa
+    const where: any = {
       company_id,
-      formattedStartPeriod,
-      formattedEndPeriod,
-    ];
-    let query = `
-      SELECT 
-        EXTRACT(YEAR FROM "invoiceDate") AS year,
-        EXTRACT(MONTH FROM "invoiceDate") AS month,
-        SUM("total_amount") AS "totalInvoice"
-      FROM "sls_InvoiceHd"
-      WHERE "company_id" = $1
-        AND "invoiceDate" BETWEEN $2::timestamp AND $3::timestamp
-    `;
+      invoiceDate: {
+        gte: new Date(formattedStartPeriod),
+        lte: new Date(formattedEndPeriod),
+      },
+    };
 
-    // Tambahkan filter opsional
-    let paramIndex = 4;
     if (paidStatus) {
-      query += ` AND "paidStatus" = $${paramIndex}`;
-      queryParams.push(paidStatus);
-      paramIndex++;
+      where.paidStatus = { name: { equals: paidStatus, mode: 'insensitive' } };
     }
     if (poType) {
-      query += ` AND "poType_id" = $${paramIndex}`; // Asumsi poType adalah poType_id (int)
-      if (typeof poType === 'string') {
-        queryParams.push(parseInt(poType, 10));
-        paramIndex++;
-      } else {
-        throw new BadRequestException('Invalid poType format');
-      }
+      where.poType = { name: { equals: poType, mode: 'insensitive' } };
     }
     if (salesPersonName) {
-      query += ` AND "salesPersonName" = $${paramIndex}`;
-      queryParams.push(salesPersonName);
-      paramIndex++;
+      const salesPersonNames = Array.isArray(salesPersonName)
+        ? salesPersonName
+        : [salesPersonName];
+      where.salesPersonName = { in: salesPersonNames, mode: 'insensitive' };
     }
 
-    query += `
-      GROUP BY year, month
-      ORDER BY year, month
-    `;
+    const result = await this.prisma.sls_InvoiceHd.groupBy({
+      by: salesPersonName
+        ? ['salesPersonName', 'invoiceDate']
+        : ['invoiceDate'],
+      where,
+      _sum: { total_amount: true },
+    });
 
-    this.logger.debug(`Raw SQL: ${query}`);
-    this.logger.debug(`Query params: ${JSON.stringify(queryParams)}`);
-
-    const result = await this.prisma.$queryRawUnsafe<any[]>(
-      query,
-      ...queryParams,
-    );
+    this.logger.debug(`Prisma query result: ${JSON.stringify(result)}`);
 
     if (!result.length) {
       this.logger.warn(
-        `No data found for company_id: ${company_id}, module_id: ${module_id}, period: ${startPeriod}-${endPeriod}`,
+        `No data found for company_id: ${company_id}, module_id: ${module_id}, period: ${startPeriod}-${endPeriod}, filters: ${JSON.stringify(dto)}`,
       );
       throw new NotFoundException('No sales data found for the given criteria');
     }
@@ -184,18 +176,79 @@ export class sls_DashboardService {
       data: [],
     };
 
-    if (isSameYear || isSameMonth) {
-      // Pengelompokan bulanan
+    // Pengelompokan bulanan
+    if (salesPersonName) {
+      const monthlyData: Record<
+        string,
+        Record<
+          string,
+          {
+            period: string;
+            salesPersonName: string;
+            totalInvoice: number;
+            months: Record<string, number>;
+          }
+        >
+      > = {};
+
+      result.forEach((item) => {
+        const year = item.invoiceDate.getFullYear().toString();
+        const monthIdx = item.invoiceDate.getMonth();
+        const monthKey = monthMap[monthIdx];
+        const salesPerson = item.salesPersonName || 'Unknown';
+        const amount = parseFloat(
+          (item._sum.total_amount || 0).toString(),
+        ).toFixed(2);
+
+        if (!monthlyData[year]) {
+          monthlyData[year] = {};
+        }
+        if (!monthlyData[year][salesPerson]) {
+          monthlyData[year][salesPerson] = {
+            period: year,
+            salesPersonName: salesPerson,
+            totalInvoice: 0,
+            months: {},
+          };
+        }
+
+        monthlyData[year][salesPerson].months[monthKey] = parseFloat(amount);
+        monthlyData[year][salesPerson].totalInvoice += parseFloat(amount);
+      });
+
+      response.data = Object.values(monthlyData).flatMap((yearData) =>
+        Object.values(yearData).map((entry) => ({
+          period: entry.period,
+          salesPersonName: entry.salesPersonName,
+          totalInvoice: parseFloat(entry.totalInvoice.toFixed(2)),
+          months: monthMap.reduce(
+            (acc, month) => {
+              acc[month] = entry.months[month] || 0;
+              return acc;
+            },
+            {} as Record<string, number>,
+          ),
+        })),
+      );
+
+      response.data.sort((a: any, b: any) =>
+        a.period === b.period
+          ? a.salesPersonName.localeCompare(b.salesPersonName)
+          : a.period.localeCompare(b.period),
+      );
+    } else {
       const monthlyData: Record<
         string,
         { period: string; totalInvoice: number; months: Record<string, number> }
       > = {};
 
       result.forEach((item) => {
-        const year = item.year.toString();
-        const monthIdx = parseInt(item.month) - 1;
+        const year = item.invoiceDate.getFullYear().toString();
+        const monthIdx = item.invoiceDate.getMonth();
         const monthKey = monthMap[monthIdx];
-        const amount = parseFloat(item.totalInvoice || 0).toFixed(2);
+        const amount = parseFloat(
+          (item._sum.total_amount || 0).toString(),
+        ).toFixed(2);
 
         if (!monthlyData[year]) {
           monthlyData[year] = { period: year, totalInvoice: 0, months: {} };
@@ -216,24 +269,8 @@ export class sls_DashboardService {
           {} as Record<string, number>,
         ),
       }));
-    } else {
-      // Pengelompokan tahunan
-      response.data = result
-        .reduce(
-          (acc, item) => {
-            const year = item.year.toString();
-            const amount = parseFloat(item.totalInvoice || 0).toFixed(2);
-            const existing = acc.find((entry: any) => entry.period === year);
-            if (existing) {
-              existing.totalInvoice += parseFloat(amount);
-            } else {
-              acc.push({ period: year, totalInvoice: parseFloat(amount) });
-            }
-            return acc;
-          },
-          [] as { period: string; totalInvoice: number }[],
-        )
-        .sort((a, b) => a.period.localeCompare(b.period));
+
+      response.data.sort((a: any, b: any) => a.period.localeCompare(b.period));
     }
 
     return response;
