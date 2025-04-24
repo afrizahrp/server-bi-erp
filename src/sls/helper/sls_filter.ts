@@ -1,0 +1,7 @@
+export interface SlsInvoiceFilter {
+  paidStatus?: string | string[];
+  poType?: string | string[];
+  salesPersonName?: string | string[];
+  startPeriod?: string;
+  endPeriod?: string;
+}

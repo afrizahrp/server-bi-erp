@@ -5,7 +5,6 @@ import { sls_PaginationInvoiceHdDto } from './dto/sls_PaginationInvoiceHd.dto';
 import { sls_ResponseInvoiceHdDto } from './dto/sls_ResponseInvoiceHd.dto';
 
 import { sls_InvoiceHdService } from './sls_InvoiceHd.service';
-import { sls_FilterInvoiceHdDto } from './dto/sls_FilterInvoiceHdDto';
 
 @Controller(':company_id/:module_id/get-invoiceHd')
 export class sls_InvoiceHdController {

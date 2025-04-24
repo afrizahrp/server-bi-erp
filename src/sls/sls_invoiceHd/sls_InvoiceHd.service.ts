@@ -6,6 +6,7 @@ import { sls_ResponseInvoiceHdWithDetailDto } from './dto/sls_ResponseInvoiceDt.
 import { slsInvoiceHdWherecondition } from '../helper/sls_InvoiceHd_wherecondition';
 import { buildSearchCondition } from 'src/utils/query-operator/buildSearchConditon';
 import { sortFieldBy } from 'src/utils/query-operator/sortFieldBy';
+import { SlsInvoiceFilter } from '../helper/sls_filter';
 
 @Injectable()
 export class sls_InvoiceHdService {
@@ -20,7 +21,17 @@ export class sls_InvoiceHdService {
     grandTotal_amount: number;
     totalRecords: number;
   }> {
-    const { page = 1, limit = 20, searchBy, searchTerm } = paginationDto;
+    const {
+      page = 1,
+      limit = 20,
+      searchBy,
+      searchTerm,
+      paidStatus,
+      poType,
+      salesPersonName,
+      startPeriod,
+      endPeriod,
+    } = paginationDto;
 
     const allowedSortFields = [
       'invoice_id',
@@ -43,17 +54,21 @@ export class sls_InvoiceHdService {
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
 
-    const whereCondition = slsInvoiceHdWherecondition(
-      company_id,
-      paginationDto,
-      {
-        requiredFilters: {
-          paidStatus: true,
-          poType: true,
-          salesPersonName: true,
-        },
+    const filter: SlsInvoiceFilter = {
+      paidStatus,
+      poType,
+      salesPersonName,
+      startPeriod,
+      endPeriod,
+    };
+
+    const whereCondition = slsInvoiceHdWherecondition(company_id, filter, {
+      requiredFilters: {
+        paidStatus: true,
+        poType: true,
+        salesPersonName: true,
       },
-    );
+    });
 
     const searchConditions = buildSearchCondition(searchBy, searchTerm);
     if (searchConditions) {
@@ -64,6 +79,7 @@ export class sls_InvoiceHdService {
       }
     }
 
+    console.log('whereCondition', whereCondition);
     // Jalankan query count, findMany, dan aggregate secara paralel
     const [totalRecords, invoices, aggregate] = await Promise.all([
       this.prisma.sls_InvoiceHd.count({ where: whereCondition }),
@@ -106,22 +122,34 @@ export class sls_InvoiceHdService {
     data: { id: string; name: string; count: number }[];
     totalRecords: number;
   }> {
-    const { page = 1, limit = 20 } = paginationDto;
+    const {
+      page = 1,
+      limit = 20,
+      paidStatus,
+      poType,
+      salesPersonName,
+      startPeriod,
+      endPeriod,
+    } = paginationDto;
 
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
 
-    const whereCondition = slsInvoiceHdWherecondition(
-      company_id,
-      paginationDto,
-      {
-        requiredFilters: {
-          paidStatus: false,
-          poType: false,
-          salesPersonName: true,
-        },
+    const filter: SlsInvoiceFilter = {
+      paidStatus,
+      poType,
+      salesPersonName,
+      startPeriod,
+      endPeriod,
+    };
+
+    const whereCondition = slsInvoiceHdWherecondition(company_id, filter, {
+      requiredFilters: {
+        paidStatus: false,
+        poType: true,
+        salesPersonName: true,
       },
-    );
+    });
 
     const paidStatusData = await this.prisma.sls_InvoiceHd.groupBy({
       by: ['paidStatus_id'],
@@ -177,23 +205,34 @@ export class sls_InvoiceHdService {
     data: { id: string; name: string; count: number }[];
     totalRecords: number;
   }> {
-    const { page = 1, limit = 20 } = paginationDto;
+    const {
+      page = 1,
+      limit = 20,
+      paidStatus,
+      poType,
+      salesPersonName,
+      startPeriod,
+      endPeriod,
+    } = paginationDto;
 
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
 
-    // Gunakan slsInvoiceHdWherecondition
-    const whereCondition = slsInvoiceHdWherecondition(
-      company_id,
-      paginationDto,
-      {
-        requiredFilters: {
-          paidStatus: true,
-          poType: true,
-          salesPersonName: false, // salesPersonName opsional
-        },
+    const filter: SlsInvoiceFilter = {
+      paidStatus,
+      poType,
+      salesPersonName,
+      startPeriod,
+      endPeriod,
+    };
+
+    const whereCondition = slsInvoiceHdWherecondition(company_id, filter, {
+      requiredFilters: {
+        paidStatus: true,
+        poType: true,
+        salesPersonName: false,
       },
-    );
+    });
 
     // Query untuk agregasi tanpa skip, take, atau orderBy
     const salesPersonData = await this.prisma.sls_InvoiceHd.groupBy({
@@ -228,22 +267,34 @@ export class sls_InvoiceHdService {
     data: { id: string; name: string; count: number }[];
     totalRecords: number;
   }> {
-    const { page = 1, limit = 20 } = paginationDto;
+    const {
+      page = 1,
+      limit = 20,
+      paidStatus,
+      poType,
+      salesPersonName,
+      startPeriod,
+      endPeriod,
+    } = paginationDto;
 
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
 
-    const whereCondition = slsInvoiceHdWherecondition(
-      company_id,
-      paginationDto,
-      {
-        requiredFilters: {
-          paidStatus: true,
-          poType: false,
-          salesPersonName: true,
-        },
+    const filter: SlsInvoiceFilter = {
+      paidStatus,
+      poType,
+      salesPersonName,
+      startPeriod,
+      endPeriod,
+    };
+
+    const whereCondition = slsInvoiceHdWherecondition(company_id, filter, {
+      requiredFilters: {
+        paidStatus: true,
+        poType: true,
+        salesPersonName: false,
       },
-    );
+    });
 
     const poTypeData = await this.prisma.sls_InvoiceHd.groupBy({
       by: ['poType_id'],

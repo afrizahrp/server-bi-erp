@@ -1,19 +1,17 @@
 import { getMonthYearPeriodRange } from 'src/utils/date/getMonthYearPeriodRange';
 import { applyPeriodToWhereCondition } from 'src/utils/date/applyMonthYearPeriodRange';
-import { sls_PaginationInvoiceHdDto } from '../sls_invoiceHd/dto/sls_PaginationInvoiceHd.dto';
+import { SlsInvoiceFilter } from 'src/sls/helper/sls_filter';
 
 export function slsInvoiceHdWherecondition(
   company_id: string,
-  paginationDto: sls_PaginationInvoiceHdDto,
+  filter: SlsInvoiceFilter,
   options: {
-    requiredFilters?: Partial<
-      Record<keyof sls_PaginationInvoiceHdDto, boolean>
-    >;
+    requiredFilters?: Partial<Record<keyof SlsInvoiceFilter, boolean>>;
     additionalConditions?: Record<string, any>;
   } = {},
 ): Record<string, any> {
   const { paidStatus, poType, salesPersonName, startPeriod, endPeriod } =
-    paginationDto;
+    filter;
   const { requiredFilters = {}, additionalConditions = {} } = options;
 
   const whereCondition: Record<string, any> = {

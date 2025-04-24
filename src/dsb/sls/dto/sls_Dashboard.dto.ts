@@ -1,9 +1,6 @@
 import { IsOptional, IsString } from 'class-validator';
 
 export class sls_dashboardDto {
-  @IsString()
-  company_id: string;
-
   @IsOptional()
   @IsString({ each: true })
   paidStatus?: string | string[];
