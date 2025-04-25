@@ -9,11 +9,11 @@ export class sls_dashboardDto {
 
   @IsString()
   @IsOptional()
-  paidStatus?: string;
+  paidStatus?: string | string[];
 
   @IsString()
   @IsOptional()
-  poType?: string;
+  poType?: string | string[];
 
   @IsOptional()
   @IsString({ each: true }) // Validasi tiap elemen di array

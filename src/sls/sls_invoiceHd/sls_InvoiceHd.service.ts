@@ -109,7 +109,12 @@ export class sls_InvoiceHdService {
 
     return {
       data: formattedInvoices,
-      grandTotal_amount: aggregate._sum.total_amount?.toNumber() || 0, // Return total_amount as grandTotal_amount
+      // grandTotal_amount: aggregate._sum.total_amount?.toNumber() || 0, // Return total_amount as grandTotal_amount
+
+      grandTotal_amount: Math.round(
+        aggregate._sum.total_amount?.toNumber() ?? 0,
+      ),
+
       totalRecords,
     };
   }
@@ -406,15 +411,35 @@ export class sls_InvoiceHdService {
       dueDate: invoice.dueDate,
       salesPerson_id: invoice.salesPerson_id.trim() ?? '',
       salesPersonName: invoice.salesPerson?.name.trim() ?? '',
-      base_amount: invoice.base_amount,
-      dp_amount: invoice.dp_amount,
-      discount_amount: invoice.discount_amount,
-      totalDiscount_amount: invoice.totalDiscount_amount,
-      tax_amount: invoice.tax_amt,
-      totalDelivery_amount: invoice.totalDelivery_amount,
-      total_amount: invoice.total_amount,
+      base_amount:
+        invoice.base_amount != null
+          ? Math.round(invoice.base_amount)
+          : undefined, // Bulatkan
+      dp_amount:
+        invoice.dp_amount != null ? Math.round(invoice.dp_amount) : undefined, // Bulatkan
+      discount_amount:
+        invoice.discount_amount != null
+          ? Math.round(invoice.discount_amount)
+          : undefined, // Bulatkan
+      totalDiscount_amount:
+        invoice.totalDiscount_amount != null
+          ? Math.round(invoice.totalDiscount_amount)
+          : undefined, // Bulatkan
+      tax_amount:
+        invoice.tax_amt != null ? Math.round(invoice.tax_amt) : undefined, // Bulatkan
+      totalDelivery_amount:
+        invoice.totalDelivery_amount != null
+          ? Math.round(invoice.totalDelivery_amount)
+          : undefined, // Bulatkan
+      total_amount:
+        invoice.total_amount != null
+          ? Math.round(invoice.total_amount)
+          : undefined, // Bulatkan
       paidStatus: invoice.sys_PaidStatus.name.trim() ?? undefined,
-      grandTotal_amount: invoice.grandTotal_amount,
+      grandTotal_amount:
+        invoice.grandTotal_amount != null
+          ? Math.round(invoice.grandTotal_amount)
+          : undefined,
     };
   }
 }
