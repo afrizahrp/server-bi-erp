@@ -36,9 +36,9 @@ export class sls_DashboardService {
         throw new BadRequestException('endPeriod must be after startPeriod');
       }
     } catch (error) {
-      this.logger.error(
-        `Invalid period format: startPeriod=${startPeriod}, endPeriod=${endPeriod}`,
-      );
+      // this.logger.error(
+      //   `Invalid period format: startPeriod=${startPeriod}, endPeriod=${endPeriod}`,
+      // );
       throw new BadRequestException(
         'startPeriod and endPeriod must be in MMMYYYY format (e.g., Jan2023)',
       );
@@ -49,14 +49,14 @@ export class sls_DashboardService {
       where: { company_id },
     });
     if (!companyExists) {
-      this.logger.warn(`Company ID not found: ${company_id}`);
+      // this.logger.warn(`Company ID not found: ${company_id}`);
       throw new NotFoundException(`Company ID ${company_id} not found`);
     }
 
     // Log filter input
-    this.logger.debug(
-      `Filter input: paidStatus=${JSON.stringify(paidStatus)}, poType=${JSON.stringify(poType)}, salesPersonName=${JSON.stringify(salesPersonName)}`,
-    );
+    // this.logger.debug(
+    //   `Filter input: paidStatus=${JSON.stringify(paidStatus)}, poType=${JSON.stringify(poType)}, salesPersonName=${JSON.stringify(salesPersonName)}`,
+    // );
 
     // Validasi filter paidStatus
     if (paidStatus && paidStatus.length > 0) {
@@ -71,7 +71,7 @@ export class sls_DashboardService {
           },
         });
         if (!paidStatusExists) {
-          this.logger.warn(`Invalid paidStatus: ${status}`);
+          // this.logger.warn(`Invalid paidStatus: ${status}`);
           throw new BadRequestException(`Invalid paidStatus: ${status}`);
         }
       }
@@ -88,7 +88,7 @@ export class sls_DashboardService {
           },
         });
         if (!poTypeExists) {
-          this.logger.warn(`Invalid poType: ${type}`);
+          // this.logger.warn(`Invalid poType: ${type}`);
           throw new BadRequestException(`Invalid poType: ${type}`);
         }
       }
@@ -111,7 +111,7 @@ export class sls_DashboardService {
           },
         });
         if (!salesPersonExists) {
-          this.logger.warn(`Invalid salesPersonName: ${name}`);
+          // this.logger.warn(`Invalid salesPersonName: ${name}`);
           throw new BadRequestException(
             `Invalid salesPersonName: ${name} for the given period`,
           );
@@ -310,9 +310,9 @@ export class sls_DashboardService {
         throw new BadRequestException('endPeriod must be after startPeriod');
       }
     } catch (error) {
-      this.logger.error(
-        `Invalid period format: startPeriod=${startPeriod}, endPeriod=${endPeriod}`,
-      );
+      // this.logger.error(
+      //   `Invalid period format: startPeriod=${startPeriod}, endPeriod=${endPeriod}`,
+      // );
       throw new BadRequestException(
         'startPeriod and endPeriod must be in MMMYYYY format (e.g., Jan2023)',
       );
@@ -323,7 +323,7 @@ export class sls_DashboardService {
       where: { company_id },
     });
     if (!companyExists) {
-      this.logger.warn(`Company ID not found: ${company_id}`);
+      // this.logger.warn(`Company ID not found: ${company_id}`);
       throw new NotFoundException(`Company ID ${company_id} not found`);
     }
 
