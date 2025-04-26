@@ -56,7 +56,7 @@ export class AuthController {
     return this.authService.login(name, password, company_id);
   }
 
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SALESPERSON')
   @Get('protected')
   getAll(@Request() req): string {
     return 'Now you can access this protected API';

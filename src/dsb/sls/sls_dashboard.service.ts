@@ -381,6 +381,7 @@ export class sls_DashboardService {
       company_id,
       module_id,
       subModule_id,
+
       data: Object.values(yearlyData).sort((a, b) =>
         a.period.localeCompare(b.period),
       ),
