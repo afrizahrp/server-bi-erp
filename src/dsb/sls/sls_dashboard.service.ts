@@ -323,30 +323,6 @@ export class sls_DashboardService {
       throw new NotFoundException(`Company ID ${company_id} not found`);
     }
 
-    // Validasi salesPersonName jika ada
-    if (salesPersonName && salesPersonName.length > 0) {
-      const salesPersonNames = Array.isArray(salesPersonName)
-        ? salesPersonName
-        : [salesPersonName];
-      for (const name of salesPersonNames) {
-        const exists = await this.prisma.sls_InvoiceHd.findFirst({
-          where: {
-            company_id,
-            salesPersonName: { equals: name, mode: 'insensitive' },
-            invoiceDate: {
-              gte: startOfMonth(startDate),
-              lte: endOfMonth(endDate),
-            },
-          },
-        });
-        if (!exists) {
-          throw new BadRequestException(
-            `Invalid salesPersonName: ${name} for the given period`,
-          );
-        }
-      }
-    }
-
     // Prepare periode
     const formattedStartPeriod = format(startOfMonth(startDate), 'yyyy-MM-dd');
     const formattedEndPeriod = format(endOfMonth(endDate), 'yyyy-MM-dd');
@@ -396,7 +372,85 @@ export class sls_DashboardService {
       data: [],
     };
 
-    if (salesPersonName && salesPersonName.length > 0) {
+    if (!salesPersonName || salesPersonName.length === 0) {
+      // Hitung total penjualan per salesperson
+      const totalSalesByPerson: Record<string, number> = {};
+
+      result.forEach((item) => {
+        const salesPerson = item.salesPersonName || 'Unknown';
+        const amount = Math.round(Number(item._sum.total_amount || 0));
+        totalSalesByPerson[salesPerson] =
+          (totalSalesByPerson[salesPerson] || 0) + amount;
+      });
+
+      // Ambil topN salesperson berdasarkan total penjualan
+      const topSalesPersons = Object.entries(totalSalesByPerson)
+        .sort(([, amountA], [, amountB]) => amountB - amountA) // Urutkan descending berdasarkan amount
+        .slice(0, 5) // Ambil 5 besar
+        .map(([salesPerson]) => salesPerson);
+
+      // Filter hanya data dari topN salesperson
+      const filteredResult = result.filter((item) =>
+        topSalesPersons.includes(item.salesPersonName || 'Unknown'),
+      );
+
+      // Proses data bulanan
+      const monthlyData: Record<
+        string,
+        {
+          period: string;
+          totalInvoice: number;
+          months: Record<string, Record<string, number>>;
+        }
+      > = {};
+
+      filteredResult.forEach((item) => {
+        const year = item.invoiceDate.getFullYear().toString();
+        const monthIdx = item.invoiceDate.getMonth();
+        const monthKey = monthMap[monthIdx];
+        const salesPerson = item.salesPersonName || 'Unknown';
+        const amount = Math.round(Number(item._sum.total_amount || 0));
+
+        if (!monthlyData[year]) {
+          monthlyData[year] = {
+            period: year,
+            totalInvoice: 0,
+            months: {},
+          };
+        }
+        if (!monthlyData[year].months[monthKey]) {
+          monthlyData[year].months[monthKey] = {};
+        }
+
+        monthlyData[year].months[monthKey][salesPerson] =
+          (monthlyData[year].months[monthKey][salesPerson] || 0) + amount;
+
+        monthlyData[year].totalInvoice += amount;
+      });
+
+      response.data = Object.values(monthlyData).map((entry) => {
+        // Buat array months dengan sales yang diurutkan
+        const sortedMonths = monthMap
+          .filter((month) => entry.months[month]) // Hanya bulan dengan data
+          .map((month) => ({
+            month,
+            sales: Object.entries(entry.months[month])
+              .sort(([, amountA], [, amountB]) => amountB - amountA) // Urutkan descending berdasarkan amount
+              .map(([salesPersonName, amount]) => ({
+                salesPersonName,
+                amount,
+              })),
+          }));
+
+        return {
+          period: entry.period,
+          totalInvoice: Math.round(entry.totalInvoice),
+          months: sortedMonths,
+        };
+      });
+
+      response.data.sort((a: any, b: any) => a.period.localeCompare(b.period));
+    } else {
       // Kalau ada filter salesPersonName
       const monthlyData: Record<
         string,
@@ -457,64 +511,8 @@ export class sls_DashboardService {
           ? a.salesPersonName.localeCompare(b.salesPersonName)
           : a.period.localeCompare(b.period),
       );
-    } else {
-      // Kalau tanpa filter salesPersonName
-      const monthlyData: Record<
-        string,
-        {
-          period: string;
-          totalInvoice: number;
-          months: Record<string, Record<string, number>>;
-        }
-      > = {};
-
-      result.forEach((item) => {
-        const year = item.invoiceDate.getFullYear().toString();
-        const monthIdx = item.invoiceDate.getMonth();
-        const monthKey = monthMap[monthIdx];
-        const salesPerson = item.salesPersonName || 'Unknown';
-        const amount = Math.round(Number(item._sum.total_amount || 0));
-
-        if (!monthlyData[year]) {
-          monthlyData[year] = {
-            period: year,
-            totalInvoice: 0,
-            months: {},
-          };
-        }
-        if (!monthlyData[year].months[monthKey]) {
-          monthlyData[year].months[monthKey] = {};
-        }
-
-        monthlyData[year].months[monthKey][salesPerson] =
-          (monthlyData[year].months[monthKey][salesPerson] || 0) + amount;
-
-        monthlyData[year].totalInvoice += amount;
-      });
-
-      response.data = Object.values(monthlyData).map((entry) => {
-        // Buat array months dengan sales yang diurutkan
-        const sortedMonths = monthMap
-          .filter((month) => entry.months[month]) // Hanya bulan dengan data
-          .map((month) => ({
-            month,
-            sales: Object.entries(entry.months[month])
-              .sort(([, amountA], [, amountB]) => amountB - amountA) // Urutkan descending berdasarkan amount
-              .map(([salesPersonName, amount]) => ({
-                salesPersonName,
-                amount,
-              })),
-          }));
-
-        return {
-          period: entry.period,
-          totalInvoice: Math.round(entry.totalInvoice),
-          months: sortedMonths,
-        };
-      });
-
-      response.data.sort((a: any, b: any) => a.period.localeCompare(b.period));
     }
+
     return response;
   }
 
