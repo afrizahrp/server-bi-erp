@@ -7,6 +7,14 @@ import {
 import { PrismaService } from 'src/prisma.service';
 import { sls_dashboardDto } from './dto/sls_dashboard.dto';
 import { format, parse, startOfMonth, endOfMonth } from 'date-fns';
+import { Decimal } from '@prisma/client/runtime/library';
+
+type MonthlySalesResult = {
+  salesPersonName: string | null;
+  month_name: string;
+  year: number;
+  total_amount: number;
+};
 
 @Injectable()
 export class sls_DashboardService {
@@ -289,6 +297,7 @@ export class sls_DashboardService {
     return response;
   }
 
+  // afriza - get sales person by period with salesPersonName filter
   async getBySalesPersonByPeriod(
     company_id: string,
     module_id: string,
@@ -516,6 +525,168 @@ export class sls_DashboardService {
     return response;
   }
 
+  //afriza top N sales person
+
+  async getByTopNSalesPersonByPeriod(
+    company_id: string,
+    module_id: string,
+    subModule_id: string,
+    dto: sls_dashboardDto,
+  ) {
+    const { startPeriod, endPeriod, salesPersonName } = dto;
+
+    // Validasi startPeriod dan endPeriod
+    if (!startPeriod || !endPeriod) {
+      throw new BadRequestException('startPeriod and endPeriod are required');
+    }
+
+    let startDate: Date, endDate: Date;
+    try {
+      startDate = parse(startPeriod, 'MMMyyyy', new Date());
+      endDate = parse(endPeriod, 'MMMyyyy', new Date());
+      if (startDate > endDate) {
+        throw new BadRequestException('endPeriod must be after startPeriod');
+      }
+    } catch (error) {
+      throw new BadRequestException(
+        'startPeriod and endPeriod must be in MMMYYYY format (e.g., Jan2023)',
+      );
+    }
+
+    // Validasi company_id
+    const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
+      where: { company_id },
+    });
+    if (!companyExists) {
+      throw new NotFoundException(`Company ID ${company_id} not found`);
+    }
+
+    // Prepare periode
+    // const formattedStartPeriod = format(startOfMonth(startDate), 'yyyy-MM-dd');
+    // const formattedEndPeriod = format(endOfMonth(endDate), 'yyyy-MM-dd');
+
+    const formattedStartPeriod = new Date(
+      format(startOfMonth(startDate), 'yyyy-MM-dd'),
+    );
+    const formattedEndPeriod = new Date(
+      format(endOfMonth(endDate), 'yyyy-MM-dd'),
+    );
+
+    // Query SQL untuk mendapatkan data
+    const result = await this.prisma.$queryRaw<MonthlySalesResult[]>`
+WITH "MonthlySales" AS (
+    SELECT 
+        "salesPersonName",
+        TO_CHAR("invoiceDate", 'FMMonth') AS "month_name",
+        EXTRACT(YEAR FROM "invoiceDate") AS "year",
+        SUM("total_amount") AS "total_amount",
+        ROW_NUMBER() OVER (
+            PARTITION BY EXTRACT(YEAR FROM "invoiceDate"), TO_CHAR("invoiceDate", 'FMMonth') 
+            ORDER BY SUM("total_amount") DESC
+        ) AS "sales_rank",
+        EXTRACT(MONTH FROM "invoiceDate") AS "month_number"
+    FROM 
+        "sls_InvoiceHd"
+    WHERE 
+        "company_id" = ${company_id}
+        AND "invoiceDate" BETWEEN ${formattedStartPeriod} AND ${formattedEndPeriod}
+    GROUP BY 
+        "salesPersonName", -- Tambahkan kolom ini ke GROUP BY
+        EXTRACT(YEAR FROM "invoiceDate"),
+        TO_CHAR("invoiceDate", 'FMMonth'),
+        EXTRACT(MONTH FROM "invoiceDate")
+)
+SELECT 
+    "salesPersonName",
+    "month_name",
+    "year",
+    "total_amount" -- Hapus fungsi agregat SUM di sini
+FROM 
+    "MonthlySales"
+WHERE 
+    "sales_rank" <= 5
+ORDER BY 
+    "year",
+    "month_number",
+    "sales_rank";
+`;
+
+    const monthMap = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    const response: any = {
+      company_id,
+      module_id,
+      subModule_id,
+      data: [],
+    };
+
+    // Proses data bulanan
+    const monthlyData: Record<
+      string,
+      {
+        period: string;
+        totalInvoice: number;
+        months: Record<string, { salesPersonName: string; amount: number }[]>;
+      }
+    > = {};
+
+    result.forEach((item) => {
+      const year = item.year.toString();
+      const monthKey = monthMap.find(
+        (m) => m.toLowerCase() === item.month_name.toLowerCase().slice(0, 3),
+      );
+
+      if (!monthKey) {
+        throw new Error(`Invalid month_name: ${item.month_name}`);
+      }
+
+      const salesPerson = item.salesPersonName || 'Unknown';
+      const amount = parseFloat(item.total_amount.toString()) || 0;
+
+      if (!monthlyData[year]) {
+        monthlyData[year] = { period: year, totalInvoice: 0, months: {} };
+      }
+      if (!monthlyData[year].months[monthKey]) {
+        monthlyData[year].months[monthKey] = [];
+      }
+
+      monthlyData[year].months[monthKey].push({
+        salesPersonName: salesPerson,
+        amount,
+      });
+      monthlyData[year].totalInvoice += amount;
+    });
+
+    response.data = Object.values(monthlyData).map((entry) => ({
+      period: entry.period,
+      totalInvoice: Math.round(entry.totalInvoice),
+      months: monthMap.map((month) => ({
+        month,
+        sales: (entry.months[month] || [])
+          .sort((a, b) => b.amount - a.amount) // Urutkan berdasarkan amount
+          .map((sales) => ({
+            salesPersonName: sales.salesPersonName,
+            amount: Math.round(sales.amount), // Bulatkan nilai
+          })),
+      })),
+    }));
+
+    return response;
+  }
+
   async sls_periodPoType(
     company_id: string,
     module_id: string,
@@ -562,8 +733,8 @@ export class sls_DashboardService {
     const where: any = {
       company_id,
       invoiceDate: {
-        gte: new Date(formattedStartPeriod),
-        lte: new Date(formattedEndPeriod),
+        gte: formattedStartPeriod,
+        lte: formattedEndPeriod,
       },
     };
 

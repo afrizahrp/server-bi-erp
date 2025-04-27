@@ -67,4 +67,27 @@ export class sls_DashboardController {
       throw error;
     }
   }
+
+  @Public()
+  @Get('getByTopNSalesPersonByPeriod')
+  async getByTopNSalesPersonByPeriod(
+    @Param('company_id') company_id: string,
+    @Param('module_id') module_id: string,
+    @Param('subModule_id') subModule_id: string,
+    @Query() query: sls_dashboardDto,
+  ) {
+    this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
+
+    try {
+      return await this.salesDashboardService.getByTopNSalesPersonByPeriod(
+        company_id,
+        module_id,
+        subModule_id,
+        query,
+      );
+    } catch (error) {
+      this.logger.error(`Error processing request: ${error.message}`);
+      throw error;
+    }
+  }
 }

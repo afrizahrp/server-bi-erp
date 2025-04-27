@@ -23,14 +23,4 @@ export class sls_dashboardDto {
   @IsNumber({}, { message: 'topN must be a valid number' })
   @Min(1, { message: 'topN must be at least 1' })
   topN?: number;
-
-  // @IsOptional()
-  // @IsNumber({}, { message: 'limit must be a valid number' })
-  // @Min(1, { message: 'limit must be at least 1' })
-  // limit?: number;
-
-  // @IsOptional()
-  // @IsNumber({}, { message: 'offset must be a valid number' })
-  // @Min(0, { message: 'offset must be at least 0' })
-  // offset?: number;
 }
