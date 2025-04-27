@@ -508,7 +508,7 @@ export class sls_DashboardService {
 
           return {
             period: entry.period,
-            salesPersonName: entry.salesPersonName,
+            salesPersonName: entry.salesPersonName.toLocaleUpperCase(),
             totalInvoice: Math.round(entry.totalInvoice),
             months: sortedMonths,
           };
@@ -678,7 +678,7 @@ ORDER BY
         sales: (entry.months[month] || [])
           .sort((a, b) => b.amount - a.amount) // Urutkan berdasarkan amount
           .map((sales) => ({
-            salesPersonName: sales.salesPersonName,
+            salesPersonName: sales.salesPersonName.toLocaleUpperCase(),
             amount: Math.round(sales.amount), // Bulatkan nilai
           })),
       })),
