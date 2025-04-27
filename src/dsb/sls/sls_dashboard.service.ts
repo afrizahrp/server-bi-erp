@@ -289,6 +289,235 @@ export class sls_DashboardService {
     return response;
   }
 
+  async getBySalesPersonByPeriod(
+    company_id: string,
+    module_id: string,
+    subModule_id: string,
+    dto: sls_dashboardDto,
+  ) {
+    const { startPeriod, endPeriod, salesPersonName } = dto;
+
+    // Validasi startPeriod dan endPeriod
+    if (!startPeriod || !endPeriod) {
+      throw new BadRequestException('startPeriod and endPeriod are required');
+    }
+
+    let startDate: Date, endDate: Date;
+    try {
+      startDate = parse(startPeriod, 'MMMyyyy', new Date());
+      endDate = parse(endPeriod, 'MMMyyyy', new Date());
+      if (startDate > endDate) {
+        throw new BadRequestException('endPeriod must be after startPeriod');
+      }
+    } catch (error) {
+      throw new BadRequestException(
+        'startPeriod and endPeriod must be in MMMYYYY format (e.g., Jan2023)',
+      );
+    }
+
+    // Validasi company_id
+    const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
+      where: { company_id },
+    });
+    if (!companyExists) {
+      throw new NotFoundException(`Company ID ${company_id} not found`);
+    }
+
+    // Validasi salesPersonName jika ada
+    if (salesPersonName && salesPersonName.length > 0) {
+      const salesPersonNames = Array.isArray(salesPersonName)
+        ? salesPersonName
+        : [salesPersonName];
+      for (const name of salesPersonNames) {
+        const exists = await this.prisma.sls_InvoiceHd.findFirst({
+          where: {
+            company_id,
+            salesPersonName: { equals: name, mode: 'insensitive' },
+            invoiceDate: {
+              gte: startOfMonth(startDate),
+              lte: endOfMonth(endDate),
+            },
+          },
+        });
+        if (!exists) {
+          throw new BadRequestException(
+            `Invalid salesPersonName: ${name} for the given period`,
+          );
+        }
+      }
+    }
+
+    // Prepare periode
+    const formattedStartPeriod = format(startOfMonth(startDate), 'yyyy-MM-dd');
+    const formattedEndPeriod = format(endOfMonth(endDate), 'yyyy-MM-dd');
+
+    // Build where condition
+    const where: any = {
+      company_id,
+      invoiceDate: {
+        gte: new Date(formattedStartPeriod),
+        lte: new Date(formattedEndPeriod),
+      },
+    };
+
+    if (salesPersonName && salesPersonName.length > 0) {
+      const salesPersonNames = Array.isArray(salesPersonName)
+        ? salesPersonName
+        : [salesPersonName];
+      where.salesPersonName = { in: salesPersonNames, mode: 'insensitive' };
+    }
+
+    // Query groupBy
+    const result = await this.prisma.sls_InvoiceHd.groupBy({
+      by: ['salesPersonName', 'invoiceDate'],
+      where,
+      _sum: { total_amount: true },
+    });
+
+    const monthMap = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    const response: any = {
+      company_id,
+      module_id,
+      subModule_id,
+      data: [],
+    };
+
+    if (salesPersonName && salesPersonName.length > 0) {
+      // Kalau ada filter salesPersonName
+      const monthlyData: Record<
+        string,
+        Record<
+          string,
+          {
+            period: string;
+            salesPersonName: string;
+            totalInvoice: number;
+            months: Record<string, number>;
+          }
+        >
+      > = {};
+
+      result.forEach((item) => {
+        const year = item.invoiceDate.getFullYear().toString();
+        const monthIdx = item.invoiceDate.getMonth();
+        const monthKey = monthMap[monthIdx];
+        const salesPerson = item.salesPersonName || 'Unknown';
+        const amount = Math.round(Number(item._sum.total_amount || 0));
+
+        if (!monthlyData[year]) {
+          monthlyData[year] = {};
+        }
+        if (!monthlyData[year][salesPerson]) {
+          monthlyData[year][salesPerson] = {
+            period: year,
+            salesPersonName: salesPerson,
+            totalInvoice: 0,
+            months: {},
+          };
+        }
+
+        monthlyData[year][salesPerson].months[monthKey] =
+          (monthlyData[year][salesPerson].months[monthKey] || 0) + amount;
+        monthlyData[year][salesPerson].totalInvoice += amount;
+      });
+
+      response.data = Object.values(monthlyData).flatMap((yearData) =>
+        Object.values(yearData).map((entry) => {
+          // Urutkan months berdasarkan monthMap
+          const sortedMonths: Record<string, number> = {};
+          monthMap.forEach((month) => {
+            sortedMonths[month] = Math.round(entry.months[month] || 0);
+          });
+
+          return {
+            period: entry.period,
+            salesPersonName: entry.salesPersonName,
+            totalInvoice: Math.round(entry.totalInvoice),
+            months: sortedMonths,
+          };
+        }),
+      );
+
+      response.data.sort((a: any, b: any) =>
+        a.period === b.period
+          ? a.salesPersonName.localeCompare(b.salesPersonName)
+          : a.period.localeCompare(b.period),
+      );
+    } else {
+      // Kalau tanpa filter salesPersonName
+      const monthlyData: Record<
+        string,
+        {
+          period: string;
+          totalInvoice: number;
+          months: Record<string, Record<string, number>>;
+        }
+      > = {};
+
+      result.forEach((item) => {
+        const year = item.invoiceDate.getFullYear().toString();
+        const monthIdx = item.invoiceDate.getMonth();
+        const monthKey = monthMap[monthIdx];
+        const salesPerson = item.salesPersonName || 'Unknown';
+        const amount = Math.round(Number(item._sum.total_amount || 0));
+
+        if (!monthlyData[year]) {
+          monthlyData[year] = {
+            period: year,
+            totalInvoice: 0,
+            months: {},
+          };
+        }
+        if (!monthlyData[year].months[monthKey]) {
+          monthlyData[year].months[monthKey] = {};
+        }
+
+        monthlyData[year].months[monthKey][salesPerson] =
+          (monthlyData[year].months[monthKey][salesPerson] || 0) + amount;
+
+        monthlyData[year].totalInvoice += amount;
+      });
+
+      response.data = Object.values(monthlyData).map((entry) => {
+        // Buat array months dengan sales yang diurutkan
+        const sortedMonths = monthMap
+          .filter((month) => entry.months[month]) // Hanya bulan dengan data
+          .map((month) => ({
+            month,
+            sales: Object.entries(entry.months[month])
+              .sort(([, amountA], [, amountB]) => amountB - amountA) // Urutkan descending berdasarkan amount
+              .map(([salesPersonName, amount]) => ({
+                salesPersonName,
+                amount,
+              })),
+          }));
+
+        return {
+          period: entry.period,
+          totalInvoice: Math.round(entry.totalInvoice),
+          months: sortedMonths,
+        };
+      });
+
+      response.data.sort((a: any, b: any) => a.period.localeCompare(b.period));
+    }
+    return response;
+  }
+
   async sls_periodPoType(
     company_id: string,
     module_id: string,
