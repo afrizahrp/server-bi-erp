@@ -733,8 +733,8 @@ ORDER BY
     const where: any = {
       company_id,
       invoiceDate: {
-        gte: formattedStartPeriod,
-        lte: formattedEndPeriod,
+        gte: startDate,
+        lte: endDate,
       },
     };
 
