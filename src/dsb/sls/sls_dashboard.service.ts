@@ -7,7 +7,6 @@ import {
 import { PrismaService } from 'src/prisma.service';
 import { sls_dashboardDto } from './dto/sls_dashboard.dto';
 import { format, parse, startOfMonth, endOfMonth } from 'date-fns';
-import { Decimal } from '@prisma/client/runtime/library';
 
 type MonthlySalesResult = {
   salesPersonName: string | null;

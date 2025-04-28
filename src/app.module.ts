@@ -24,6 +24,9 @@ import { sys_MenuPermissionModule } from './sys/sys_menu_permission/sys_Menu_Per
 import { sls_InvoiceHdModule } from './sls/sls_invoiceHd/sls_InvoiceHd.module';
 import { sls_InvoiceDtModule } from './sls/sls_InvoiceDt/sls_InvoiceDt.module';
 import { sls_DashboardModule } from './dsb/sls/sls_dashboard.module';
+
+import { sls_AnalyticsModule } from './ant/sls/sales-person-performa/sls_analytics.module';
+
 import { UploadController } from './cloudinary/cloudinary.controller';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
@@ -49,6 +52,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     sls_InvoiceHdModule,
     sls_InvoiceDtModule,
     sls_DashboardModule,
+    sls_AnalyticsModule,
     CloudinaryModule,
   ],
   controllers: [AppController, UploadController],
