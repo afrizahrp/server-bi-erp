@@ -63,18 +63,18 @@ export class sls_AnalythicsController {
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
     @Query('salesPersonName') salesPersonName: string,
-    @Query('startPeriod') startPeriod: string,
-    @Query('endPeriod') endPeriod: string,
+    @Query('yearPeriod') yearPeriod: string,
+    @Query('monthPeriod') monthPeriod: string,
   ) {
     this.logger.debug(
-      `Received params: company_id=${company_id}, module_id=${module_id}, subModule_id=${subModule_id}, salesPersonName=${salesPersonName}, startPeriod=${startPeriod}, endPeriod=${endPeriod}`,
+      `Received params: company_id=${company_id}, module_id=${module_id}, subModule_id=${subModule_id}, salesPersonName=${salesPersonName}, yearPeriod=${yearPeriod}, monthPeriod=${monthPeriod}`,
     );
     try {
       return await this.salesAnalytics.getProductSoldCountBySalesPerson(
         company_id,
         salesPersonName,
-        startPeriod,
-        endPeriod,
+        yearPeriod,
+        monthPeriod,
       );
     } catch (error) {
       this.logger.error(`Error processing request: ${error.message}`);

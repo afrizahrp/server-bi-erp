@@ -415,40 +415,38 @@ export class sls_AnalythicsService {
   async getProductSoldCountBySalesPerson(
     company_id: string,
     salesPersonName: string,
-    startPeriod: string,
-    endPeriod: string,
+    yearPeriod: string,
+    monthPeriod: string,
   ) {
     this.logger.debug(
-      `Received params: company_id=${company_id}, salesPersonName=${salesPersonName}, startPeriod=${startPeriod}, endPeriod=${endPeriod}`,
+      `Received params: company_id=${company_id}, salesPersonName=${salesPersonName}, yearPeriod=${yearPeriod}, monthPeriod=${monthPeriod}`,
     );
 
-    // Validasi input
     if (!salesPersonName) {
       throw new BadRequestException('salesPersonName is required');
     }
-    if (!startPeriod || !endPeriod) {
-      throw new BadRequestException('startPeriod and endPeriod are required');
+
+    if (!yearPeriod || !monthPeriod) {
+      throw new BadRequestException('yearPeriod and monthPeriod are required');
     }
 
-    // Parse periode
+    const period = `${monthPeriod}${yearPeriod}`;
+
+    // Parsing periode
     let startDate: Date, endDate: Date;
+
     try {
-      startDate = parse(startPeriod, 'MMMyyyy', new Date());
-      endDate = parse(endPeriod, 'MMMyyyy', new Date());
-      if (startDate > endDate) {
-        throw new BadRequestException('endPeriod must be after startPeriod');
-      }
+      startDate = parse(period, 'MMMyyyy', new Date());
+      endDate = parse(period, 'MMMyyyy', new Date());
     } catch (error) {
       throw new BadRequestException(
-        'startPeriod and endPeriod must be in MMMYYYY format (e.g., Jan2023)',
+        'yearPeriod and monthPeriod must form a valid period in MMMYYYY format (e.g., Jan2024)',
       );
     }
 
-    // Format periode untuk query
     const formattedStartPeriod = format(startOfMonth(startDate), 'yyyy-MM-dd');
     const formattedEndPeriod = format(endOfMonth(endDate), 'yyyy-MM-dd');
 
-    // Validasi company_id
     const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
       where: { company_id },
     });
@@ -460,7 +458,7 @@ export class sls_AnalythicsService {
       by: ['productName'],
       _sum: {
         qty: true,
-        total_amount: true, // Tambahkan SUM(amount)
+        total_amount: true,
       },
       where: {
         company_id,
@@ -478,32 +476,26 @@ export class sls_AnalythicsService {
       },
       orderBy: {
         _sum: {
-          total_amount: 'desc', // Urutkan berdasarkan SUM(qty)
+          total_amount: 'desc',
         },
       },
-      take: 10, // Batasi ke 10 produk teratas
+      take: 3,
     });
 
-    // Format hasil
     const data = results.map((result) => ({
       productName: result.productName.trim(),
       qty: result._sum.qty ? Math.round(Number(result._sum.qty)) : 0,
       total_amount: result._sum.total_amount
         ? Math.round(Number(result._sum.total_amount))
-        : 0, // Tambahkan total_amount
+        : 0,
     }));
 
     return {
       company_id,
-      module_id: 'ANT', // Nilai statis sesuai permintaan
-      subModule_id: 'sls', // Nilai statis sesuai permintaan
+      module_id: 'ANT',
+      subModule_id: 'sls',
       salesPersonName: salesPersonName.toUpperCase(),
       data,
     };
   }
-
-  // Method getBySalesPersonByPeriod (tetap sama, disertakan untuk referensi)
-  // async getBySalesPersonByPeriod(company_id: string, dto: SlsDashboardDto) {
-  //   // ... (kode sebelumnya, tidak berubah)
-  // }
 }
