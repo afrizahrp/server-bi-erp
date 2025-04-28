@@ -65,9 +65,10 @@ export class sls_AnalythicsController {
     @Query('salesPersonName') salesPersonName: string,
     @Query('yearPeriod') yearPeriod: string,
     @Query('monthPeriod') monthPeriod: string,
+    @Query('sortBy') sortBy: string,
   ) {
     this.logger.debug(
-      `Received params: company_id=${company_id}, module_id=${module_id}, subModule_id=${subModule_id}, salesPersonName=${salesPersonName}, yearPeriod=${yearPeriod}, monthPeriod=${monthPeriod}`,
+      `Received params: company_id=${company_id}, module_id=${module_id}, subModule_id=${subModule_id}, salesPersonName=${salesPersonName}, yearPeriod=${yearPeriod}, monthPeriod=${monthPeriod},sortBy=${sortBy}`,
     );
     try {
       return await this.salesAnalytics.getProductSoldCountBySalesPerson(
@@ -75,6 +76,7 @@ export class sls_AnalythicsController {
         salesPersonName,
         yearPeriod,
         monthPeriod,
+        sortBy,
       );
     } catch (error) {
       this.logger.error(`Error processing request: ${error.message}`);

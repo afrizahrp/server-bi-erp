@@ -417,6 +417,7 @@ export class sls_AnalythicsService {
     salesPersonName: string,
     yearPeriod: string,
     monthPeriod: string,
+    sortBy: string,
   ) {
     this.logger.debug(
       `Received params: company_id=${company_id}, salesPersonName=${salesPersonName}, yearPeriod=${yearPeriod}, monthPeriod=${monthPeriod}`,
@@ -476,7 +477,7 @@ export class sls_AnalythicsService {
       },
       orderBy: {
         _sum: {
-          total_amount: 'desc',
+          [sortBy]: 'desc', // Gunakan parameter sort untuk menentukan kolom yang diurutkan
         },
       },
       take: 3,
