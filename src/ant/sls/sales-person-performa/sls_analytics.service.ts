@@ -480,7 +480,7 @@ export class sls_AnalythicsService {
           [sortBy]: 'desc', // Gunakan parameter sort untuk menentukan kolom yang diurutkan
         },
       },
-      take: 3,
+      take: 3, // Ambil 3 besar
     });
 
     const data = results.map((result) => ({
