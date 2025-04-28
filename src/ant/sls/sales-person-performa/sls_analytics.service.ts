@@ -58,6 +58,10 @@ export class sls_AnalythicsService {
       throw new NotFoundException(`Company ID ${company_id} not found`);
     }
 
+    // Prepare periode
+    // const formattedStartPeriod = format(startOfMonth(startDate), 'yyyy-MM-dd');
+    // const formattedEndPeriod = format(endOfMonth(endDate), 'yyyy-MM-dd');
+
     const formattedStartPeriod = new Date(
       format(startOfMonth(startDate), 'yyyy-MM-dd'),
     );
@@ -67,57 +71,57 @@ export class sls_AnalythicsService {
 
     // Query SQL untuk mendapatkan data
     const result = await this.prisma.$queryRaw<MonthlySalesResult[]>`
-WITH "MonthlySales" AS (
+  WITH "MonthlySales" AS (
+      SELECT 
+          "salesPersonName",
+          TO_CHAR("invoiceDate", 'FMMonth') AS "month_name",
+          EXTRACT(YEAR FROM "invoiceDate") AS "year",
+          SUM("total_amount") AS "total_amount",
+          ROW_NUMBER() OVER (
+              PARTITION BY EXTRACT(YEAR FROM "invoiceDate"), TO_CHAR("invoiceDate", 'FMMonth') 
+              ORDER BY SUM("total_amount") DESC
+          ) AS "sales_rank",
+          EXTRACT(MONTH FROM "invoiceDate") AS "month_number"
+      FROM 
+          "sls_InvoiceHd"
+      WHERE 
+          "company_id" = ${company_id}
+          AND "invoiceDate" BETWEEN ${formattedStartPeriod} AND ${formattedEndPeriod}
+      GROUP BY 
+          "salesPersonName", -- Tambahkan kolom ini ke GROUP BY
+          EXTRACT(YEAR FROM "invoiceDate"),
+          TO_CHAR("invoiceDate", 'FMMonth'),
+          EXTRACT(MONTH FROM "invoiceDate")
+  )
   SELECT 
       "salesPersonName",
-      TO_CHAR("invoiceDate", 'FMMonth') AS "month_name",
-      EXTRACT(YEAR FROM "invoiceDate") AS "year",
-      SUM("total_amount") AS "total_amount",
-      ROW_NUMBER() OVER (
-          PARTITION BY EXTRACT(YEAR FROM "invoiceDate"), TO_CHAR("invoiceDate", 'FMMonth') 
-          ORDER BY SUM("total_amount") DESC
-      ) AS "sales_rank",
-      EXTRACT(MONTH FROM "invoiceDate") AS "month_number"
+      "month_name",
+      "year",
+      "total_amount" -- Hapus fungsi agregat SUM di sini
   FROM 
-      "sls_InvoiceHd"
+      "MonthlySales"
   WHERE 
-      "company_id" = ${company_id}
-      AND "invoiceDate" BETWEEN ${formattedStartPeriod} AND ${formattedEndPeriod}
-  GROUP BY 
-      "salesPersonName", -- Tambahkan kolom ini ke GROUP BY
-      EXTRACT(YEAR FROM "invoiceDate"),
-      TO_CHAR("invoiceDate", 'FMMonth'),
-      EXTRACT(MONTH FROM "invoiceDate")
-)
-SELECT 
-  "salesPersonName",
-  "month_name",
-  "year",
-  "total_amount" -- Hapus fungsi agregat SUM di sini
-FROM 
-  "MonthlySales"
-WHERE 
-  "sales_rank" <= 5
-ORDER BY 
-  "year",
-  "month_number",
-  "sales_rank";
-`;
+      "sales_rank" <= 5
+  ORDER BY 
+      "year",
+      "month_number",
+      "sales_rank";
+  `;
 
-    // const monthMap = [
-    //   'Jan',
-    //   'Feb',
-    //   'Mar',
-    //   'Apr',
-    //   'May',
-    //   'Jun',
-    //   'Jul',
-    //   'Aug',
-    //   'Sep',
-    //   'Oct',
-    //   'Nov',
-    //   'Dec',
-    // ];
+    const monthMap = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
 
     const response: any = {
       company_id,
@@ -138,8 +142,7 @@ ORDER BY
 
     result.forEach((item) => {
       const year = item.year.toString();
-      // const monthKey = monthMap.find(
-      const monthKey = monthMap.findIndex(
+      const monthKey = monthMap.find(
         (m) => m.toLowerCase() === item.month_name.toLowerCase().slice(0, 3),
       );
 
