@@ -86,6 +86,7 @@ export class sls_AnalythicsService {
           "sls_InvoiceHd"
       WHERE 
           "company_id" = ${company_id}
+      AND "trxType" = 'IV'
           AND "invoiceDate" BETWEEN ${formattedStartPeriod} AND ${formattedEndPeriod}
       GROUP BY 
           "salesPersonName", -- Tambahkan kolom ini ke GROUP BY
@@ -465,6 +466,7 @@ export class sls_AnalythicsService {
         company_id,
         sls_InvoiceHd: {
           company_id,
+          trxType: 'IV',
           salesPersonName: {
             equals: salesPersonName,
             mode: 'insensitive',
