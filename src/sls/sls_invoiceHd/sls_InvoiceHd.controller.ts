@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Param,
+  Query,
+  Request,
+} from '@nestjs/common';
 import { Public } from 'src/auth/decorators/public.decorator';
 
 import { sls_PaginationInvoiceHdDto } from './dto/sls_PaginationInvoiceHd.dto';
@@ -16,11 +23,18 @@ export class sls_InvoiceHdController {
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Query() paginationDto: sls_PaginationInvoiceHdDto,
+    @Request() req, // Ambil userId dari request
   ): Promise<{ data: sls_ResponseInvoiceHdDto[]; totalRecords: number }> {
+    const userId = req.user?.id; // Pastikan userId tersedia di request
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+
     return this.sls_invoiceHdService.findAll(
       company_id,
       module_id,
       paginationDto,
+      userId,
     );
   }
 

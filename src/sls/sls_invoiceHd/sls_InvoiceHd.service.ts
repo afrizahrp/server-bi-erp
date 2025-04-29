@@ -16,6 +16,7 @@ export class sls_InvoiceHdService {
     company_id: string,
     module_id: string,
     paginationDto: sls_PaginationInvoiceHdDto,
+    userId: number, // Tambahkan userId untuk memfilter berdasarkan pengguna
   ): Promise<{
     data: sls_ResponseInvoiceHdDto[];
     grandTotal_amount: number;
@@ -44,7 +45,6 @@ export class sls_InvoiceHdService {
       'paidStatus_id',
     ];
 
-    // const searchCondition = buildSearchCondition(searchBy, searchTerm);
     const orderByCondition = sortFieldBy(
       allowedSortFields,
       paginationDto.orderBy,
@@ -70,6 +70,29 @@ export class sls_InvoiceHdService {
       },
     });
 
+    // Cari nama pengguna berdasarkan userId
+    const user = await this.prisma.sys_User.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Tambahkan filter berdasarkan salesPersonName jika user terdaftar
+    const salesPerson = await this.prisma.sls_SalesPerson.findUnique({
+      where: { company_id_id: { company_id, id: String(userId) } },
+      select: { name: true },
+    });
+
+    if (salesPerson) {
+      whereCondition.salesPersonName = {
+        equals: salesPerson.name,
+        mode: 'insensitive',
+      };
+    }
+
     const searchConditions = buildSearchCondition(searchBy, searchTerm);
     if (searchConditions) {
       if (whereCondition.AND) {
@@ -80,6 +103,7 @@ export class sls_InvoiceHdService {
     }
 
     console.log('whereCondition', whereCondition);
+
     // Jalankan query count, findMany, dan aggregate secara paralel
     const [totalRecords, invoices, aggregate] = await Promise.all([
       this.prisma.sls_InvoiceHd.count({ where: whereCondition }),
@@ -109,12 +133,9 @@ export class sls_InvoiceHdService {
 
     return {
       data: formattedInvoices,
-      // grandTotal_amount: aggregate._sum.total_amount?.toNumber() || 0, // Return total_amount as grandTotal_amount
-
       grandTotal_amount: Math.round(
         aggregate._sum.total_amount?.toNumber() ?? 0,
       ),
-
       totalRecords,
     };
   }

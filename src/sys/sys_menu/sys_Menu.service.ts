@@ -72,9 +72,9 @@ export class sys_MenuService {
 
   private mapToMenuItem(menu: any, allMenus: any[]): MenuItemDto {
     const childMenus = allMenus.filter((m) => m.parent_id === menu.id);
-
+    const submenuItem_list = ['List', 'Sales', 'Inventory', 'Purchasing'];
     // Jika menu memiliki "List", child-nya harus masuk ke multi_menu
-    if (menu.menu_description === 'List') {
+    if (submenuItem_list.includes(menu.menu_description)) {
       return {
         title: menu.menu_description,
         href: menu.href || '#',
