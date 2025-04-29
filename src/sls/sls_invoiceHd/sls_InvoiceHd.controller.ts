@@ -23,18 +23,18 @@ export class sls_InvoiceHdController {
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Query() paginationDto: sls_PaginationInvoiceHdDto,
-    @Request() req, // Ambil userId dari request
+    // @Request() req, // Ambil userId dari request
   ): Promise<{ data: sls_ResponseInvoiceHdDto[]; totalRecords: number }> {
-    const userId = req.user?.id; // Pastikan userId tersedia di request
-    if (!userId) {
-      throw new BadRequestException('User ID is required');
-    }
+    // const userId = req.user?.id; // Pastikan userId tersedia di request
+    // if (!userId) {
+    //   throw new BadRequestException('User ID is required');
+    // }
 
     return this.sls_invoiceHdService.findAll(
       company_id,
       module_id,
       paginationDto,
-      userId,
+      // userId,
     );
   }
 

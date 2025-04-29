@@ -16,7 +16,7 @@ export class sls_InvoiceHdService {
     company_id: string,
     module_id: string,
     paginationDto: sls_PaginationInvoiceHdDto,
-    userId: number, // Tambahkan userId untuk memfilter berdasarkan pengguna
+    // userId: number, // Tambahkan userId untuk memfilter berdasarkan pengguna
   ): Promise<{
     data: sls_ResponseInvoiceHdDto[];
     grandTotal_amount: number;
@@ -71,27 +71,27 @@ export class sls_InvoiceHdService {
     });
 
     // Cari nama pengguna berdasarkan userId
-    const user = await this.prisma.sys_User.findUnique({
-      where: { id: userId },
-      select: { name: true },
-    });
+    // const user = await this.prisma.sys_User.findUnique({
+    //   where: { id: userId },
+    //   select: { name: true },
+    // });
 
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
+    // if (!user) {
+    //   throw new NotFoundException(`User with ID ${userId} not found`);
+    // }
 
     // Tambahkan filter berdasarkan salesPersonName jika user terdaftar
-    const salesPerson = await this.prisma.sls_SalesPerson.findUnique({
-      where: { company_id_id: { company_id, id: String(userId) } },
-      select: { name: true },
-    });
+    // const salesPerson = await this.prisma.sls_SalesPerson.findUnique({
+    //   where: { company_id_id: { company_id, id: String(userId) } },
+    //   select: { name: true },
+    // });
 
-    if (salesPerson) {
-      whereCondition.salesPersonName = {
-        equals: salesPerson.name,
-        mode: 'insensitive',
-      };
-    }
+    // if (salesPersonName) {
+    //   whereCondition.salesPersonName = {
+    //     equals: name,
+    //     mode: 'insensitive',
+    //   };
+    // }
 
     const searchConditions = buildSearchCondition(searchBy, searchTerm);
     if (searchConditions) {
