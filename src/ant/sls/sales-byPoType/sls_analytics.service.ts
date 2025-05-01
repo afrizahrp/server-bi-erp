@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { sls_analyticsDto } from './dto/sls_analytics.dto';
+import { sls_analyticsDto } from '../dto/sls_person-performa-analytics.dto';
 import { format, parse, startOfMonth, endOfMonth } from 'date-fns';
 import { monthMap } from 'src/utils/date/getMonthName';
 
@@ -30,7 +30,7 @@ export class sls_AnalythicsService {
     subModule_id: string,
     dto: sls_analyticsDto,
   ) {
-    const { startPeriod, endPeriod } = dto;
+    const { startPeriod, endPeriod, salesPersonName } = dto;
 
     // Validasi startPeriod dan endPeriod
     if (!startPeriod || !endPeriod) {
@@ -71,43 +71,52 @@ export class sls_AnalythicsService {
 
     // Query SQL untuk mendapatkan data
     const result = await this.prisma.$queryRaw<MonthlySalesResult[]>`
-  WITH "MonthlySales" AS (
+    WITH "MonthlySales" AS (
       SELECT 
-          "salesPersonName",
-          TO_CHAR("invoiceDate", 'FMMonth') AS "month_name",
-          EXTRACT(YEAR FROM "invoiceDate") AS "year",
-          SUM("total_amount") AS "total_amount",
-          ROW_NUMBER() OVER (
-              PARTITION BY EXTRACT(YEAR FROM "invoiceDate"), TO_CHAR("invoiceDate", 'FMMonth') 
-              ORDER BY SUM("total_amount") DESC
-          ) AS "sales_rank",
-          EXTRACT(MONTH FROM "invoiceDate") AS "month_number"
+        "salesPersonName",
+        TO_CHAR("invoiceDate", 'YYYY-MM') AS "period",
+        TO_CHAR("invoiceDate", 'Mon') AS "month_name",
+        EXTRACT(YEAR FROM "invoiceDate") AS "year",
+        EXTRACT(MONTH FROM "invoiceDate") AS "month_number",
+        SUM("total_amount") AS "total_amount"
       FROM 
-          "sls_InvoiceHd"
+        "sls_InvoiceHd"
       WHERE 
-          "company_id" = ${company_id}
-      AND "trxType" = 'IV'
-          AND "invoiceDate" BETWEEN ${formattedStartPeriod} AND ${formattedEndPeriod}
+        "company_id" = ${company_id}
+        AND "trxType" = 'IV'
+        AND "invoiceDate" BETWEEN ${formattedStartPeriod} AND ${formattedEndPeriod}
       GROUP BY 
-          "salesPersonName", -- Tambahkan kolom ini ke GROUP BY
-          EXTRACT(YEAR FROM "invoiceDate"),
-          TO_CHAR("invoiceDate", 'FMMonth'),
-          EXTRACT(MONTH FROM "invoiceDate")
-  )
-  SELECT 
+        "salesPersonName", "period", "month_name", "year", "month_number"
+      HAVING 
+        SUM("total_amount") >= 50000000
+    )
+    SELECT 
       "salesPersonName",
+      "period",
       "month_name",
-      "year",
-      "total_amount" -- Hapus fungsi agregat SUM di sini
-  FROM 
-      "MonthlySales"
-  WHERE 
-      "sales_rank" <= 5
-  ORDER BY 
-      "year",
       "month_number",
-      "sales_rank";
+      "year",
+      "total_amount"
+    FROM 
+      "MonthlySales"
+    ORDER BY 
+      "year", "month_number", "total_amount" DESC;
   `;
+
+    const monthMap = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
 
     const response: any = {
       company_id,
@@ -485,132 +494,5 @@ export class sls_AnalythicsService {
       salesPersonName: salesPersonName.toUpperCase(),
       data,
     };
-  }
-
-  async getSalesByPoTypeByPeriod(
-    company_id: string,
-    module_id: string,
-    subModule_id: string,
-    dto: sls_analyticsDto,
-  ) {
-    const { startPeriod, endPeriod, poType } = dto;
-
-    // Validasi startPeriod dan endPeriod
-    if (!startPeriod || !endPeriod) {
-      throw new BadRequestException('startPeriod and endPeriod are required');
-    }
-
-    let startDate: Date, endDate: Date;
-    try {
-      startDate = parse(startPeriod, 'MMMyyyy', new Date());
-      endDate = parse(endPeriod, 'MMMyyyy', new Date());
-      if (startDate > endDate) {
-        throw new BadRequestException('endPeriod must be after startPeriod');
-      }
-    } catch (error) {
-      throw new BadRequestException(
-        'startPeriod and endPeriod must be in MMMYYYY format (e.g., Jan2023)',
-      );
-    }
-
-    // Validasi company_id
-    const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
-      where: { company_id },
-    });
-    if (!companyExists) {
-      throw new NotFoundException(`Company ID ${company_id} not found`);
-    }
-
-    // Hitung rentang tanggal
-    const formattedStartPeriod = format(startOfMonth(startDate), 'yyyy-MM-dd');
-    const formattedEndPeriod = format(endOfMonth(endDate), 'yyyy-MM-dd');
-
-    // Buat where clause untuk query Prisma
-    const where: any = {
-      company_id,
-      invoiceDate: {
-        gte: startDate,
-        lte: endDate,
-      },
-    };
-
-    // Tambahkan filter poType jika ada
-    if (poType) {
-      const poTypes = Array.isArray(poType) ? poType : [poType];
-      where.sls_InvoicePoType = {
-        name: { in: poTypes },
-      };
-    }
-
-    // Query dengan findMany untuk mengambil data beserta relasi poType
-    const invoices = await this.prisma.sls_InvoiceHd.findMany({
-      where,
-      select: {
-        invoiceDate: true,
-        total_amount: true,
-        sls_InvoicePoType: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    });
-
-    // Mapping data ke format yang diinginkan
-    const yearlyData: Record<
-      string,
-      Record<
-        string,
-        {
-          period: string;
-          poType: string;
-          totalInvoice: number;
-          months: Record<string, number>;
-        }
-      >
-    > = {};
-
-    for (const item of invoices) {
-      const year = item.invoiceDate.getFullYear().toString();
-      const monthIdx = item.invoiceDate.getMonth();
-      const monthKey = monthMap[monthIdx];
-      const poTypeName = item.sls_InvoicePoType?.name || 'Unknown';
-      const amount = item.total_amount
-        ? Math.round(parseFloat(item.total_amount.toString()))
-        : 0;
-
-      if (!yearlyData[year]) {
-        yearlyData[year] = {};
-      }
-      if (!yearlyData[year][poTypeName]) {
-        yearlyData[year][poTypeName] = {
-          period: year,
-          poType: poTypeName,
-          totalInvoice: 0,
-          months: monthMap.reduce(
-            (acc, month) => {
-              acc[month] = 0;
-              return acc;
-            },
-            {} as Record<string, number>,
-          ),
-        };
-      }
-
-      yearlyData[year][poTypeName].months[monthKey] += amount;
-      yearlyData[year][poTypeName].totalInvoice += amount;
-    }
-
-    // Bentuk response
-    const response: any = {
-      company_id,
-      module_id,
-      subModule_id,
-      data: Object.values(yearlyData)
-        .flatMap((yearData) => Object.values(yearData))
-        .sort((a, b) => a.period.localeCompare(b.period)),
-    };
-
-    return response;
   }
 }

@@ -7,6 +7,7 @@ import {
 import { PrismaService } from 'src/prisma.service';
 import { sls_dashboardDto } from './dto/sls_dashboard.dto';
 import { format, parse, startOfMonth, endOfMonth } from 'date-fns';
+import { monthMap } from 'src/utils/date/getMonthName';
 
 type MonthlySalesResult = {
   salesPersonName: string | null;
@@ -168,22 +169,6 @@ export class sls_DashboardService {
       where,
       _sum: { total_amount: true },
     });
-
-    // Mapping month
-    const monthMap = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
 
     const response: any = {
       company_id,
@@ -357,21 +342,6 @@ export class sls_DashboardService {
       where,
       _sum: { total_amount: true },
     });
-
-    const monthMap = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
 
     const response: any = {
       company_id,
@@ -609,21 +579,6 @@ ORDER BY
     "month_number",
     "sales_rank";
 `;
-
-    const monthMap = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
 
     const response: any = {
       company_id,
