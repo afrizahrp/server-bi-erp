@@ -8,6 +8,7 @@ import { PrismaService } from 'src/prisma.service';
 import { sls_analyticsDto } from '../dto/sls_person-performa-analytics.dto';
 import { format, parse, startOfMonth, endOfMonth } from 'date-fns';
 import { monthMap } from 'src/utils/date/getMonthName';
+import { Prisma } from '@prisma/client';
 
 type MonthlySalesResult = {
   salesPersonName: string | null;
@@ -30,6 +31,8 @@ export class sls_AnalythicsService {
     subModule_id: string,
     dto: sls_analyticsDto,
   ) {
+    console.log('Starting getByTopNSalesPersonByPeriod...');
+
     const { startPeriod, endPeriod, salesPersonName } = dto;
 
     // Validasi startPeriod dan endPeriod
@@ -58,10 +61,6 @@ export class sls_AnalythicsService {
       throw new NotFoundException(`Company ID ${company_id} not found`);
     }
 
-    // Prepare periode
-    // const formattedStartPeriod = format(startOfMonth(startDate), 'yyyy-MM-dd');
-    // const formattedEndPeriod = format(endOfMonth(endDate), 'yyyy-MM-dd');
-
     const formattedStartPeriod = new Date(
       format(startOfMonth(startDate), 'yyyy-MM-dd'),
     );
@@ -69,16 +68,25 @@ export class sls_AnalythicsService {
       format(endOfMonth(endDate), 'yyyy-MM-dd'),
     );
 
-    // Query SQL untuk mendapatkan data
-    const result = await this.prisma.$queryRaw<MonthlySalesResult[]>`
-    WITH "MonthlySales" AS (
+    console.log('Executing query...');
+    // Query untuk mendapatkan data per bulan dengan filter total_amount >= 100 juta
+    const result = await this.prisma.$queryRaw<
+      {
+        salesPersonName: string;
+        period: string;
+        month_name: string;
+        month_number: number;
+        year: number;
+        total_amount: number;
+      }[]
+    >`
       SELECT 
         "salesPersonName",
         TO_CHAR("invoiceDate", 'YYYY-MM') AS "period",
         TO_CHAR("invoiceDate", 'Mon') AS "month_name",
         EXTRACT(YEAR FROM "invoiceDate") AS "year",
         EXTRACT(MONTH FROM "invoiceDate") AS "month_number",
-        SUM("total_amount") AS "total_amount"
+        CAST(SUM("total_amount") AS DECIMAL) AS "total_amount"
       FROM 
         "sls_InvoiceHd"
       WHERE 
@@ -88,20 +96,13 @@ export class sls_AnalythicsService {
       GROUP BY 
         "salesPersonName", "period", "month_name", "year", "month_number"
       HAVING 
-        SUM("total_amount") >= 50000000
-    )
-    SELECT 
-      "salesPersonName",
-      "period",
-      "month_name",
-      "month_number",
-      "year",
-      "total_amount"
-    FROM 
-      "MonthlySales"
-    ORDER BY 
-      "year", "month_number", "total_amount" DESC;
-  `;
+        CAST(SUM("total_amount") AS DECIMAL) >= 100000000
+      ORDER BY 
+        "year", "month_number", "total_amount" DESC;
+    `;
+
+    // Log hasil query untuk debugging
+    console.log('Query Result:', JSON.stringify(result, null, 2));
 
     const monthMap = [
       'Jan',
@@ -135,18 +136,45 @@ export class sls_AnalythicsService {
       }
     > = {};
 
-    result.forEach((item) => {
+    // Log untuk memastikan forEach dijalankan
+    console.log('Starting result.forEach loop...');
+    result.forEach((item, index) => {
+      console.log(`Processing item ${index}:`, JSON.stringify(item, null, 2));
+
       const year = item.year.toString();
       const monthKey = monthMap.find(
         (m) => m.toLowerCase() === item.month_name.toLowerCase().slice(0, 3),
       );
 
       if (!monthKey) {
+        console.log(`Invalid month_name: ${item.month_name}`);
         throw new Error(`Invalid month_name: ${item.month_name}`);
       }
 
       const salesPerson = item.salesPersonName || 'Unknown';
-      const amount = parseFloat(item.total_amount.toString()) || 0;
+      // Pastikan total_amount adalah angka yang valid
+      console.log(`Raw total_amount for ${salesPerson}: ${item.total_amount}`);
+      const amount = Number(item.total_amount);
+      console.log(`Converted amount for ${salesPerson}: ${amount}`);
+      if (isNaN(amount)) {
+        console.log(
+          `Invalid amount for ${salesPerson} in ${monthKey} ${year}: ${item.total_amount}`,
+        );
+        return;
+      }
+
+      // Log untuk memastikan data sebelum filter
+      console.log(
+        `Adding ${salesPerson} for ${monthKey} ${year}: ${amount} >= 100 million`,
+      );
+
+      // Filter untuk memastikan hanya amount >= 100 juta yang lolos
+      if (amount < 100000000) {
+        console.log(
+          `Skipping ${salesPerson} for ${monthKey} ${year}: ${amount} < 100 million`,
+        );
+        return;
+      }
 
       if (!monthlyData[year]) {
         monthlyData[year] = { period: year, totalInvoice: 0, months: {} };
@@ -162,6 +190,11 @@ export class sls_AnalythicsService {
       monthlyData[year].totalInvoice += amount;
     });
 
+    console.log(
+      'Finished processing monthlyData:',
+      JSON.stringify(monthlyData, null, 2),
+    );
+
     response.data = Object.values(monthlyData).map((entry) => ({
       period: entry.period,
       totalInvoice: Math.round(entry.totalInvoice),
@@ -169,6 +202,7 @@ export class sls_AnalythicsService {
         month,
         sales: (entry.months[month] || [])
           .sort((a, b) => b.amount - a.amount) // Urutkan berdasarkan amount
+          .slice(0, 5) // Ambil 5 teratas per bulan
           .map((sales) => ({
             salesPersonName: sales.salesPersonName.toLocaleUpperCase(),
             amount: Math.round(sales.amount), // Bulatkan nilai
@@ -176,6 +210,7 @@ export class sls_AnalythicsService {
       })),
     }));
 
+    console.log('Final response:', JSON.stringify(response, null, 2));
     return response;
   }
 

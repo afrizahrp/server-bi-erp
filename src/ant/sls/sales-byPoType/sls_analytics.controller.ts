@@ -18,7 +18,7 @@ export class sls_AnalythicsController {
     @Param('subModule_id') subModule_id: string,
     @Query() query: sls_analyticsDto,
   ) {
-    this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
+    // this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
 
     try {
       return await this.salesAnalytics.getByTopNSalesPersonByPeriod(
@@ -41,7 +41,7 @@ export class sls_AnalythicsController {
     @Param('subModule_id') subModule_id: string,
     @Query() query: sls_analyticsDto,
   ) {
-    this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
+    // this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
 
     try {
       return await this.salesAnalytics.getBySalesPersonByPeriod(
@@ -67,9 +67,9 @@ export class sls_AnalythicsController {
     @Query('monthPeriod') monthPeriod: string,
     @Query('sortBy') sortBy: string,
   ) {
-    this.logger.debug(
-      `Received params: company_id=${company_id}, module_id=${module_id}, subModule_id=${subModule_id}, salesPersonName=${salesPersonName}, yearPeriod=${yearPeriod}, monthPeriod=${monthPeriod},sortBy=${sortBy}`,
-    );
+    // this.logger.debug(
+    //   `Received params: company_id=${company_id}, module_id=${module_id}, subModule_id=${subModule_id}, salesPersonName=${salesPersonName}, yearPeriod=${yearPeriod}, monthPeriod=${monthPeriod},sortBy=${sortBy}`,
+    // );
     try {
       return await this.salesAnalytics.getProductSoldCountBySalesPerson(
         company_id,
