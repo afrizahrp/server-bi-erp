@@ -58,10 +58,6 @@ export class sls_AnalythicsService {
       throw new NotFoundException(`Company ID ${company_id} not found`);
     }
 
-    // Prepare periode
-    // const formattedStartPeriod = format(startOfMonth(startDate), 'yyyy-MM-dd');
-    // const formattedEndPeriod = format(endOfMonth(endDate), 'yyyy-MM-dd');
-
     const formattedStartPeriod = new Date(
       format(startOfMonth(startDate), 'yyyy-MM-dd'),
     );
@@ -69,45 +65,63 @@ export class sls_AnalythicsService {
       format(endOfMonth(endDate), 'yyyy-MM-dd'),
     );
 
-    // Query SQL untuk mendapatkan data
+    // Definisikan monthMap
+    const monthMap = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    // Query SQL
     const result = await this.prisma.$queryRaw<MonthlySalesResult[]>`
-  WITH "MonthlySales" AS (
+      WITH "MonthlySales" AS (
+          SELECT 
+              "salesPersonName",
+              TO_CHAR("invoiceDate", 'FMMonth') AS "month_name",
+              EXTRACT(YEAR FROM "invoiceDate") AS "year",
+              SUM("total_amount") AS "total_amount",
+              ROW_NUMBER() OVER (
+                  PARTITION BY EXTRACT(YEAR FROM "invoiceDate"), TO_CHAR("invoiceDate", 'FMMonth') 
+                  ORDER BY SUM("total_amount") DESC
+              ) AS "sales_rank",
+              EXTRACT(MONTH FROM "invoiceDate") AS "month_number"
+          FROM 
+              "sls_InvoiceHd"
+          WHERE 
+              "company_id" = ${company_id}
+              AND "trxType" = 'IV'
+              AND "invoiceDate" BETWEEN ${formattedStartPeriod} AND ${formattedEndPeriod}
+          GROUP BY 
+              "salesPersonName",
+              EXTRACT(YEAR FROM "invoiceDate"),
+              TO_CHAR("invoiceDate", 'FMMonth'),
+              EXTRACT(MONTH FROM "invoiceDate")
+          HAVING 
+              SUM("total_amount") >= 100000000
+      )
       SELECT 
           "salesPersonName",
-          TO_CHAR("invoiceDate", 'FMMonth') AS "month_name",
-          EXTRACT(YEAR FROM "invoiceDate") AS "year",
-          SUM("total_amount") AS "total_amount",
-          ROW_NUMBER() OVER (
-              PARTITION BY EXTRACT(YEAR FROM "invoiceDate"), TO_CHAR("invoiceDate", 'FMMonth') 
-              ORDER BY SUM("total_amount") DESC
-          ) AS "sales_rank",
-          EXTRACT(MONTH FROM "invoiceDate") AS "month_number"
+          "month_name",
+          "year",
+          "total_amount"
       FROM 
-          "sls_InvoiceHd"
+          "MonthlySales"
       WHERE 
-          "company_id" = ${company_id}
-      AND "trxType" = 'IV'
-          AND "invoiceDate" BETWEEN ${formattedStartPeriod} AND ${formattedEndPeriod}
-      GROUP BY 
-          "salesPersonName", -- Tambahkan kolom ini ke GROUP BY
-          EXTRACT(YEAR FROM "invoiceDate"),
-          TO_CHAR("invoiceDate", 'FMMonth'),
-          EXTRACT(MONTH FROM "invoiceDate")
-  )
-  SELECT 
-      "salesPersonName",
-      "month_name",
-      "year",
-      "total_amount" -- Hapus fungsi agregat SUM di sini
-  FROM 
-      "MonthlySales"
-  WHERE 
-      "sales_rank" <= 5
-  ORDER BY 
-      "year",
-      "month_number",
-      "sales_rank";
-  `;
+          "sales_rank" <= 5
+      ORDER BY 
+          "year",
+          "month_number",
+          "sales_rank";
+    `;
 
     const response: any = {
       company_id,
@@ -139,6 +153,11 @@ export class sls_AnalythicsService {
       const salesPerson = item.salesPersonName || 'Unknown';
       const amount = parseFloat(item.total_amount.toString()) || 0;
 
+      // Validasi tambahan (meskipun query sudah memfilter)
+      if (amount < 100000000) {
+        return; // Skip jika amount < 100 juta
+      }
+
       if (!monthlyData[year]) {
         monthlyData[year] = { period: year, totalInvoice: 0, months: {} };
       }
@@ -159,10 +178,10 @@ export class sls_AnalythicsService {
       months: monthMap.map((month) => ({
         month,
         sales: (entry.months[month] || [])
-          .sort((a, b) => b.amount - a.amount) // Urutkan berdasarkan amount
+          .sort((a, b) => b.amount - a.amount)
           .map((sales) => ({
             salesPersonName: sales.salesPersonName.toLocaleUpperCase(),
-            amount: Math.round(sales.amount), // Bulatkan nilai
+            amount: Math.round(sales.amount),
           })),
       })),
     }));
