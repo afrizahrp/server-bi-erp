@@ -190,10 +190,10 @@ export class sls_AnalythicsService {
       monthlyData[year].totalInvoice += amount;
     });
 
-    console.log(
-      'Finished processing monthlyData:',
-      JSON.stringify(monthlyData, null, 2),
-    );
+    // console.log(
+    //   'Finished processing monthlyData:',
+    //   JSON.stringify(monthlyData, null, 2),
+    // );
 
     response.data = Object.values(monthlyData).map((entry) => ({
       period: entry.period,
