@@ -90,7 +90,7 @@ export class salesPersonPerformaAnalyticsService {
       GROUP BY 
         "salesPersonName", "period", "month_name", "year", "month_number"
       HAVING 
-        CAST(SUM("total_amount") AS DECIMAL) >= 300000000
+        CAST(SUM("total_amount") AS DECIMAL) >= 100000000
       ORDER BY 
         "year", "month_number", "total_amount" DESC;
     `;
@@ -103,7 +103,7 @@ export class salesPersonPerformaAnalyticsService {
 
     // Jika hasil query kosong, kembalikan response kosong
     if (result.length === 0) {
-      console.log('No salespeople with total_amount >= 300 million found.');
+      console.log('No salespeople with total_amount >= 100 million found.');
       return {
         company_id,
         module_id,
@@ -173,7 +173,7 @@ export class salesPersonPerformaAnalyticsService {
 
       // Log untuk memastikan data memenuhi filter
       console.log(
-        `Processing ${salesPerson} for ${monthKey} ${year}: ${amount} >= 300 million`,
+        `Processing ${salesPerson} for ${monthKey} ${year}: ${amount} >= 100 million`,
       );
 
       // Filter sudah ditangani oleh HAVING clause, jadi tidak perlu filter ulang
