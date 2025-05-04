@@ -6,7 +6,7 @@ import {
   IsDate,
 } from 'class-validator';
 
-export class sls_CreateSlsInvoiceDtDto {
+export class updateSalesInvoiceHdDto {
   @IsString()
   id: string;
 

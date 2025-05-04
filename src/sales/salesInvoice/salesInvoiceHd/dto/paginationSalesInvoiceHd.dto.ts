@@ -9,7 +9,7 @@ import {
   Matches,
 } from 'class-validator';
 
-export class sls_PaginationInvoiceHdDto {
+export class paginationSalesInvoiceHdDto {
   @Transform(({ value }) => Number(value))
   @IsNumber()
   @IsPositive()

@@ -1,16 +1,16 @@
 // src/sls_InvoiceDt/sls_InvoiceDt.service.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { sls_ResponseInvoiceDtDto } from './dto/sls_ResponseInvoiceDt.dto';
+import { responseSalesInvoiceItemDto } from './dto/responseSalesInvoiceItem.dto';
 
 @Injectable()
-export class sls_InvoiceDtService {
+export class salesInvoiceItemService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findByInvoiceId(
     company_id: string,
     invoice_id: string,
-  ): Promise<sls_ResponseInvoiceDtDto[]> {
+  ): Promise<responseSalesInvoiceItemDto[]> {
     const details = await this.prisma.sls_InvoiceDt.findMany({
       where: {
         company_id,

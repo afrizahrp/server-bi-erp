@@ -8,29 +8,29 @@ import {
 } from '@nestjs/common';
 import { Public } from 'src/auth/decorators/public.decorator';
 
-import { sls_PaginationInvoiceHdDto } from './dto/sls_PaginationInvoiceHd.dto';
-import { sls_ResponseInvoiceHdDto } from './dto/sls_ResponseInvoiceHd.dto';
+import { paginationSalesInvoiceHdDto } from './dto/paginationSalesInvoiceHd.dto';
+import { responseSalesInvoiceHdDto } from './dto/responseSalesInvoiceHd';
 
-import { sls_InvoiceHdService } from './sls_InvoiceHd.service';
+import { salesInvoiceHdService } from './salesInvoiceHd.service';
 
 @Controller(':company_id/:module_id/get-invoiceHd')
-export class sls_InvoiceHdController {
-  constructor(private readonly sls_invoiceHdService: sls_InvoiceHdService) {}
+export class salesInvoiceHdController {
+  constructor(private readonly salesInvoiceHdService: salesInvoiceHdService) {}
 
   @Public()
   @Get()
   async findAll(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
-    @Query() paginationDto: sls_PaginationInvoiceHdDto,
+    @Query() paginationDto: paginationSalesInvoiceHdDto,
     // @Request() req, // Ambil userId dari request
-  ): Promise<{ data: sls_ResponseInvoiceHdDto[]; totalRecords: number }> {
+  ): Promise<{ data: responseSalesInvoiceHdDto[]; totalRecords: number }> {
     // const userId = req.user?.id; // Pastikan userId tersedia di request
     // if (!userId) {
     //   throw new BadRequestException('User ID is required');
     // }
 
-    return this.sls_invoiceHdService.findAll(
+    return this.salesInvoiceHdService.findAll(
       company_id,
       module_id,
       paginationDto,
@@ -43,8 +43,8 @@ export class sls_InvoiceHdController {
   async findOne(
     @Param('company_id') company_id: string,
     @Param('id') id: string,
-  ): Promise<sls_ResponseInvoiceHdDto> {
-    return this.sls_invoiceHdService.findOne(company_id, id);
+  ): Promise<responseSalesInvoiceHdDto> {
+    return this.salesInvoiceHdService.findOne(company_id, id);
   }
 
   @Public()
@@ -52,9 +52,9 @@ export class sls_InvoiceHdController {
   async getPaidStatus(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
-    @Query() query: sls_PaginationInvoiceHdDto,
+    @Query() query: paginationSalesInvoiceHdDto,
   ) {
-    const rawData = await this.sls_invoiceHdService.filterByPaidStatus(
+    const rawData = await this.salesInvoiceHdService.filterByPaidStatus(
       company_id,
       module_id,
       query,
@@ -68,9 +68,9 @@ export class sls_InvoiceHdController {
   async getPoType(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
-    @Query() query: sls_PaginationInvoiceHdDto,
+    @Query() query: paginationSalesInvoiceHdDto,
   ) {
-    const rawData = await this.sls_invoiceHdService.filterByPoType(
+    const rawData = await this.salesInvoiceHdService.filterByPoType(
       company_id,
       module_id,
       query,
@@ -83,9 +83,9 @@ export class sls_InvoiceHdController {
   async getSalesPerson(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
-    @Query() query: sls_PaginationInvoiceHdDto,
+    @Query() query: paginationSalesInvoiceHdDto,
   ) {
-    const rawData = await this.sls_invoiceHdService.filterBySalesPersonName(
+    const rawData = await this.salesInvoiceHdService.filterBySalesPersonName(
       company_id,
       module_id,
       query,

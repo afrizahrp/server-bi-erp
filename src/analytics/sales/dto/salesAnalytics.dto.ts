@@ -1,6 +1,6 @@
-import { IsString, IsOptional, Min, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsInt, Min, IsNumber } from 'class-validator';
 
-export class sls_analyticsDto {
+export class salesAnalyticsDto {
   @IsString()
   startPeriod: string;
 

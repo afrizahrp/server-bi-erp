@@ -1,6 +1,6 @@
-import { sls_ResponseInvoiceHdDto } from './sls_ResponseInvoiceHd.dto';
+import { responseSalesInvoiceHdDto } from './responseSalesInvoiceHd';
 
-export class sls_ResponseInvoiceHdWithDetailDto extends sls_ResponseInvoiceHdDto {
+export class responseSalesInvoiceHdWithItemdDto extends responseSalesInvoiceHdDto {
   details: {
     invoice_id: string;
     line_no: number;

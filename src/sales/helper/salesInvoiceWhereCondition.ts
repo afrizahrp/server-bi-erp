@@ -1,12 +1,12 @@
 import { getMonthYearPeriodRange } from 'src/utils/date/getMonthYearPeriodRange';
 import { applyPeriodToWhereCondition } from 'src/utils/date/applyMonthYearPeriodRange';
-import { SlsInvoiceFilter } from 'src/sls/helper/sls_filter';
+import { SalesInvoiceFilter } from 'src/sales/helper/salesInvoiceFilter';
 
-export function slsInvoiceHdWherecondition(
+export function salesInvoiceWhereCondition(
   company_id: string,
-  filter: SlsInvoiceFilter,
+  filter: SalesInvoiceFilter,
   options: {
-    requiredFilters?: Partial<Record<keyof SlsInvoiceFilter, boolean>>;
+    requiredFilters?: Partial<Record<keyof SalesInvoiceFilter, boolean>>;
     additionalConditions?: Record<string, any>;
   } = {},
 ): Record<string, any> {

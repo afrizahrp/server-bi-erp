@@ -1,24 +1,24 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { sls_PaginationInvoiceHdDto } from './dto/sls_PaginationInvoiceHd.dto';
-import { sls_ResponseInvoiceHdDto } from './dto/sls_ResponseInvoiceHd.dto';
-import { sls_ResponseInvoiceHdWithDetailDto } from './dto/sls_ResponseInvoiceDt.dto';
-import { slsInvoiceHdWherecondition } from '../helper/sls_InvoiceHd_wherecondition';
+import { paginationSalesInvoiceHdDto } from './dto/paginationSalesInvoiceHd.dto';
+import { responseSalesInvoiceHdDto } from './dto/responseSalesInvoiceHd';
+import { responseSalesInvoiceHdWithItemdDto } from './dto/responseSalesInvoiceHdWithItem.dto';
+import { salesInvoiceWhereCondition } from '../../helper/salesInvoiceWhereCondition';
 import { buildSearchCondition } from 'src/utils/query-operator/buildSearchConditon';
 import { sortFieldBy } from 'src/utils/query-operator/sortFieldBy';
-import { SlsInvoiceFilter } from '../helper/sls_filter';
+import { SalesInvoiceFilter } from '../../helper/salesInvoiceFilter';
 
 @Injectable()
-export class sls_InvoiceHdService {
+export class salesInvoiceHdService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(
     company_id: string,
     module_id: string,
-    paginationDto: sls_PaginationInvoiceHdDto,
+    paginationDto: paginationSalesInvoiceHdDto,
     // userId: number, // Tambahkan userId untuk memfilter berdasarkan pengguna
   ): Promise<{
-    data: sls_ResponseInvoiceHdDto[];
+    data: responseSalesInvoiceHdDto[];
     grandTotal_amount: number;
     totalRecords: number;
   }> {
@@ -54,7 +54,7 @@ export class sls_InvoiceHdService {
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
 
-    const filter: SlsInvoiceFilter = {
+    const filter: SalesInvoiceFilter = {
       paidStatus,
       poType,
       salesPersonName,
@@ -62,7 +62,7 @@ export class sls_InvoiceHdService {
       endPeriod,
     };
 
-    const whereCondition = slsInvoiceHdWherecondition(company_id, filter, {
+    const whereCondition = salesInvoiceWhereCondition(company_id, filter, {
       requiredFilters: {
         paidStatus: true,
         poType: true,
@@ -143,7 +143,7 @@ export class sls_InvoiceHdService {
   async filterByPaidStatus(
     company_id: string,
     module_id: string,
-    paginationDto: sls_PaginationInvoiceHdDto,
+    paginationDto: paginationSalesInvoiceHdDto,
   ): Promise<{
     data: { id: string; name: string; count: number }[];
     totalRecords: number;
@@ -161,7 +161,7 @@ export class sls_InvoiceHdService {
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
 
-    const filter: SlsInvoiceFilter = {
+    const filter: SalesInvoiceFilter = {
       paidStatus,
       poType,
       salesPersonName,
@@ -169,7 +169,7 @@ export class sls_InvoiceHdService {
       endPeriod,
     };
 
-    const whereCondition = slsInvoiceHdWherecondition(company_id, filter, {
+    const whereCondition = salesInvoiceWhereCondition(company_id, filter, {
       requiredFilters: {
         paidStatus: false,
         poType: true,
@@ -226,7 +226,7 @@ export class sls_InvoiceHdService {
   async filterBySalesPersonName(
     company_id: string,
     module_id: string,
-    paginationDto: sls_PaginationInvoiceHdDto,
+    paginationDto: paginationSalesInvoiceHdDto,
   ): Promise<{
     data: { id: string; name: string; count: number }[];
     totalRecords: number;
@@ -244,7 +244,7 @@ export class sls_InvoiceHdService {
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
 
-    const filter: SlsInvoiceFilter = {
+    const filter: SalesInvoiceFilter = {
       paidStatus,
       poType,
       salesPersonName,
@@ -252,7 +252,7 @@ export class sls_InvoiceHdService {
       endPeriod,
     };
 
-    const whereCondition = slsInvoiceHdWherecondition(company_id, filter, {
+    const whereCondition = salesInvoiceWhereCondition(company_id, filter, {
       requiredFilters: {
         paidStatus: true,
         poType: true,
@@ -288,7 +288,7 @@ export class sls_InvoiceHdService {
   async filterByPoType(
     company_id: string,
     module_id: string,
-    paginationDto: sls_PaginationInvoiceHdDto,
+    paginationDto: paginationSalesInvoiceHdDto,
   ): Promise<{
     data: { id: string; name: string; count: number }[];
     totalRecords: number;
@@ -306,7 +306,7 @@ export class sls_InvoiceHdService {
     const safeLimit = Math.min(Number(limit) || 10, 100);
     const offset = (Number(page) - 1) * safeLimit;
 
-    const filter: SlsInvoiceFilter = {
+    const filter: SalesInvoiceFilter = {
       paidStatus,
       poType,
       salesPersonName,
@@ -314,7 +314,7 @@ export class sls_InvoiceHdService {
       endPeriod,
     };
 
-    const whereCondition = slsInvoiceHdWherecondition(company_id, filter, {
+    const whereCondition = salesInvoiceWhereCondition(company_id, filter, {
       requiredFilters: {
         paidStatus: true,
         poType: true,
@@ -369,7 +369,7 @@ export class sls_InvoiceHdService {
   async findOne(
     company_id: string,
     invoice_id: string,
-  ): Promise<sls_ResponseInvoiceHdWithDetailDto> {
+  ): Promise<responseSalesInvoiceHdWithItemdDto> {
     const invoice = await this.prisma.sls_InvoiceHd.findUnique({
       where: { company_id_invoice_id: { company_id, invoice_id } },
       include: {
@@ -409,7 +409,7 @@ export class sls_InvoiceHdService {
     };
   }
 
-  private mapToResponseDto(invoice: any): sls_ResponseInvoiceHdDto {
+  private mapToResponseDto(invoice: any): responseSalesInvoiceHdDto {
     return {
       poType_id: invoice.poType,
       invoiceType_id: invoice.invoiceType,

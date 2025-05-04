@@ -1,14 +1,18 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { Public } from 'src/auth/decorators/public.decorator';
-import { sls_AnalythicsService } from './sls_analytics.service';
-import { sls_analyticsDto } from '../dto/sls_analytics.dto';
+import { salesPersonPerformaAnalyticsService } from './salesPersonPerformaAnalyticsService';
+import { salesAnalyticsDto } from '../dto/salesAnalytics.dto';
 import { Logger } from '@nestjs/common';
 
 @Controller(':company_id/:module_id/:subModule_id/get-analytics')
-export class sls_AnalythicsController {
-  private readonly logger = new Logger(sls_AnalythicsController.name);
+export class salesPersonPerformaAnalyticsController {
+  private readonly logger = new Logger(
+    salesPersonPerformaAnalyticsController.name,
+  );
 
-  constructor(private readonly salesAnalytics: sls_AnalythicsService) {}
+  constructor(
+    private readonly salesAnalytics: salesPersonPerformaAnalyticsService,
+  ) {}
 
   @Public()
   @Get('getByTopNSalesPersonByPeriod')
@@ -16,7 +20,7 @@ export class sls_AnalythicsController {
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
-    @Query() query: sls_analyticsDto,
+    @Query() query: salesAnalyticsDto,
   ) {
     this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
 
@@ -39,7 +43,7 @@ export class sls_AnalythicsController {
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
-    @Query() query: sls_analyticsDto,
+    @Query() query: salesAnalyticsDto,
   ) {
     this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
 
@@ -62,7 +66,7 @@ export class sls_AnalythicsController {
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
-    @Query() query: sls_analyticsDto,
+    @Query() query: salesAnalyticsDto,
   ) {
     this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
 

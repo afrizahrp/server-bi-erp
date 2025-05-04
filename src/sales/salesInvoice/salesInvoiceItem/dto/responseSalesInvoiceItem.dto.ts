@@ -1,6 +1,6 @@
 import { IsString, IsOptional, IsInt, IsDecimal } from 'class-validator';
 
-export class sls_ResponseInvoiceDtDto {
+export class responseSalesInvoiceItemDto {
   @IsString()
   invoice_id: string;
 

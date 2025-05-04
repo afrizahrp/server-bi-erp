@@ -1,7 +1,7 @@
 import { Transform } from 'class-transformer';
 import { IsOptional, IsString } from 'class-validator';
 
-export class sls_FilterInvoiceHdDto {
+export class filterSalesInvoiceHdDto {
   @IsOptional()
   @IsString()
   startPeriod?: string;

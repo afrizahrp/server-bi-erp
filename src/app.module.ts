@@ -21,11 +21,11 @@ import { sys_CompanyModule } from './sys/sys_company/sys_Company.module';
 import { sys_MenuModule } from './sys/sys_menu/sys_Menu.module';
 import { sys_MenuPermissionModule } from './sys/sys_menu_permission/sys_Menu_Permission.module';
 
-import { sls_InvoiceHdModule } from './sls/sls_invoiceHd/sls_InvoiceHd.module';
-import { sls_InvoiceDtModule } from './sls/sls_InvoiceDt/sls_InvoiceDt.module';
-import { sls_DashboardModule } from './dashboard/sales/sls_dashboard.module';
+import { salesInvoiceHdModule } from './sales/salesInvoice/salesInvoiceHd/salesInvoiceHd.module';
+import { salesInvoiceItemModule } from './sales/salesInvoice/salesInvoiceItem/salesInvoiceItem.module';
+import { salesInvoiceAnalyticsModule } from './analytics/sales/salesInvoice/salesInvoiceAnalytics.module';
 
-import { sls_AnalyticsModule } from './analytics/sales/sales-person-performa/sls_analytics.module';
+import { salesPersonPerformaAnalyticsModule } from './analytics/sales/salesPerson-performa/salesPersonPerformaAnalytics.module';
 
 import { UploadController } from './cloudinary/cloudinary.controller';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
@@ -49,10 +49,11 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     imc_CategoryModule,
     imc_ProductModule,
     imc_ProductStockCardModule,
-    sls_InvoiceHdModule,
-    sls_InvoiceDtModule,
-    sls_DashboardModule,
-    sls_AnalyticsModule,
+
+    salesInvoiceHdModule,
+    salesInvoiceItemModule,
+    salesInvoiceAnalyticsModule,
+    salesPersonPerformaAnalyticsModule,
     CloudinaryModule,
   ],
   controllers: [AppController, UploadController],

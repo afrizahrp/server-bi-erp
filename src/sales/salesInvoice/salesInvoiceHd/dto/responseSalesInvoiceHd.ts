@@ -2,31 +2,42 @@ import {
   IsString,
   IsOptional,
   IsInt,
-  IsDecimal,
+  IsNumber,
   IsDate,
   IsEnum,
+  IsDecimal,
 } from 'class-validator';
-import { InvoicePaidStatusEnum } from '@prisma/client';
 
-export class sls_CreateSlsInvoiceHdDto {
+export class responseSalesInvoiceHdDto {
   @IsString()
   @IsOptional()
-  po_id: string;
+  po_id?: string;
+
+  @IsInt()
+  @IsOptional()
+  invoiceType_id?: number;
+
+  @IsInt()
+  @IsOptional()
+  poType_id?: number;
 
   @IsString()
   @IsOptional()
-  ecatalog_id: string;
+  invoiceType?: string;
+
+  @IsString()
+  @IsOptional()
+  poType?: string;
+
+  @IsString()
+  @IsOptional()
+  ecatalog_id?: string;
 
   @IsString()
   invoice_id: string;
 
-  @IsString()
-  @IsOptional()
-  so_id?: string;
-
   @IsDate()
-  @IsOptional()
-  invoiceDate?: Date;
+  invoiceDate: Date;
 
   @IsString()
   @IsOptional()
@@ -41,14 +52,16 @@ export class sls_CreateSlsInvoiceHdDto {
   taxRate?: number;
 
   @IsString()
-  debtor_id: string;
+  @IsOptional()
+  debtor_id?: string;
 
   @IsString()
   @IsOptional()
   debtorName?: string;
 
   @IsString()
-  customer_id: string;
+  @IsOptional()
+  customer_id?: string;
 
   @IsString()
   @IsOptional()
@@ -64,64 +77,49 @@ export class sls_CreateSlsInvoiceHdDto {
 
   @IsString()
   @IsOptional()
-  sales_person_id?: string;
+  salesPerson_id?: string;
 
   @IsString()
   @IsOptional()
   salesPersonName?: string;
 
-  @IsDecimal()
+  @IsNumber()
   @IsOptional()
   base_amount?: number;
 
-  @IsDecimal()
+  @IsNumber()
   @IsOptional()
   dp_amount?: number;
 
-  @IsDecimal()
+  @IsNumber()
   @IsOptional()
   discount_amount?: number;
 
-  @IsDecimal()
+  @IsNumber()
   @IsOptional()
-  total_discount?: number;
+  totalDiscount_amount?: number;
 
-  @IsDecimal()
+  @IsNumber()
   @IsOptional()
   tax_amount?: number;
 
-  @IsDecimal()
+  @IsNumber()
   @IsOptional()
-  total_delivery_amount?: number;
+  totalDelivery_amount?: number;
 
-  @IsDecimal()
+  @IsNumber()
   @IsOptional()
   total_amount?: number;
 
-  @IsEnum(InvoicePaidStatusEnum)
+  @IsInt()
   @IsOptional()
-  paidStatus?: InvoicePaidStatusEnum;
-
-  @IsString()
-  company_id: string;
+  paidStatus_id?: number;
 
   @IsString()
   @IsOptional()
-  createdBy?: string;
+  paidStatus?: string;
 
-  @IsDate()
+  @IsDecimal()
   @IsOptional()
-  createdAt?: Date;
-
-  @IsString()
-  @IsOptional()
-  updatedBy?: string;
-
-  @IsDate()
-  @IsOptional()
-  updatedAt?: Date;
-
-  @IsString()
-  @IsOptional()
-  branch_id?: string;
+  grandTotal_amount?: number;
 }

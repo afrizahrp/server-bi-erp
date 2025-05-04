@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { sls_dashboardDto } from './dto/sls_dashboard.dto';
+import { salesAnalyticsDto } from '../dto/salesAnalytics.dto';
 import { format, parse, startOfMonth, endOfMonth } from 'date-fns';
 import { monthMap } from 'src/utils/date/getMonthName';
 
@@ -17,8 +17,8 @@ type MonthlySalesResult = {
 };
 
 @Injectable()
-export class sls_DashboardService {
-  private readonly logger = new Logger(sls_DashboardService.name);
+export class salesInvoiceAnalyticsService {
+  private readonly logger = new Logger(salesInvoiceAnalyticsService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -27,7 +27,7 @@ export class sls_DashboardService {
     company_id: string,
     module_id: string,
     subModule_id: string,
-    dto: sls_dashboardDto,
+    dto: salesAnalyticsDto,
   ) {
     const { startPeriod, endPeriod, paidStatus, poType, salesPersonName } = dto;
 
@@ -286,7 +286,7 @@ export class sls_DashboardService {
     company_id: string,
     module_id: string,
     subModule_id: string,
-    dto: sls_dashboardDto,
+    dto: salesAnalyticsDto,
   ) {
     const { startPeriod, endPeriod, salesPersonName } = dto;
 
@@ -500,7 +500,7 @@ export class sls_DashboardService {
     company_id: string,
     module_id: string,
     subModule_id: string,
-    dto: sls_dashboardDto,
+    dto: salesAnalyticsDto,
   ) {
     const { startPeriod, endPeriod, salesPersonName } = dto;
 
@@ -645,7 +645,7 @@ ORDER BY
     company_id: string,
     module_id: string,
     subModule_id: string,
-    dto: sls_dashboardDto,
+    dto: salesAnalyticsDto,
   ) {
     const { startPeriod, endPeriod } = dto;
 

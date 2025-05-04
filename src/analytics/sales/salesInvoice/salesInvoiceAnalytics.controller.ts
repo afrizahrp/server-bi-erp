@@ -1,21 +1,23 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { Public } from 'src/auth/decorators/public.decorator';
-import { sls_DashboardService } from './sls_dashboard.service';
-import { sls_dashboardDto } from './dto/sls_dashboard.dto';
+import { salesInvoiceAnalyticsService } from './salesInvoiceAnalytics.service';
+import { salesAnalyticsDto } from '../dto/salesAnalytics.dto';
 import { Logger } from '@nestjs/common';
 
-@Controller(':company_id/:module_id/:subModule_id/get-dashboard')
-export class sls_DashboardController {
-  private readonly logger = new Logger(sls_DashboardController.name);
+@Controller(':company_id/:module_id/:subModule_id/get-analytics')
+export class salesInvoiceAnalyticsController {
+  private readonly logger = new Logger(salesInvoiceAnalyticsController.name);
 
-  constructor(private readonly salesDashboardService: sls_DashboardService) {}
+  constructor(
+    private readonly salesDashboardService: salesInvoiceAnalyticsService,
+  ) {}
   @Public()
   @Get('getByPeriod') // Tambahkan path spesifik
   async sls_periodComparison(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
-    @Query() query: sls_dashboardDto,
+    @Query() query: salesAnalyticsDto,
   ) {
     // console.log('Query params received:', JSON.stringify(query)); // Tambah log
 
@@ -33,7 +35,7 @@ export class sls_DashboardController {
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
-    @Query() query: sls_dashboardDto,
+    @Query() query: salesAnalyticsDto,
   ) {
     // console.log('Query params received:', JSON.stringify(query)); // Tambah log
 
@@ -51,7 +53,7 @@ export class sls_DashboardController {
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
-    @Query() query: sls_dashboardDto,
+    @Query() query: salesAnalyticsDto,
   ) {
     this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
 
@@ -74,7 +76,7 @@ export class sls_DashboardController {
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
-    @Query() query: sls_dashboardDto,
+    @Query() query: salesAnalyticsDto,
   ) {
     this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
 
