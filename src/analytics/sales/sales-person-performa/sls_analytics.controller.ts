@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { sls_AnalythicsService } from './sls_analytics.service';
-import { sls_analyticsDto } from './dto/sls_analytics.dto';
+import { sls_analyticsDto } from '../dto/sls_analytics.dto';
 import { Logger } from '@nestjs/common';
 
 @Controller(':company_id/:module_id/:subModule_id/get-analytics')

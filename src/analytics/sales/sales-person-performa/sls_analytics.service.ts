@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { sls_analyticsDto } from './dto/sls_analytics.dto';
+import { sls_analyticsDto } from '../dto/sls_analytics.dto';
 import { format, parse, startOfMonth, endOfMonth } from 'date-fns';
 import { monthMap } from 'src/utils/date/getMonthName';
 
