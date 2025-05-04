@@ -30,7 +30,9 @@ export class sls_AnalythicsService {
     subModule_id: string,
     dto: sls_analyticsDto,
   ) {
-    const { startPeriod, endPeriod } = dto;
+    console.log('Starting getByTopNSalesPersonByPeriod...');
+
+    const { startPeriod, endPeriod, salesPersonName } = dto;
 
     // Validasi startPeriod dan endPeriod
     if (!startPeriod || !endPeriod) {
@@ -65,7 +67,56 @@ export class sls_AnalythicsService {
       format(endOfMonth(endDate), 'yyyy-MM-dd'),
     );
 
-    // Definisikan monthMap
+    console.log('Executing query...');
+    // Query untuk mendapatkan data per bulan dengan filter total_amount >= 300 juta
+    const result = await this.prisma.$queryRaw<
+      {
+        salesPersonName: string;
+        period: string;
+        month_name: string;
+        year: number;
+        month_number: number;
+        total_amount: number;
+      }[]
+    >`
+      SELECT 
+        "salesPersonName",
+        TO_CHAR("invoiceDate", 'YYYY-MM') AS "period",
+        TO_CHAR("invoiceDate", 'Mon') AS "month_name",
+        EXTRACT(YEAR FROM "invoiceDate") AS "year",
+        EXTRACT(MONTH FROM "invoiceDate") AS "month_number",
+        CAST(SUM("total_amount") AS DECIMAL) AS "total_amount"
+      FROM 
+        "sls_InvoiceHd"
+      WHERE 
+        "company_id" = ${company_id}
+        AND "trxType" = 'IV'
+        AND "invoiceDate" BETWEEN ${formattedStartPeriod} AND ${formattedEndPeriod}
+      GROUP BY 
+        "salesPersonName", "period", "month_name", "year", "month_number"
+      HAVING 
+        CAST(SUM("total_amount") AS DECIMAL) >= 300000000
+      ORDER BY 
+        "year", "month_number", "total_amount" DESC;
+    `;
+
+    // Log hasil query
+    console.log(
+      'Query Result:',
+      result.length > 0 ? JSON.stringify(result, null, 2) : 'No data found',
+    );
+
+    // Jika hasil query kosong, kembalikan response kosong
+    if (result.length === 0) {
+      console.log('No salespeople with total_amount >= 300 million found.');
+      return {
+        company_id,
+        module_id,
+        subModule_id,
+        data: [],
+      };
+    }
+
     const monthMap = [
       'Jan',
       'Feb',
@@ -80,48 +131,6 @@ export class sls_AnalythicsService {
       'Nov',
       'Dec',
     ];
-
-    // Query SQL
-    const result = await this.prisma.$queryRaw<MonthlySalesResult[]>`
-      WITH "MonthlySales" AS (
-          SELECT 
-              "salesPersonName",
-              TO_CHAR("invoiceDate", 'FMMonth') AS "month_name",
-              EXTRACT(YEAR FROM "invoiceDate") AS "year",
-              SUM("total_amount") AS "total_amount",
-              ROW_NUMBER() OVER (
-                  PARTITION BY EXTRACT(YEAR FROM "invoiceDate"), TO_CHAR("invoiceDate", 'FMMonth') 
-                  ORDER BY SUM("total_amount") DESC
-              ) AS "sales_rank",
-              EXTRACT(MONTH FROM "invoiceDate") AS "month_number"
-          FROM 
-              "sls_InvoiceHd"
-          WHERE 
-              "company_id" = ${company_id}
-              AND "trxType" = 'IV'
-              AND "invoiceDate" BETWEEN ${formattedStartPeriod} AND ${formattedEndPeriod}
-          GROUP BY 
-              "salesPersonName",
-              EXTRACT(YEAR FROM "invoiceDate"),
-              TO_CHAR("invoiceDate", 'FMMonth'),
-              EXTRACT(MONTH FROM "invoiceDate")
-          HAVING 
-              SUM("total_amount") >= 100000000
-      )
-      SELECT 
-          "salesPersonName",
-          "month_name",
-          "year",
-          "total_amount"
-      FROM 
-          "MonthlySales"
-      WHERE 
-          "sales_rank" <= 5
-      ORDER BY 
-          "year",
-          "month_number",
-          "sales_rank";
-    `;
 
     const response: any = {
       company_id,
@@ -140,24 +149,39 @@ export class sls_AnalythicsService {
       }
     > = {};
 
-    result.forEach((item) => {
+    console.log('Starting result.forEach loop...');
+    result.forEach((item, index) => {
+      console.log(`Processing item ${index}:`, JSON.stringify(item, null, 2));
+
       const year = item.year.toString();
       const monthKey = monthMap.find(
         (m) => m.toLowerCase() === item.month_name.toLowerCase().slice(0, 3),
       );
 
       if (!monthKey) {
+        console.log(`Invalid month_name: ${item.month_name}`);
         throw new Error(`Invalid month_name: ${item.month_name}`);
       }
 
       const salesPerson = item.salesPersonName || 'Unknown';
-      const amount = parseFloat(item.total_amount.toString()) || 0;
+      const amount = Number(item.total_amount);
+      console.log(
+        `Converted amount for ${salesPerson} in ${monthKey} ${year}: ${amount}`,
+      );
 
-      // Validasi tambahan (meskipun query sudah memfilter)
-      if (amount < 100000000) {
-        return; // Skip jika amount < 100 juta
+      if (isNaN(amount)) {
+        console.log(
+          `Invalid amount for ${salesPerson} in ${monthKey} ${year}: ${item.total_amount}`,
+        );
+        return;
       }
 
+      // Log untuk memastikan data memenuhi filter
+      console.log(
+        `Processing ${salesPerson} for ${monthKey} ${year}: ${amount} >= 300 million`,
+      );
+
+      // Filter sudah ditangani oleh HAVING clause, jadi tidak perlu filter ulang
       if (!monthlyData[year]) {
         monthlyData[year] = { period: year, totalInvoice: 0, months: {} };
       }
@@ -172,13 +196,16 @@ export class sls_AnalythicsService {
       monthlyData[year].totalInvoice += amount;
     });
 
+    console.log('Processed monthlyData:', JSON.stringify(monthlyData, null, 2));
+
     response.data = Object.values(monthlyData).map((entry) => ({
       period: entry.period,
       totalInvoice: Math.round(entry.totalInvoice),
       months: monthMap.map((month) => ({
         month,
         sales: (entry.months[month] || [])
-          .sort((a, b) => b.amount - a.amount)
+          .sort((a, b) => b.amount - a.amount) // Urutkan berdasarkan amount
+          .slice(0, 5) // Ambil 5 teratas per bulan
           .map((sales) => ({
             salesPersonName: sales.salesPersonName.toLocaleUpperCase(),
             amount: Math.round(sales.amount),
@@ -186,6 +213,7 @@ export class sls_AnalythicsService {
       })),
     }));
 
+    console.log('Final response:', JSON.stringify(response, null, 2));
     return response;
   }
 
