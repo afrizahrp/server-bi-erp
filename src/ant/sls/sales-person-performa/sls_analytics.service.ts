@@ -576,8 +576,8 @@ export class sls_AnalythicsService {
     const where: any = {
       company_id,
       invoiceDate: {
-        gte: startDate,
-        lte: endDate,
+        gte: new Date(formattedStartPeriod),
+        lte: new Date(formattedEndPeriod),
       },
     };
 

@@ -318,7 +318,7 @@ export class sls_InvoiceHdService {
       requiredFilters: {
         paidStatus: true,
         poType: true,
-        salesPersonName: false,
+        salesPersonName: true,
       },
     });
 
