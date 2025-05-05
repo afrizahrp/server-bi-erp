@@ -15,8 +15,26 @@ export class salesPersonPerformaAnalyticsController {
   ) {}
 
   @Public()
-  @Get('getByTopNSalesPersonByPeriod')
-  async getByTopNSalesPersonByPeriod(
+  @Get('getYearlySalespersonInvoice') // Tambahkan path spesifik
+  async getYearlySalespersonInvoice(
+    @Param('company_id') company_id: string,
+    @Param('module_id') module_id: string,
+    @Param('subModule_id') subModule_id: string,
+    @Query('years') years: string | string[], // Query bisa string atau array
+  ) {
+    const yearsArray = Array.isArray(years) ? years : [years];
+
+    return this.salesAnalytics.getYearlySalespersonInvoice(
+      company_id,
+      module_id,
+      subModule_id,
+      { years: yearsArray },
+    );
+  }
+
+  @Public()
+  @Get('getMonthlySalespersonInvoice')
+  async getMonthlySalespersonInvoice(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
@@ -25,7 +43,53 @@ export class salesPersonPerformaAnalyticsController {
     this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
 
     try {
-      return await this.salesAnalytics.getByTopNSalesPersonByPeriod(
+      return await this.salesAnalytics.getMonthlySalespersonInvoice(
+        company_id,
+        module_id,
+        subModule_id,
+        query,
+      );
+    } catch (error) {
+      this.logger.error(`Error processing request: ${error.message}`);
+      throw error;
+    }
+  }
+
+  // @Public()
+  // @Get('getSalesByPoTypeByPeriod')
+  // async getSalesByPoTypeByPeriod(
+  //   @Param('company_id') company_id: string,
+  //   @Param('module_id') module_id: string,
+  //   @Param('subModule_id') subModule_id: string,
+  //   @Query() query: salesAnalyticsDto,
+  // ) {
+  //   this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
+
+  //   try {
+  //     return await this.salesAnalytics.getSalesByPoTypeByPeriod(
+  //       company_id,
+  //       module_id,
+  //       subModule_id,
+  //       query,
+  //     );
+  //   } catch (error) {
+  //     this.logger.error(`Error processing request: ${error.message}`);
+  //     throw error;
+  //   }
+  // }
+
+  @Public()
+  @Get('getSelectedSalesPersonInvoice')
+  async getSelectedSalesPersonInvoice(
+    @Param('company_id') company_id: string,
+    @Param('module_id') module_id: string,
+    @Param('subModule_id') subModule_id: string,
+    @Query() query: salesAnalyticsDto,
+  ) {
+    this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
+
+    try {
+      return await this.salesAnalytics.getSelectedSalesPersonInvoice(
         company_id,
         module_id,
         subModule_id,
@@ -38,54 +102,8 @@ export class salesPersonPerformaAnalyticsController {
   }
 
   @Public()
-  @Get('getSalesByPoTypeByPeriod')
-  async getSalesByPoTypeByPeriod(
-    @Param('company_id') company_id: string,
-    @Param('module_id') module_id: string,
-    @Param('subModule_id') subModule_id: string,
-    @Query() query: salesAnalyticsDto,
-  ) {
-    this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
-
-    try {
-      return await this.salesAnalytics.getSalesByPoTypeByPeriod(
-        company_id,
-        module_id,
-        subModule_id,
-        query,
-      );
-    } catch (error) {
-      this.logger.error(`Error processing request: ${error.message}`);
-      throw error;
-    }
-  }
-
-  @Public()
-  @Get('getBySalesPersonByPeriod')
-  async getBySalesPersonByPeriod(
-    @Param('company_id') company_id: string,
-    @Param('module_id') module_id: string,
-    @Param('subModule_id') subModule_id: string,
-    @Query() query: salesAnalyticsDto,
-  ) {
-    this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
-
-    try {
-      return await this.salesAnalytics.getBySalesPersonByPeriod(
-        company_id,
-        module_id,
-        subModule_id,
-        query,
-      );
-    } catch (error) {
-      this.logger.error(`Error processing request: ${error.message}`);
-      throw error;
-    }
-  }
-
-  @Public()
-  @Get('getProductSoldCountBySalesPerson')
-  async getProductSoldCountBySalesPerson(
+  @Get('getProductSoldFromSelectedSalesPerson')
+  async getProductSoldFromSelectedSalesPerson(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
@@ -98,7 +116,7 @@ export class salesPersonPerformaAnalyticsController {
       `Received params: company_id=${company_id}, module_id=${module_id}, subModule_id=${subModule_id}, salesPersonName=${salesPersonName}, yearPeriod=${yearPeriod}, monthPeriod=${monthPeriod},sortBy=${sortBy}`,
     );
     try {
-      return await this.salesAnalytics.getProductSoldCountBySalesPerson(
+      return await this.salesAnalytics.getProductSoldFromSelectedSalesPerson(
         company_id,
         salesPersonName,
         yearPeriod,
