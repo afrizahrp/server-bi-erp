@@ -11,26 +11,8 @@ export class salesPersonPerformaAnalyticsController {
   );
 
   constructor(
-    private readonly salesAnalytics: salesPersonPerformaAnalyticsService,
+    private readonly salesPersonPerformaAnalyticsService: salesPersonPerformaAnalyticsService,
   ) {}
-
-  @Public()
-  @Get('getYearlySalespersonInvoice') // Tambahkan path spesifik
-  async getYearlySalespersonInvoice(
-    @Param('company_id') company_id: string,
-    @Param('module_id') module_id: string,
-    @Param('subModule_id') subModule_id: string,
-    @Query('years') years: string | string[], // Query bisa string atau array
-  ) {
-    const yearsArray = Array.isArray(years) ? years : [years];
-
-    return this.salesAnalytics.getYearlySalespersonInvoice(
-      company_id,
-      module_id,
-      subModule_id,
-      { years: yearsArray },
-    );
-  }
 
   @Public()
   @Get('getMonthlySalespersonInvoice')
@@ -43,7 +25,7 @@ export class salesPersonPerformaAnalyticsController {
     this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
 
     try {
-      return await this.salesAnalytics.getMonthlySalespersonInvoice(
+      return await this.salesPersonPerformaAnalyticsService.getMonthlySalespersonInvoice(
         company_id,
         module_id,
         subModule_id,
@@ -55,32 +37,9 @@ export class salesPersonPerformaAnalyticsController {
     }
   }
 
-  // @Public()
-  // @Get('getSalesByPoTypeByPeriod')
-  // async getSalesByPoTypeByPeriod(
-  //   @Param('company_id') company_id: string,
-  //   @Param('module_id') module_id: string,
-  //   @Param('subModule_id') subModule_id: string,
-  //   @Query() query: salesAnalyticsDto,
-  // ) {
-  //   this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
-
-  //   try {
-  //     return await this.salesAnalytics.getSalesByPoTypeByPeriod(
-  //       company_id,
-  //       module_id,
-  //       subModule_id,
-  //       query,
-  //     );
-  //   } catch (error) {
-  //     this.logger.error(`Error processing request: ${error.message}`);
-  //     throw error;
-  //   }
-  // }
-
   @Public()
-  @Get('getSelectedSalesPersonInvoice')
-  async getSelectedSalesPersonInvoice(
+  @Get('getMonthlySalesPersonInvoiceFiltered')
+  async getMonthlySalesPersonInvoiceFiltered(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
@@ -89,7 +48,7 @@ export class salesPersonPerformaAnalyticsController {
     this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
 
     try {
-      return await this.salesAnalytics.getSelectedSalesPersonInvoice(
+      return await this.salesPersonPerformaAnalyticsService.getMonthlySalesPersonInvoiceFiltered(
         company_id,
         module_id,
         subModule_id,
@@ -102,26 +61,19 @@ export class salesPersonPerformaAnalyticsController {
   }
 
   @Public()
-  @Get('getProductSoldFromSelectedSalesPerson')
-  async getProductSoldFromSelectedSalesPerson(
+  @Get('getMonthlyProductSoldFromSalesPersonFiltered')
+  async getMonthlyProductSoldFromSalesPersonFiltered(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
-    @Query('salesPersonName') salesPersonName: string,
-    @Query('yearPeriod') yearPeriod: string,
-    @Query('monthPeriod') monthPeriod: string,
-    @Query('sortBy') sortBy: string,
+    @Query() query: salesAnalyticsDto,
   ) {
-    this.logger.debug(
-      `Received params: company_id=${company_id}, module_id=${module_id}, subModule_id=${subModule_id}, salesPersonName=${salesPersonName}, yearPeriod=${yearPeriod}, monthPeriod=${monthPeriod},sortBy=${sortBy}`,
-    );
     try {
-      return await this.salesAnalytics.getProductSoldFromSelectedSalesPerson(
+      return await this.salesPersonPerformaAnalyticsService.getMonthlyProductSoldFromSalesPersonFiltered(
         company_id,
-        salesPersonName,
-        yearPeriod,
-        monthPeriod,
-        sortBy,
+        module_id,
+        subModule_id,
+        query,
       );
     } catch (error) {
       this.logger.error(`Error processing request: ${error.message}`);

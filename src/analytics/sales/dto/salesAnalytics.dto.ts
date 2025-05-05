@@ -1,11 +1,21 @@
-import { IsString, IsOptional, IsInt, Min, IsNumber } from 'class-validator';
+import { IsString, IsOptional, Min, IsNumber, IsIn } from 'class-validator';
 
 export class salesAnalyticsDto {
   @IsString()
-  startPeriod: string;
+  @IsOptional()
+  startPeriod?: string;
 
   @IsString()
-  endPeriod: string;
+  @IsOptional()
+  endPeriod?: string;
+
+  @IsString()
+  @IsOptional()
+  yearPeriod?: string;
+
+  @IsString()
+  @IsOptional()
+  monthPeriod?: string;
 
   @IsString()
   @IsOptional()
@@ -23,4 +33,11 @@ export class salesAnalyticsDto {
   @IsNumber({}, { message: 'topN must be a valid number' })
   @Min(1, { message: 'topN must be at least 1' })
   topN?: number;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['qty', 'total_amount'], {
+    message: 'sortBy must be one of: qty, total_amount',
+  })
+  sortBy?: string;
 }

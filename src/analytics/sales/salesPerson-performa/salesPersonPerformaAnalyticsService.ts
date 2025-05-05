@@ -8,7 +8,6 @@ import { PrismaService } from 'src/prisma.service';
 import { salesAnalyticsDto } from '../dto/salesAnalytics.dto';
 import { format, parse, startOfMonth, endOfMonth } from 'date-fns';
 import { monthMap } from 'src/utils/date/getMonthName';
-import { yearlySalesAnalyticsDto } from '../dto/yearlySalesAnalytics.dto';
 
 @Injectable()
 export class salesPersonPerformaAnalyticsService {
@@ -20,151 +19,6 @@ export class salesPersonPerformaAnalyticsService {
 
   //YEARLY SALES PERSON INVOICE ANALYTICS
   // TOP N SALES PERSON BY YEAR WITH GROWTH PERCENTAGE AND YEARLY SALES 300Juta * 12
-  async getYearlySalespersonInvoice(
-    company_id: string,
-    module_id: string,
-    subModule_id: string,
-    dto: yearlySalesAnalyticsDto,
-  ) {
-    const { years } = dto;
-
-    // Validasi years
-    if (!years || !Array.isArray(years) || years.length === 0) {
-      throw new BadRequestException(
-        'years array is required and cannot be empty',
-      );
-    }
-
-    // Validasi format tahun dan hapus duplikat
-    const uniqueYears = [...new Set(years)];
-    const invalidYears = uniqueYears.filter(
-      (year) => !/^\d{4}$/.test(year) || isNaN(parseInt(year)),
-    );
-    if (invalidYears.length > 0) {
-      throw new BadRequestException(
-        `Invalid years: ${invalidYears.join(', ')}. Must be in YYYY format (e.g., 2023)`,
-      );
-    }
-
-    // Validasi company_id
-    const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
-      where: { company_id },
-    });
-    if (!companyExists) {
-      throw new NotFoundException(`Company ID ${company_id} not found`);
-    }
-
-    // Tentukan tahun sebelumnya untuk growth percentage
-    const previousYears = uniqueYears
-      .map((year) => (parseInt(year) - 1).toString())
-      .filter((year) => !uniqueYears.includes(year));
-    const allYears = [...uniqueYears, ...previousYears].map(Number);
-
-    // Query untuk Salesperson Invoice Per Tahun
-    const salespersonInvoiceResult = await this.prisma.$queryRaw<
-      {
-        salesPersonName: string;
-        year: number;
-        total_amount: number;
-        invoice_count: number;
-      }[]
-    >`
-      SELECT 
-        "salesPersonName",
-        EXTRACT(YEAR FROM "invoiceDate") AS "year",
-        CAST(SUM("total_amount") AS DECIMAL) AS "total_amount",
-        COUNT(*) AS "invoice_count"
-      FROM 
-        "sls_InvoiceHd"
-      WHERE 
-        "company_id" = ${company_id}
-        AND "trxType" = 'IV'
-        AND "total_amount" > 0
-        AND EXTRACT(YEAR FROM "invoiceDate") = ANY(${allYears}::integer[])
-      GROUP BY 
-        "salesPersonName", EXTRACT(YEAR FROM "invoiceDate")
-      HAVING 
-        CAST(SUM("total_amount") AS DECIMAL) >= 300000000
-      ORDER BY 
-        "year", "total_amount" DESC;
-    `;
-
-    // Proses data
-    const yearlyData: Record<
-      string,
-      Record<
-        string,
-        { salesPersonName: string; amount: number; quantity: number }
-      >
-    > = {};
-
-    salespersonInvoiceResult.forEach((item) => {
-      const year = item.year.toString();
-      const salesPerson = item.salesPersonName || 'Unknown';
-      const amount = Math.round(Number(item.total_amount));
-      const quantity = Number(item.invoice_count);
-
-      if (!yearlyData[year]) {
-        yearlyData[year] = {};
-      }
-      yearlyData[year][salesPerson] = {
-        salesPersonName: salesPerson.toLocaleUpperCase(),
-        amount,
-        quantity,
-      };
-    });
-
-    // Hitung growth percentage berdasarkan total_amount
-    const salespersonData = uniqueYears
-      .map((year) => {
-        const sales = yearlyData[year];
-        if (!sales) return null;
-
-        const salesArray = Object.values(sales).map((entry) => {
-          const previousYear = (parseInt(year) - 1).toString();
-          const previousData =
-            yearlyData[previousYear]?.[entry.salesPersonName];
-          let growthPercentage: number | null = null;
-
-          if (previousData && previousData.amount > 0) {
-            growthPercentage =
-              ((entry.amount - previousData.amount) / previousData.amount) *
-              100;
-            growthPercentage = Math.round(growthPercentage * 10) / 10; // 1 desimal
-          } else if (
-            entry.amount > 0 &&
-            year === Math.min(...uniqueYears.map(Number)).toString()
-          ) {
-            growthPercentage = 0; // Tahun pertama yang dipilih
-          }
-
-          return {
-            salesPersonName: entry.salesPersonName,
-            amount: entry.amount,
-            quantity: entry.quantity,
-            growthPercentage,
-          };
-        });
-
-        return {
-          period: year,
-          totalInvoice: Math.round(
-            salesArray.reduce((sum, s) => sum + s.amount, 0),
-          ),
-          sales: salesArray.sort((a, b) => b.amount - a.amount).slice(0, 5), // Top 5
-        };
-      })
-      .filter((entry) => entry !== null)
-      .sort((a, b) => a.period.localeCompare(b.period));
-
-    // Format respons
-    return {
-      company_id,
-      module_id,
-      subModule_id,
-      data: salespersonData,
-    };
-  }
 
   //afriza top N sales person MONTHLY
 
@@ -376,7 +230,7 @@ export class salesPersonPerformaAnalyticsService {
 
   // afriza - get sales person by period with salesPersonName filter
   // get sales person invoice with salesPersonName, year, month filter
-  async getSelectedSalesPersonInvoice(
+  async getMonthlySalesPersonInvoiceFiltered(
     company_id: string,
     module_id: string,
     subModule_id: string,
@@ -421,9 +275,6 @@ export class salesPersonPerformaAnalyticsService {
         gte: new Date(formattedStartPeriod),
         lte: new Date(formattedEndPeriod),
       },
-      total_amount: {
-        gte: 100000000,
-      },
     };
 
     if (salesPersonName && salesPersonName.length > 0) {
@@ -439,21 +290,6 @@ export class salesPersonPerformaAnalyticsService {
       where,
       _sum: { total_amount: true },
     });
-
-    // const monthMap = [
-    //   'Jan',
-    //   'Feb',
-    //   'Mar',
-    //   'Apr',
-    //   'May',
-    //   'Jun',
-    //   'Jul',
-    //   'Aug',
-    //   'Sep',
-    //   'Oct',
-    //   'Nov',
-    //   'Dec',
-    // ];
 
     const response: any = {
       company_id,
@@ -606,17 +442,24 @@ export class salesPersonPerformaAnalyticsService {
     return response;
   }
 
-  async getProductSoldFromSelectedSalesPerson(
+  async getMonthlyProductSoldFromSalesPersonFiltered(
     company_id: string,
-    salesPersonName: string,
-    yearPeriod: string,
-    monthPeriod: string,
-    sortBy: string,
+    module_id: string,
+    subModule_id: string,
+    dto: salesAnalyticsDto,
   ) {
+    const {
+      salesPersonName,
+      yearPeriod,
+      monthPeriod,
+      sortBy = 'total_amount',
+    } = dto;
+
     this.logger.debug(
-      `Received params: company_id=${company_id}, salesPersonName=${salesPersonName}, yearPeriod=${yearPeriod}, monthPeriod=${monthPeriod}`,
+      `Received params: company_id=${company_id}, salesPersonName=${salesPersonName}, yearPeriod=${yearPeriod}, monthPeriod=${monthPeriod}, sortBy=${sortBy}`,
     );
 
+    // Validasi input
     if (!salesPersonName) {
       throw new BadRequestException('salesPersonName is required');
     }
@@ -625,9 +468,8 @@ export class salesPersonPerformaAnalyticsService {
       throw new BadRequestException('yearPeriod and monthPeriod are required');
     }
 
-    const period = `${monthPeriod}${yearPeriod}`;
-
     // Parsing periode
+    const period = `${monthPeriod}${yearPeriod}`;
     let startDate: Date, endDate: Date;
 
     try {
@@ -642,6 +484,7 @@ export class salesPersonPerformaAnalyticsService {
     const formattedStartPeriod = format(startOfMonth(startDate), 'yyyy-MM-dd');
     const formattedEndPeriod = format(endOfMonth(endDate), 'yyyy-MM-dd');
 
+    // Validasi company_id
     const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
       where: { company_id },
     });
@@ -649,38 +492,40 @@ export class salesPersonPerformaAnalyticsService {
       throw new NotFoundException(`Company ID ${company_id} not found`);
     }
 
+    // Buat where clause untuk query Prisma
+    const where: any = {
+      company_id,
+      sls_InvoiceHd: {
+        company_id,
+        trxType: 'IV',
+        salesPersonName: {
+          equals: salesPersonName,
+          mode: 'insensitive',
+        },
+        invoiceDate: {
+          gte: new Date(formattedStartPeriod),
+          lte: new Date(formattedEndPeriod),
+        },
+      },
+    };
+
+    // Query dengan groupBy untuk mengambil data produk terjual
     const results = await this.prisma.sls_InvoiceDt.groupBy({
       by: ['productName'],
       _sum: {
         qty: true,
         total_amount: true,
       },
-      where: {
-        company_id,
-        sls_InvoiceHd: {
-          company_id,
-          trxType: 'IV',
-          salesPersonName: {
-            equals: salesPersonName,
-            mode: 'insensitive',
-          },
-          total_amount: {
-            gte: 100000000,
-          },
-          invoiceDate: {
-            gte: new Date(formattedStartPeriod),
-            lte: new Date(formattedEndPeriod),
-          },
-        },
-      },
+      where,
       orderBy: {
         _sum: {
-          [sortBy]: 'desc', // Gunakan parameter sort untuk menentukan kolom yang diurutkan
+          [sortBy]: 'desc',
         },
       },
-      take: 3, // Ambil 3 besar
+      take: 3,
     });
 
+    // Format data
     const data = results.map((result) => ({
       productName: result.productName.trim(),
       qty: result._sum.qty ? Math.round(Number(result._sum.qty)) : 0,
@@ -689,11 +534,16 @@ export class salesPersonPerformaAnalyticsService {
         : 0,
     }));
 
+    // Bentuk response
     return {
       company_id,
-      module_id: 'ANT',
-      subModule_id: 'sls',
-      salesPersonName: salesPersonName.toUpperCase(),
+      module_id,
+      subModule_id,
+      salesPersonName: Array.isArray(salesPersonName)
+        ? salesPersonName.map((name) => name.toUpperCase())
+        : salesPersonName.toUpperCase(),
+      yearPeriod,
+      monthPeriod,
       data,
     };
   }

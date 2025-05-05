@@ -23,8 +23,11 @@ import { sys_MenuPermissionModule } from './sys/sys_menu_permission/sys_Menu_Per
 
 import { salesInvoiceHdModule } from './sales/salesInvoice/salesInvoiceHd/salesInvoiceHd.module';
 import { salesInvoiceItemModule } from './sales/salesInvoice/salesInvoiceItem/salesInvoiceItem.module';
-import { salesInvoiceAnalyticsModule } from './analytics/sales/salesInvoice/salesInvoiceAnalytics.module';
 
+import { salesInvoiceDashboardModule } from './dashboard/sales/salesInvoice/salesInvoiceDashboard.module';
+import { salesPersonPerformaDashboardModule } from './dashboard/sales/salesPerson-performa/salesPersonPerformaDashboard.module';
+
+import { salesInvoiceAnalyticsModule } from './analytics/sales/salesInvoice/salesInvoiceAnalytics.module';
 import { salesPersonPerformaAnalyticsModule } from './analytics/sales/salesPerson-performa/salesPersonPerformaAnalytics.module';
 
 import { UploadController } from './cloudinary/cloudinary.controller';
@@ -52,6 +55,8 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
     salesInvoiceHdModule,
     salesInvoiceItemModule,
+    salesInvoiceDashboardModule,
+    salesPersonPerformaDashboardModule,
     salesInvoiceAnalyticsModule,
     salesPersonPerformaAnalyticsModule,
     CloudinaryModule,
