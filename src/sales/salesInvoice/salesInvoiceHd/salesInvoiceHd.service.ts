@@ -70,28 +70,9 @@ export class salesInvoiceHdService {
       },
     });
 
-    // Cari nama pengguna berdasarkan userId
-    // const user = await this.prisma.sys_User.findUnique({
-    //   where: { id: userId },
-    //   select: { name: true },
-    // });
-
-    // if (!user) {
-    //   throw new NotFoundException(`User with ID ${userId} not found`);
-    // }
-
-    // Tambahkan filter berdasarkan salesPersonName jika user terdaftar
-    // const salesPerson = await this.prisma.sls_SalesPerson.findUnique({
-    //   where: { company_id_id: { company_id, id: String(userId) } },
-    //   select: { name: true },
-    // });
-
-    // if (salesPersonName) {
-    //   whereCondition.salesPersonName = {
-    //     equals: name,
-    //     mode: 'insensitive',
-    //   };
-    // }
+    whereCondition.AND = whereCondition.AND
+      ? [...whereCondition.AND, { trxType: { equals: 'IV' } }]
+      : [{ trxType: { equals: 'IV' } }];
 
     const searchConditions = buildSearchCondition(searchBy, searchTerm);
     if (searchConditions) {
@@ -102,7 +83,7 @@ export class salesInvoiceHdService {
       }
     }
 
-    console.log('whereCondition', whereCondition);
+    // console.log('whereCondition', whereCondition);
 
     // Jalankan query count, findMany, dan aggregate secara paralel
     const [totalRecords, invoices, aggregate] = await Promise.all([

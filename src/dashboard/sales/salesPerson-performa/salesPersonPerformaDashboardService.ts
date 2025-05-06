@@ -83,7 +83,7 @@ export class salesPersonPerformaDashboardService {
       GROUP BY 
         "salesPersonName", EXTRACT(YEAR FROM "invoiceDate")
       HAVING 
-        CAST(SUM("total_amount") AS DECIMAL) >= 300000000
+        CAST(SUM("total_amount") AS DECIMAL) >= 3600000000
       ORDER BY 
         "year", "total_amount" DESC;
     `;
