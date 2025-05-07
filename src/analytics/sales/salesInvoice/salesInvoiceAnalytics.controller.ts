@@ -14,7 +14,7 @@ export class salesInvoiceAnalyticsController {
 
   @Public()
   @Get('getMonthlySalesInvoice')
-  async sls_periodComparison(
+  async getMonthlySalesInvoice(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
@@ -23,6 +23,24 @@ export class salesInvoiceAnalyticsController {
     // console.log('Query params received:', JSON.stringify(query)); // Tambah log
 
     return this.salesInvoiceAnalyticsService.getMonthlySalesInvoice(
+      company_id,
+      module_id,
+      subModule_id,
+      query,
+    );
+  }
+
+  @Public()
+  @Get('getMonthlyComparisonSalesInvoice')
+  async getMonthlyComparisonSalesInvoice(
+    @Param('company_id') company_id: string,
+    @Param('module_id') module_id: string,
+    @Param('subModule_id') subModule_id: string,
+    @Query() query: salesAnalyticsDto,
+  ) {
+    // console.log('Query params received:', JSON.stringify(query)); // Tambah log
+
+    return this.salesInvoiceAnalyticsService.getMonthlyComparisonSalesInvoice(
       company_id,
       module_id,
       subModule_id,
