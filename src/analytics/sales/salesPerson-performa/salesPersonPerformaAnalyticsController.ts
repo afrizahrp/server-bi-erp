@@ -38,6 +38,29 @@ export class salesPersonPerformaAnalyticsController {
   }
 
   @Public()
+  @Get('getMonthlyComparisonSalespersonInvoiceUnfiltered')
+  async getMonthlyComparisonSalespersonInvoiceUnfiltered(
+    @Param('company_id') company_id: string,
+    @Param('module_id') module_id: string,
+    @Param('subModule_id') subModule_id: string,
+    @Query() query: salesAnalyticsDto,
+  ) {
+    this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
+
+    try {
+      return await this.salesPersonPerformaAnalyticsService.getMonthlyComparisonSalespersonInvoiceUnfiltered(
+        company_id,
+        module_id,
+        subModule_id,
+        query,
+      );
+    } catch (error) {
+      this.logger.error(`Error processing request: ${error.message}`);
+      throw error;
+    }
+  }
+
+  @Public()
   @Get('getMonthlySalesPersonInvoiceFiltered')
   async getMonthlySalesPersonInvoiceFiltered(
     @Param('company_id') company_id: string,
@@ -93,6 +116,27 @@ export class salesPersonPerformaAnalyticsController {
   ) {
     try {
       return await this.salesPersonPerformaAnalyticsService.getMonthlyProductSoldFromSalesPersonFiltered(
+        company_id,
+        module_id,
+        subModule_id,
+        query,
+      );
+    } catch (error) {
+      this.logger.error(`Error processing request: ${error.message}`);
+      throw error;
+    }
+  }
+
+  @Public()
+  @Get('getSalespersonFilteredSummary')
+  async getSalespersonFilteredSummary(
+    @Param('company_id') company_id: string,
+    @Param('module_id') module_id: string,
+    @Param('subModule_id') subModule_id: string,
+    @Query() query: salesAnalyticsDto,
+  ) {
+    try {
+      return await this.salesPersonPerformaAnalyticsService.getSalespersonFilteredSummary(
         company_id,
         module_id,
         subModule_id,
