@@ -1454,7 +1454,7 @@ export class salesPersonPerformaAnalyticsService {
           )
         : 0;
       monthlyData[year].targetSalesSuggestion = Math.round(
-        monthlyData[year].averageMonthlySales * 12 * 1.1,
+        monthlyData[year].averageMonthlySales * 12 * 1.1, // Target 10% lebih tinggi dari rata-rata tahunan
       );
     }
 
