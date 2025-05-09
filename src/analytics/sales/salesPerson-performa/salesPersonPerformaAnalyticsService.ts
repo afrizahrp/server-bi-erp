@@ -15,6 +15,7 @@ import {
   endOfYear,
 } from 'date-fns';
 import { monthMap } from 'src/utils/date/getMonthName';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class salesPersonPerformaAnalyticsService {
@@ -276,7 +277,6 @@ export class salesPersonPerformaAnalyticsService {
       WHERE 
           "company_id" = ${company_id}
           AND "trxType" = 'IV'
-          AND "total_amount" > 0
           AND "invoiceDate" BETWEEN ${formattedStartPeriod} AND ${formattedEndPeriod}
       GROUP BY 
           "salesPersonName", "period", "month_name", "year", "month_number"
@@ -318,6 +318,7 @@ export class salesPersonPerformaAnalyticsService {
           {
             salesPersonName: string;
             amount: number;
+            previousAmounts: number | null;
             growthPercentage: number | null;
           }[]
         >;
@@ -351,14 +352,6 @@ export class salesPersonPerformaAnalyticsService {
         return;
       }
 
-      // Filter untuk memastikan amount >= 300 juta
-      if (amount < 300000000) {
-        console.log(
-          `Skipping ${salesPerson} for ${monthKey} ${year}: ${amount} < 300 million`,
-        );
-        return;
-      }
-
       if (!monthlyData[year]) {
         monthlyData[year] = { period: year, totalInvoice: 0, months: {} };
       }
@@ -369,6 +362,7 @@ export class salesPersonPerformaAnalyticsService {
       monthlyData[year].months[monthKey].push({
         salesPersonName: salesPerson,
         amount,
+        previousAmounts: null,
         growthPercentage: null, // Akan diisi setelah menghitung
       });
       monthlyData[year].totalInvoice += amount;
@@ -406,7 +400,6 @@ export class salesPersonPerformaAnalyticsService {
           WHERE 
               "company_id" = ${company_id}
               AND "trxType" = 'IV'
-              AND "total_amount" > 0
               AND "invoiceDate" BETWEEN ${new Date(previousYearStart)} AND ${new Date(previousYearEnd)}
           GROUP BY 
               "salesPersonName";
@@ -424,6 +417,7 @@ export class salesPersonPerformaAnalyticsService {
           const salesPerson = salesEntry.salesPersonName;
           const currentAmount = salesEntry.amount;
           const previousAmount = previousAmounts[salesPerson] || 0;
+          salesEntry.previousAmounts = Math.round(previousAmount);
 
           let growthPercentage: number | null = null;
           if (previousAmount > 0) {
@@ -459,6 +453,7 @@ export class salesPersonPerformaAnalyticsService {
               return {
                 salesPersonName: sales.salesPersonName.toLocaleUpperCase(),
                 amount: Math.round(sales.amount),
+                previousAmounts: sales.previousAmounts,
                 growthPercentage: sales.growthPercentage,
               };
             });
@@ -685,6 +680,8 @@ export class salesPersonPerformaAnalyticsService {
     return response;
   }
 
+  //begin afriza - get sales person by period with salesPersonName filter
+
   // get growth percentage of sales person by month
   async getMonthlyComparisonSalesPersonInvoice(
     company_id: string,
@@ -692,6 +689,8 @@ export class salesPersonPerformaAnalyticsService {
     subModule_id: string,
     dto: salesAnalyticsDto,
   ) {
+    console.log('Starting getMonthlySalespersonInvoice...', { dto });
+
     const { startPeriod, endPeriod, salesPersonName } = dto;
 
     // Validasi startPeriod dan endPeriod
@@ -720,32 +719,87 @@ export class salesPersonPerformaAnalyticsService {
       throw new NotFoundException(`Company ID ${company_id} not found`);
     }
 
-    // Prepare periode
+    // Format tanggal sebagai string
     const formattedStartPeriod = format(startOfMonth(startDate), 'yyyy-MM-dd');
     const formattedEndPeriod = format(endOfMonth(endDate), 'yyyy-MM-dd');
+    console.log('Formatted Periods:', {
+      formattedStartPeriod,
+      formattedEndPeriod,
+    });
 
-    // Build where condition
-    const where: any = {
+    // Build WHERE clause dengan Prisma.sql
+    const whereConditions: string[] = [
+      `"company_id" = $1`,
+      `"trxType" = 'IV'`,
+      `"invoiceDate" BETWEEN $2::timestamp AND $3::timestamp`, // Cast ke timestamp
+    ];
+    const whereParams: any[] = [
       company_id,
-      invoiceDate: {
-        gte: new Date(formattedStartPeriod),
-        lte: new Date(formattedEndPeriod),
-      },
-    };
+      formattedStartPeriod,
+      formattedEndPeriod,
+    ];
 
     if (salesPersonName && salesPersonName.length > 0) {
       const salesPersonNames = Array.isArray(salesPersonName)
         ? salesPersonName
         : [salesPersonName];
-      where.salesPersonName = { in: salesPersonNames, mode: 'insensitive' };
+      whereConditions.push(
+        `"salesPersonName" IN (${salesPersonNames.map((_, i) => `$${i + 4}`).join(',')})`,
+      );
+      whereParams.push(...salesPersonNames);
     }
 
-    // Query groupBy
-    const result = await this.prisma.sls_InvoiceHd.groupBy({
-      by: ['salesPersonName', 'invoiceDate'],
-      where,
-      _sum: { total_amount: true },
-    });
+    const whereClause = whereConditions.join(' AND ');
+    console.log('Where Clause:', whereClause);
+    console.log('Where Params:', whereParams);
+
+    console.log('Executing query...');
+    const result = await this.prisma.$queryRawUnsafe<
+      {
+        salesPersonName: string;
+        period: string;
+        month_name: string;
+        year: number;
+        month_number: number;
+        total_amount: number;
+      }[]
+    >(
+      `
+      SELECT 
+          "salesPersonName",
+          TO_CHAR("invoiceDate", 'YYYY-MM') AS "period",
+          TO_CHAR("invoiceDate", 'Mon') AS "month_name",
+          EXTRACT(YEAR FROM "invoiceDate") AS "year",
+          EXTRACT(MONTH FROM "invoiceDate") AS "month_number",
+          CAST(SUM("total_amount") AS DECIMAL) AS "total_amount"
+      FROM 
+          "sls_InvoiceHd"
+      WHERE 
+          ${whereClause}
+      GROUP BY 
+          "salesPersonName", "period", "month_name", "year", "month_number"
+      HAVING 
+          CAST(SUM("total_amount") AS DECIMAL) >= 300000000
+      ORDER BY 
+          "year", "month_number", "total_amount" DESC;
+    `,
+      ...whereParams,
+    );
+
+    console.log(
+      'Query Result:',
+      result.length > 0 ? JSON.stringify(result, null, 2) : 'No data found',
+    );
+
+    if (result.length === 0) {
+      console.log('No salespeople with total_amount >= 300 million found.');
+      return {
+        company_id,
+        module_id,
+        subModule_id,
+        data: [],
+      };
+    }
 
     const response: any = {
       company_id,
@@ -769,225 +823,195 @@ export class salesPersonPerformaAnalyticsService {
       'Dec',
     ];
 
-    if (!salesPersonName || salesPersonName.length === 0) {
-      // Hitung total penjualan per salesperson
-      const totalSalesByPerson: Record<string, number> = {};
-
-      result.forEach((item) => {
-        const salesPerson = item.salesPersonName || 'Unknown';
-        const amount = Math.round(Number(item._sum.total_amount || 0));
-        totalSalesByPerson[salesPerson] =
-          (totalSalesByPerson[salesPerson] || 0) + amount;
-      });
-
-      // Ambil topN salesperson berdasarkan total penjualan
-      const topSalesPersons = Object.entries(totalSalesByPerson)
-        .sort(([, amountA], [, amountB]) => amountB - amountA) // Urutkan descending berdasarkan amount
-        .slice(0, 5) // Ambil 5 besar
-        .map(([salesPerson]) => salesPerson);
-
-      // Filter hanya data dari topN salesperson
-      const filteredResult = result.filter((item) =>
-        topSalesPersons.includes(item.salesPersonName || 'Unknown'),
-      );
-
-      // Proses data bulanan
-      const monthlyData: Record<
-        string,
-        {
-          period: string;
-          totalInvoice: number;
-          months: Record<string, Record<string, number>>;
-        }
-      > = {};
-
-      filteredResult.forEach((item) => {
-        const year = item.invoiceDate.getFullYear().toString();
-        const monthIdx = item.invoiceDate.getMonth();
-        const monthKey = monthMap[monthIdx];
-        const salesPerson = item.salesPersonName || 'Unknown';
-        const amount = Math.round(Number(item._sum.total_amount || 0));
-
-        if (!monthlyData[year]) {
-          monthlyData[year] = {
-            period: year,
-            totalInvoice: 0,
-            months: {},
-          };
-        }
-        if (!monthlyData[year].months[monthKey]) {
-          monthlyData[year].months[monthKey] = {};
-        }
-
-        monthlyData[year].months[monthKey][salesPerson] =
-          (monthlyData[year].months[monthKey][salesPerson] || 0) + amount;
-
-        monthlyData[year].totalInvoice += amount;
-      });
-
-      response.data = Object.values(monthlyData).map((entry) => {
-        // Buat array months dengan sales yang diurutkan
-        const sortedMonths = monthMap
-          .filter((month) => entry.months[month]) // Hanya bulan dengan data
-          .map((month) => ({
-            month,
-            sales: Object.entries(entry.months[month])
-              .sort(([, amountA], [, amountB]) => amountB - amountA) // Urutkan descending berdasarkan amount
-              .map(([salesPersonName, amount]) => ({
-                salesPersonName,
-                amount,
-              })),
-          }));
-
-        return {
-          period: entry.period,
-          totalInvoice: Math.round(entry.totalInvoice),
-          months: sortedMonths,
-        };
-      });
-
-      response.data.sort((a: any, b: any) => a.period.localeCompare(b.period));
-    } else {
-      // Kalau ada filter salesPersonName
-      const monthlyData: Record<
-        string,
-        Record<
+    const monthlyData: Record<
+      string,
+      {
+        period: string;
+        totalInvoice: number;
+        months: Record<
           string,
           {
-            period: string;
             salesPersonName: string;
-            totalInvoice: number;
-            months: Record<
-              string,
-              { amount: number; growthPercentage: number | null }
-            >;
-          }
-        >
-      > = {};
+            amount: number;
+            previousAmounts: number | null;
+            growthPercentage: number | null;
+          }[]
+        >;
+      }
+    > = {};
 
-      // Proses data untuk periode saat ini
-      result.forEach((item) => {
-        const year = item.invoiceDate.getFullYear().toString();
-        const monthIdx = item.invoiceDate.getMonth();
-        const monthKey = monthMap[monthIdx];
-        const salesPerson = item.salesPersonName || 'Unknown';
-        const amount = Math.round(Number(item._sum.total_amount || 0));
+    console.log('Starting result.forEach loop...');
+    result.forEach((item, index) => {
+      console.log(`Processing item ${index}:`, JSON.stringify(item, null, 2));
 
-        if (!monthlyData[year]) {
-          monthlyData[year] = {};
-        }
-        if (!monthlyData[year][salesPerson]) {
-          monthlyData[year][salesPerson] = {
-            period: year,
-            salesPersonName: salesPerson,
-            totalInvoice: 0,
-            months: {},
-          };
-        }
+      const year = item.year.toString();
+      const monthKey = monthMap.find(
+        (m) => m.toLowerCase() === item.month_name.toLowerCase().slice(0, 3),
+      );
 
-        monthlyData[year][salesPerson].months[monthKey] = {
-          amount:
-            (monthlyData[year][salesPerson].months[monthKey]?.amount || 0) +
-            amount,
-          growthPercentage: null, // Akan diisi setelah menghitung
-        };
-        monthlyData[year][salesPerson].totalInvoice += amount;
-      });
-
-      // Ambil data untuk tahun sebelumnya untuk setiap bulan
-      for (const year in monthlyData) {
-        const previousYear = (parseInt(year) - 1).toString();
-
-        for (const salesPerson in monthlyData[year]) {
-          const months = monthlyData[year][salesPerson].months;
-
-          for (const monthKey of Object.keys(months)) {
-            const monthIdx = monthMap.indexOf(monthKey);
-            const previousYearStart = format(
-              startOfMonth(new Date(parseInt(previousYear), monthIdx)),
-              'yyyy-MM-dd',
-            );
-            const previousYearEnd = format(
-              endOfMonth(new Date(parseInt(previousYear), monthIdx)),
-              'yyyy-MM-dd',
-            );
-
-            // Query untuk data tahun sebelumnya
-            const previousResult = await this.prisma.sls_InvoiceHd.groupBy({
-              by: ['salesPersonName', 'invoiceDate'],
-              where: {
-                company_id,
-                salesPersonName: {
-                  equals: salesPerson,
-                  mode: 'insensitive',
-                },
-                invoiceDate: {
-                  gte: new Date(previousYearStart),
-                  lte: new Date(previousYearEnd),
-                },
-              },
-              _sum: { total_amount: true },
-            });
-
-            // Hitung total_amount untuk bulan yang sama di tahun sebelumnya
-            const previousAmount = previousResult.reduce(
-              (sum, item) =>
-                sum + Math.round(Number(item._sum.total_amount || 0)),
-              0,
-            );
-
-            const currentAmount = months[monthKey].amount;
-
-            // Hitung growthPercentage
-            let growthPercentage: number | null = null;
-            if (previousAmount > 0) {
-              growthPercentage =
-                ((currentAmount - previousAmount) / previousAmount) * 100;
-              growthPercentage = Number(growthPercentage.toFixed(1)); // Bulatkan ke 1 desimal
-            } else if (currentAmount > 0) {
-              // Jika previousAmount = 0 tetapi currentAmount > 0, bisa dianggap pertumbuhan "infinite"
-              growthPercentage = 100; // Atau bisa disesuaikan (misalnya null)
-            } else {
-              growthPercentage = 0; // Tidak ada pertumbuhan jika keduanya 0
-            }
-
-            months[monthKey].growthPercentage = growthPercentage;
-          }
-        }
+      if (!monthKey) {
+        console.log(`Invalid month_name: ${item.month_name}`);
+        throw new Error(`Invalid month_name: ${item.month_name}`);
       }
 
-      response.data = Object.values(monthlyData).flatMap((yearData) =>
-        Object.values(yearData).map((entry) => {
-          // Urutkan months berdasarkan monthMap
-          const sortedMonths: Record<
-            string,
-            { amount: number; growthPercentage: number | null }
-          > = {};
-          monthMap.forEach((month) => {
-            sortedMonths[month] = {
-              amount: Math.round(entry.months[month]?.amount || 0),
-              growthPercentage: entry.months[month]?.growthPercentage || 0,
-            };
-          });
-
-          return {
-            period: entry.period,
-            salesPersonName: entry.salesPersonName.toLocaleUpperCase(),
-            totalInvoice: Math.round(entry.totalInvoice),
-            months: sortedMonths,
-          };
-        }),
+      const salesPerson = item.salesPersonName || 'Unknown';
+      const amount = Number(item.total_amount);
+      console.log(
+        `Converted amount for ${salesPerson} in ${monthKey} ${year}: ${amount}`,
       );
 
-      response.data.sort((a: any, b: any) =>
-        a.period === b.period
-          ? a.salesPersonName.localeCompare(b.salesPersonName)
-          : a.period.localeCompare(b.period),
-      );
+      if (isNaN(amount)) {
+        console.log(
+          `Invalid amount for ${salesPerson} in ${monthKey} ${year}: ${item.total_amount}`,
+        );
+        return;
+      }
+
+      if (!monthlyData[year]) {
+        monthlyData[year] = { period: year, totalInvoice: 0, months: {} };
+      }
+      if (!monthlyData[year].months[monthKey]) {
+        monthlyData[year].months[monthKey] = [];
+      }
+
+      monthlyData[year].months[monthKey].push({
+        salesPersonName: salesPerson,
+        amount,
+        previousAmounts: null,
+        growthPercentage: null,
+      });
+      monthlyData[year].totalInvoice += amount;
+    });
+
+    console.log('Processed monthlyData:', JSON.stringify(monthlyData, null, 2));
+
+    // Hitung growth percentage untuk setiap salesperson per bulan
+    for (const year in monthlyData) {
+      const previousYear = (parseInt(year) - 1).toString();
+
+      for (const monthKey of Object.keys(monthlyData[year].months)) {
+        const monthIdx = monthMap.indexOf(monthKey);
+        const previousYearStart = format(
+          startOfMonth(new Date(parseInt(previousYear), monthIdx)),
+          'yyyy-MM-dd',
+        );
+        const previousYearEnd = format(
+          endOfMonth(new Date(parseInt(previousYear), monthIdx)),
+          'yyyy-MM-dd',
+        );
+
+        // Query data tahun sebelumnya, dengan filter salesPersonName jika ada
+        const previousWhereConditions: string[] = [
+          `"company_id" = $1`,
+          `"trxType" = 'IV'`,
+          `"trxStatus" = '1'`,
+          `"invoiceDate" BETWEEN $2::timestamp AND $3::timestamp`, // Cast ke timestamp
+        ];
+        const previousWhereParams: any[] = [
+          company_id,
+          previousYearStart,
+          previousYearEnd,
+        ];
+
+        if (salesPersonName && salesPersonName.length > 0) {
+          const salesPersonNames = Array.isArray(salesPersonName)
+            ? salesPersonName
+            : [salesPersonName];
+          previousWhereConditions.push(
+            `"salesPersonName" IN (${salesPersonNames.map((_, i) => `$${i + 4}`).join(',')})`,
+          );
+          previousWhereParams.push(...salesPersonNames);
+        }
+
+        const previousWhereClause = previousWhereConditions.join(' AND ');
+        console.log('Previous Where Clause:', previousWhereClause);
+        console.log('Previous Where Params:', previousWhereParams);
+
+        const previousResult = await this.prisma.$queryRawUnsafe<
+          {
+            salesPersonName: string;
+            total_amount: number;
+          }[]
+        >(
+          `
+          SELECT 
+              "salesPersonName",
+              CAST(SUM("total_amount") AS DECIMAL) AS "total_amount"
+          FROM 
+              "sls_InvoiceHd"
+          WHERE 
+              ${previousWhereClause}
+          GROUP BY 
+              "salesPersonName";
+        `,
+          ...previousWhereParams,
+        );
+
+        // Buat peta untuk data tahun sebelumnya
+        const previousAmounts: Record<string, number> = {};
+        previousResult.forEach((item) => {
+          const salesPerson = item.salesPersonName || 'Unknown';
+          previousAmounts[salesPerson] = Number(item.total_amount) || 0;
+        });
+
+        // Hitung growth percentage untuk setiap salesperson di bulan ini
+        monthlyData[year].months[monthKey].forEach((salesEntry) => {
+          const salesPerson = salesEntry.salesPersonName;
+          const currentAmount = salesEntry.amount;
+          const previousAmount = previousAmounts[salesPerson] || 0;
+
+          salesEntry.previousAmounts = Math.round(previousAmount);
+
+          let growthPercentage: number | null = null;
+          if (previousAmount > 0) {
+            growthPercentage =
+              ((currentAmount - previousAmount) / previousAmount) * 100;
+            growthPercentage = Number(growthPercentage.toFixed(1));
+          } else if (currentAmount > 0) {
+            growthPercentage = 100;
+          } else {
+            growthPercentage = 0;
+          }
+
+          salesEntry.growthPercentage = growthPercentage;
+        });
+      }
     }
 
+    response.data = Object.values(monthlyData).map((entry) => {
+      console.log(
+        `Processing period ${entry.period} with totalInvoice ${entry.totalInvoice}`,
+      );
+      return {
+        period: entry.period,
+        totalInvoice: Math.round(entry.totalInvoice),
+        months: monthMap.map((month) => {
+          const sales = (entry.months[month] || [])
+            .sort((a, b) => b.amount - a.amount)
+            .slice(0, 5)
+            .map((sales) => {
+              console.log(
+                `Final sales entry for ${month} ${entry.period}: ${sales.salesPersonName} - ${sales.amount} 
+                Previous Amount: ${sales.previousAmounts}
+                (Growth: ${sales.growthPercentage}%)`,
+              );
+              return {
+                salesPersonName: sales.salesPersonName.toLocaleUpperCase(),
+                amount: Math.round(sales.amount),
+                previousAmounts: sales.previousAmounts,
+                growthPercentage: sales.growthPercentage,
+              };
+            });
+          return { month, sales };
+        }),
+      };
+    });
+
+    console.log('Final response:', JSON.stringify(response, null, 2));
     return response;
   }
+
+  //afriza end of getMonthlyComparisonSalesPersonInvoice
 
   async getMonthlyProductSoldFromSalesPersonFiltered(
     company_id: string,
