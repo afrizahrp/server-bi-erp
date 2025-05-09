@@ -1296,20 +1296,20 @@ export class salesPersonPerformaAnalyticsService {
       data: [],
     };
 
-    const monthMap = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
+    // const monthMap = [
+    //   'Jan',
+    //   'Feb',
+    //   'Mar',
+    //   'Apr',
+    //   'May',
+    //   'Jun',
+    //   'Jul',
+    //   'Aug',
+    //   'Sep',
+    //   'Oct',
+    //   'Nov',
+    //   'Dec',
+    // ];
 
     // Logika untuk salesperson spesifik dengan agregat
     const monthlyData: Record<
@@ -1447,7 +1447,7 @@ export class salesPersonPerformaAnalyticsService {
         (min, current) => (current.amount < min.amount ? current : min),
         { month: '', amount: Number.MAX_VALUE },
       );
-      monthlyData[year].averageMonthlySales = monthlyAmounts.length
+      monthlyData[year].averageMonthlySales = monthlyAmounts.length // Hitung Total Penjualan Bulanan / Jumlah Bulan
         ? Math.round(
             monthlyAmounts.reduce((sum, a) => sum + a, 0) /
               monthlyAmounts.length,
