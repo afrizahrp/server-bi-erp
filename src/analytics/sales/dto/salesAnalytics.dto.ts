@@ -17,13 +17,13 @@ export class salesAnalyticsDto {
   @IsOptional()
   monthPeriod?: string;
 
-  @IsString()
   @IsOptional()
-  paidStatus?: string | string[];
+  @IsString({ each: true }) // Validasi setiap elemen dalam array sebagai string
+  paidStatus?: string[];
 
-  @IsString()
   @IsOptional()
-  poType?: string | string[];
+  @IsString({ each: true }) // Validasi setiap elemen dalam array sebagai string
+  poType?: string[];
 
   @IsOptional()
   @IsString({ each: true }) // Validasi tiap elemen di array
