@@ -574,6 +574,12 @@ model sls_SalesPerson {
   @@id([company_id, id], map: "pk_sls_SalesPerson")
 }
 
+model sls_CustomerType {
+  id           String @id @db.Char(4)
+  name         String @db.VarChar(60)
+  isGovernment Int    @db.SmallInt
+}
+
 model sls_Customer {
   id            String          @db.Char(20)
   name          String          @db.VarChar(150)
