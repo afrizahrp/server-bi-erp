@@ -53,7 +53,7 @@ export class Cms_UpdateBillboardDto {
 
   @IsOptional()
   @IsDateString()
-  updatedAt: Date;
+  updatedAt?: Date;
 
   @IsString()
   @IsOptional()
