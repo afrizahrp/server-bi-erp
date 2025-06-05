@@ -259,20 +259,19 @@ model imc_Category {
 }
 
 model imc_SubCategory {
-  id           String                 @db.Char(10)
-  category_id  String                 @db.Char(10)
-  name         String                 @db.VarChar(80)
-  slug         String                 @db.VarChar(50)
-  iStatus      MasterRecordStatusEnum @default(Active)
-  remarks      String?                @db.VarChar(250)
-  createdBy    String?                @db.Char(10)
-  createdAt    DateTime               @default(now())
-  updatedBy    String?                @db.Char(10)
-  updatedAt    DateTime
-  company_id   String                 @db.Char(5)
-  branch_id    String                 @db.Char(10)
-  imc_Products imc_Product[]
-  category     imc_Category           @relation(fields: [company_id, category_id], references: [company_id, id])
+  id          String                 @db.Char(10)
+  category_id String                 @db.Char(10)
+  name        String                 @db.VarChar(80)
+  slug        String                 @db.VarChar(50)
+  iStatus     MasterRecordStatusEnum @default(Active)
+  remarks     String?                @db.VarChar(250)
+  createdBy   String?                @db.Char(10)
+  createdAt   DateTime               @default(now())
+  updatedBy   String?                @db.Char(10)
+  updatedAt   DateTime
+  company_id  String                 @db.Char(5)
+  branch_id   String                 @db.Char(10)
+  category    imc_Category           @relation(fields: [company_id, category_id], references: [company_id, id])
 
   @@id([company_id, category_id, id], map: "pk_imc_SubCategories")
 }
@@ -320,7 +319,6 @@ model imc_Product {
   branch_id      String                 @db.Char(10)
   brand          imc_Brand              @relation(fields: [company_id, brand_id], references: [company_id, id], onUpdate: NoAction)
   category       imc_Category           @relation(fields: [company_id, category_id], references: [company_id, id], onUpdate: NoAction)
-  subCategory    imc_SubCategory        @relation(fields: [company_id, category_id, subCategory_id], references: [company_id, category_id, id], onUpdate: NoAction)
   uom            imc_Uom                @relation(fields: [company_id, uom_id], references: [company_id, id], onUpdate: NoAction)
   descriptions   imc_ProductDesc?
   images         imc_ProductImage[]
