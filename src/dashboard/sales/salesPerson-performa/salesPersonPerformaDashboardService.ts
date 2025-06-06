@@ -107,7 +107,7 @@ export class salesPersonPerformaDashboardService {
         yearlyData[year] = {};
       }
       yearlyData[year][salesPerson] = {
-        salesPersonName: salesPerson.toLocaleUpperCase(),
+        salesPersonName: salesPerson.toLocaleUpperCase().trim(),
         amount,
         quantity,
       };
@@ -346,8 +346,8 @@ export class salesPersonPerformaDashboardService {
       module_id,
       subModule_id,
       salesPersonName: Array.isArray(salesPersonName)
-        ? salesPersonName.map((name) => name.toUpperCase())
-        : salesPersonName?.toUpperCase() || null,
+        ? salesPersonName.map((name) => name.toLocaleUpperCase().trim)
+        : salesPersonName?.toLocaleUpperCase().trim() || null,
       years,
       data,
     };
