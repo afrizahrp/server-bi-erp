@@ -77,9 +77,9 @@ export class salesPersonPerformaDashboardService {
         "sls_InvoiceHd"
       WHERE 
         "company_id" = ${company_id}
-        AND "trxType" = 'IV'
         AND "total_amount" > 0
         AND EXTRACT(YEAR FROM "invoiceDate") = ANY(${allYears}::integer[])
+
       GROUP BY 
         "salesPersonName", EXTRACT(YEAR FROM "invoiceDate")
       HAVING 
@@ -123,7 +123,7 @@ export class salesPersonPerformaDashboardService {
           const previousYear = (parseInt(year) - 1).toString();
           const previousData =
             yearlyData[previousYear]?.[entry.salesPersonName];
-          let growthPercentage: number | null = null;
+          let growthPercentage: number | null = 0; // Default ke 0
 
           if (previousData && previousData.amount > 0) {
             growthPercentage =
