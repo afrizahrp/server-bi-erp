@@ -39,16 +39,21 @@ export class salesPersonPerformaDashboardController {
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
     @Query('years') years: string | string[], // Query bisa string atau array
+
     @Query('salesPersonName') salesPersonName: string | string[], // Query bisa string atau array
   ) {
     try {
       const yearsArray = Array.isArray(years) ? years : [years];
 
+      const salesPersonNameArray = Array.isArray(salesPersonName)
+        ? salesPersonName
+        : [salesPersonName];
+
       return await this.salesPersonPerformaDashboardService.getYearlySalesPersonInvoiceFiltered(
         company_id,
         module_id,
         subModule_id,
-        { years: yearsArray },
+        { years: yearsArray, salesPersonName: salesPersonNameArray },
       );
     } catch (error) {
       this.logger.error(`Error processing request: ${error.message}`);

@@ -5,6 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
+import { Prisma } from '@prisma/client';
+
 import { format, parse, startOfMonth, endOfMonth } from 'date-fns';
 import { monthMap } from 'src/utils/date/getMonthName';
 import { yearlySalesDashboardDto } from '../dto/yearlySalesDashboard.dto';
@@ -169,6 +171,7 @@ export class salesPersonPerformaDashboardService {
 
   // afriza - get sales person by period with salesPersonName filter
   // get sales person invoice with salesPersonName, year, month filter
+
   async getYearlySalesPersonInvoiceFiltered(
     company_id: string,
     module_id: string,
@@ -178,11 +181,45 @@ export class salesPersonPerformaDashboardService {
     const { years, salesPersonName } = dto;
 
     // Validasi years
-    if (!years || years.length === 0) {
+    if (!years || !Array.isArray(years) || years.length === 0) {
       throw new BadRequestException(
         'Years array is required and cannot be empty',
       );
     }
+
+    // Validasi format tahun dan hapus duplikat
+    const uniqueYears = [...new Set(years)];
+    const invalidYears = uniqueYears.filter(
+      (year) => !/^\d{4}$/.test(year) || isNaN(parseInt(year)),
+    );
+    if (invalidYears.length > 0) {
+      throw new BadRequestException(
+        `Invalid years: ${invalidYears.join(', ')}. Must be in YYYY format (e.g., 2023)`,
+      );
+    }
+
+    // Validasi salesPersonName (opsional)
+    let salesPersonNames: string[] = [];
+    if (
+      salesPersonName &&
+      Array.isArray(salesPersonName) &&
+      salesPersonName.length > 0
+    ) {
+      salesPersonNames = [
+        ...new Set(salesPersonName.map((name) => name.toUpperCase().trim())),
+      ];
+      const invalidNames = salesPersonNames.filter(
+        (name) => !name || typeof name !== 'string',
+      );
+      if (invalidNames.length > 0) {
+        throw new BadRequestException(
+          `Invalid salesPersonName: ${invalidNames.join(', ')}. Must be non-empty strings`,
+        );
+      }
+    }
+
+    // Logging untuk debug
+    console.log('salesPersonNames:', salesPersonNames);
 
     // Validasi company_id
     const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
@@ -192,69 +229,132 @@ export class salesPersonPerformaDashboardService {
       throw new NotFoundException(`Company ID ${company_id} not found`);
     }
 
-    // Build where condition
-    const where: any = {
-      company_id,
-      invoiceDate: {
-        gte: new Date(`${Math.min(...years.map(Number))}-01-01`),
-        lte: new Date(`${Math.max(...years.map(Number))}-12-31`),
-      },
-      total_amount: {
-        gte: 360000000, // 300 juta * 12 bulan,
-      },
-    };
+    // Tentukan tahun sebelumnya untuk growth percentage
+    const previousYears = uniqueYears
+      .map((year) => (parseInt(year) - 1).toString())
+      .filter((year) => !uniqueYears.includes(year));
+    const allYears = [...uniqueYears, ...previousYears].map(Number);
 
-    // Query groupBy
-    const result = await this.prisma.sls_InvoiceHd.groupBy({
-      by: ['salesPersonName', 'invoiceDate'],
-      where,
-      _sum: { total_amount: true },
-    });
+    // Query menggunakan $queryRaw
+    const query = Prisma.sql`
+    SELECT 
+      "salesPersonName",
+      EXTRACT(YEAR FROM "invoiceDate") AS "year",
+      CAST(SUM("total_amount") AS DECIMAL) AS "total_amount",
+      COUNT(*) AS "invoice_count"
+    FROM 
+      "sls_InvoiceHd"
+    WHERE 
+      "company_id" = ${company_id}
+      AND "total_amount" > 0
+      AND EXTRACT(YEAR FROM "invoiceDate") = ANY(${allYears})
+      ${salesPersonNames.length > 0 ? Prisma.sql`AND "salesPersonName" IN (${Prisma.join(salesPersonNames)})` : Prisma.empty}
+    GROUP BY 
+      "salesPersonName", EXTRACT(YEAR FROM "invoiceDate")
+    HAVING 
+      CAST(SUM("total_amount") AS DECIMAL) >= 3600000000
+    ORDER BY 
+      EXTRACT(YEAR FROM "invoiceDate"), SUM("total_amount") DESC;
+  `;
 
+    const salespersonInvoiceResult = await this.prisma.$queryRaw<
+      {
+        salesPersonName: string;
+        year: number;
+        total_amount: bigint;
+        invoice_count: bigint;
+      }[]
+    >(query);
+
+    // Konversi BigInt ke number untuk logging
+    const serializedResult = salespersonInvoiceResult.map((item) => ({
+      salesPersonName: item.salesPersonName,
+      year: item.year,
+      total_amount: Number(item.total_amount),
+      invoice_count: Number(item.invoice_count),
+    }));
+
+    // Logging untuk debug
+    console.log('Query result:', JSON.stringify(serializedResult, null, 2));
+
+    // Proses data
     const yearlyData: Record<
       string,
-      {
-        period: string;
-        totalInvoice: number;
-        sales: { salesPersonName: string; totalAmount: number }[];
-      }
+      Record<
+        string,
+        { salesPersonName: string; amount: number; quantity: number }
+      >
     > = {};
 
-    result.forEach((item) => {
-      const year = item.invoiceDate.getFullYear().toString();
+    salespersonInvoiceResult.forEach((item) => {
+      const year = item.year.toString();
       const salesPerson = item.salesPersonName || 'Unknown';
-      const totalAmount = Math.round(Number(item._sum.total_amount || 0));
+      const amount = Number(item.total_amount); // Konversi BigInt ke number
+      const quantity = Number(item.invoice_count); // Konversi BigInt ke number
 
       if (!yearlyData[year]) {
-        yearlyData[year] = {
-          period: year,
-          totalInvoice: 0,
-          sales: [],
-        };
+        yearlyData[year] = {};
       }
-
-      yearlyData[year].sales.push({
-        salesPersonName: salesPerson,
-        totalAmount,
-      });
-
-      yearlyData[year].totalInvoice += totalAmount;
+      yearlyData[year][salesPerson] = {
+        salesPersonName: salesPerson.toUpperCase().trim(),
+        amount,
+        quantity,
+      };
     });
 
-    const response = {
+    // Hitung growth percentage
+    const salespersonData = uniqueYears
+      .map((year) => {
+        const sales = yearlyData[year];
+        if (!sales) {
+          return {
+            period: year,
+            totalInvoice: 0,
+            sales: [],
+          };
+        }
+
+        const salesArray = Object.values(sales).map((entry) => {
+          const previousYear = (parseInt(year) - 1).toString();
+          const previousData =
+            yearlyData[previousYear]?.[entry.salesPersonName];
+          let growthPercentage: number = 0; // Default ke 0
+
+          if (previousData && previousData.amount > 0) {
+            growthPercentage =
+              ((entry.amount - previousData.amount) / previousData.amount) *
+              100;
+            growthPercentage = Math.round(growthPercentage * 10) / 10; // 1 desimal
+          }
+
+          return {
+            salesPersonName: entry.salesPersonName,
+            amount: entry.amount,
+            quantity: entry.quantity,
+            growthPercentage,
+          };
+        });
+
+        return {
+          period: year,
+          totalInvoice: Math.round(
+            salesArray.reduce((sum, s) => sum + s.amount, 0),
+          ),
+          sales: salesArray.sort((a, b) => b.amount - a.amount).slice(0, 5), // Top 5
+        };
+      })
+      .sort((a, b) => a.period.localeCompare(b.period));
+
+    // Logging untuk debug
+    console.log('salespersonData:', JSON.stringify(salespersonData, null, 2));
+
+    // Format respons
+    return {
       company_id,
       module_id,
       subModule_id,
-      data: Object.values(yearlyData).map((entry) => ({
-        period: entry.period,
-        totalInvoice: entry.totalInvoice,
-        sales: entry.sales
-          .sort((a, b) => b.totalAmount - a.totalAmount)
-          .slice(0, 5), // Ambil 5 sales person dengan penjualan tertinggi
-      })),
+      data: salespersonData,
     };
-
-    return response;
   }
 
   async getYearlyProductSoldFromSalesPersonFiltered(
@@ -300,7 +400,6 @@ export class salesPersonPerformaDashboardService {
       company_id,
       sls_InvoiceHd: {
         company_id,
-        trxType: 'IV',
         invoiceDate: {
           gte: new Date(`${Math.min(...years.map(Number))}-01-01`),
           lte: new Date(`${Math.max(...years.map(Number))}-12-31`),
