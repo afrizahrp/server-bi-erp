@@ -42,7 +42,7 @@ export class salesInvoiceDashboardController {
       if (monthsArray) {
         this.logger.log(`Received months: ${JSON.stringify(monthsArray)}`);
         // Validasi manual sebagai cadangan (opsional)
-        if (monthsArray.length > 3) {
+        if (monthsArray.length > 6) {
           throw new BadRequestException('Maximum 3 months can be selected');
         }
       }

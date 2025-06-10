@@ -4,7 +4,8 @@ import { Public } from 'src/auth/decorators/public.decorator';
 import { salesInvoiceItemService } from './salesInvoiceItem.service';
 import { responseSalesInvoiceItemDto } from './dto/responseSalesInvoiceItem.dto';
 
-@Controller(':company_id/get-invoiceDt')
+// @Controller(':company_id/get-invoiceDt')
+@Controller(':company_id/:module_id/get-invoiceDt')
 export class salesInvoiceItemContoller {
   constructor(private readonly invoiceDtService: salesInvoiceItemService) {}
 
