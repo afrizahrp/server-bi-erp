@@ -1,11 +1,18 @@
-import { IsArray, IsIn, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class yearlySalesDashboardDto {
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   years: string[];
 
   @IsOptional()
-  @IsString({ each: true }) // Validasi tiap elemen di array
+  @IsString({ each: true })
   salesPersonName?: string | string[];
 
   @IsOptional()
@@ -14,4 +21,33 @@ export class yearlySalesDashboardDto {
     message: 'sortBy must be one of: qty, total_amount',
   })
   sortBy?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @IsIn(
+    [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ],
+    {
+      each: true,
+      message: 'Each month must be a valid month name (e.g., Jan, Feb, etc.)',
+    },
+  )
+  @MaxLength(3, {
+    each: false, // Validasi panjang array, bukan panjang string
+    message: 'Maximum 3 months can be selected',
+  })
+  months?: string[];
 }

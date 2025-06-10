@@ -70,9 +70,8 @@ export class salesInvoiceHdService {
       },
     });
 
-    whereCondition.AND = whereCondition.AND
-      ? [...whereCondition.AND, { trxType: { equals: 'IV' } }]
-      : [{ trxType: { equals: 'IV' } }];
+    // whereCondition.AND = whereCondition.AND
+    //   ? [...whereCondition]
 
     const searchConditions = buildSearchCondition(searchBy, searchTerm);
     if (searchConditions) {

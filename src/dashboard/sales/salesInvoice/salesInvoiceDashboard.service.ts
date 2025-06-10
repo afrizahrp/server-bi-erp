@@ -14,7 +14,7 @@ import {
   startOfMonth,
   endOfMonth,
 } from 'date-fns';
-
+import { Prisma } from '@prisma/client';
 import { monthMap } from 'src/utils/date/getMonthName';
 
 @Injectable()
@@ -22,14 +22,14 @@ export class salesInvoiceDashboardService {
   private readonly logger = new Logger(salesInvoiceDashboardService.name);
 
   constructor(private readonly prisma: PrismaService) {}
-  // YEARLY SALES ANALYTICS
+
   async getYearlySalesInvoice(
     company_id: string,
     module_id: string,
     subModule_id: string,
     dto: yearlySalesDashboardDto,
   ) {
-    const { years } = dto;
+    const { years, months } = dto;
 
     // Validasi years
     if (!years || !Array.isArray(years) || years.length === 0) {
@@ -49,6 +49,22 @@ export class salesInvoiceDashboardService {
       );
     }
 
+    // Validasi months (opsional)
+    let monthNumbers: number[] = [];
+    if (months && months.length > 0) {
+      monthNumbers = months.map((month) => {
+        const monthName =
+          month.charAt(0).toUpperCase() + month.slice(1).toLowerCase();
+        const monthIndex = monthMap.indexOf(monthName);
+        if (monthIndex === -1) {
+          throw new BadRequestException(
+            `Invalid month: ${month}. Must be a valid month name (e.g., Jan, Feb, etc.)`,
+          );
+        }
+        return monthIndex + 1; // Konversi ke nomor bulan (1-12)
+      });
+    }
+
     // Validasi company_id
     const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
       where: { company_id },
@@ -64,20 +80,41 @@ export class salesInvoiceDashboardService {
     const allYears = [...uniqueYears, ...previousYears].map(Number);
 
     // Query untuk Sales Invoice Per Tahun
-    const salesInvoiceResult = await this.prisma.sls_InvoiceHd.groupBy({
-      by: ['invoiceDate'],
-      where: {
-        company_id,
-        invoiceDate: {
-          gte: startOfYear(new Date(Math.min(...allYears), 0, 1)),
-          lte: endOfYear(new Date(Math.max(...allYears), 11, 31)),
-        },
-        trxType: 'IV',
-        total_amount: { gt: 0 },
-      },
-      _count: { _all: true }, // Quantity (jumlah invoice)
-      _sum: { total_amount: true }, // Untuk total_amount dan filter
-    });
+    const salesInvoiceResult = await this.prisma.$queryRaw<
+      {
+        year: number;
+        total_amount: bigint;
+        invoice_count: bigint;
+      }[]
+    >(Prisma.sql`
+      SELECT 
+        EXTRACT(YEAR FROM "invoiceDate") AS "year",
+        CAST(SUM("total_amount") AS DECIMAL) AS "total_amount",
+        COUNT(*) AS "invoice_count"
+      FROM 
+        "sls_InvoiceHd"
+      WHERE 
+        "company_id" = ${company_id}
+        AND EXTRACT(YEAR FROM "invoiceDate") = ANY(${allYears})
+        ${monthNumbers.length > 0 ? Prisma.sql`AND EXTRACT(MONTH FROM "invoiceDate") IN (${Prisma.join(monthNumbers)})` : Prisma.empty}
+      GROUP BY 
+        EXTRACT(YEAR FROM "invoiceDate")
+      ORDER BY 
+        EXTRACT(YEAR FROM "invoiceDate");
+    `);
+
+    // Logging untuk debug
+    this.logger.log(
+      `Query result: ${JSON.stringify(
+        salesInvoiceResult.map((item) => ({
+          year: item.year,
+          total_amount: item.total_amount.toString(),
+          invoice_count: Number(item.invoice_count),
+        })),
+        null,
+        2,
+      )}`,
+    );
 
     // Proses data
     const yearlyData: Record<
@@ -85,26 +122,32 @@ export class salesInvoiceDashboardService {
       { period: string; totalInvoice: number; quantity: number }
     > = {};
 
+    // Inisialisasi semua tahun yang diminta dengan default 0
+    uniqueYears.forEach((year) => {
+      yearlyData[year] = {
+        period: year,
+        totalInvoice: 0,
+        quantity: 0,
+      };
+    });
+
+    // Isi data dari hasil query
     salesInvoiceResult.forEach((item) => {
-      const year = item.invoiceDate.getFullYear().toString();
-      const totalAmount = Math.round(
-        parseFloat((item._sum.total_amount || 0).toString()),
-      );
-      const quantity = item._count._all || 0;
+      const year = item.year.toString();
+      const totalAmount = parseFloat(item.total_amount.toString());
+      const quantity = Number(item.invoice_count);
 
-      if (!yearlyData[year]) {
-        yearlyData[year] = { period: year, totalInvoice: 0, quantity: 0 };
-      }
-
-      yearlyData[year].totalInvoice += totalAmount;
-      yearlyData[year].quantity += quantity;
+      yearlyData[year] = {
+        period: year,
+        totalInvoice: totalAmount,
+        quantity,
+      };
     });
 
     // Hitung growth percentage berdasarkan total_amount
     const filteredSalesData = uniqueYears
       .map((year) => {
         const entry = yearlyData[year];
-        if (!entry || entry.totalInvoice < 3600000000) return null;
 
         const previousYear = (parseInt(year) - 1).toString();
         const previousData = yearlyData[previousYear];
@@ -132,6 +175,11 @@ export class salesInvoiceDashboardService {
       })
       .filter((entry) => entry !== null)
       .sort((a, b) => a.period.localeCompare(b.period));
+
+    // Logging untuk debug
+    this.logger.log(
+      `Filtered sales data: ${JSON.stringify(filteredSalesData, null, 2)}`,
+    );
 
     // Format respons
     return {

@@ -90,7 +90,6 @@ export class salesPersonPerformaAnalyticsService {
             "sls_InvoiceHd"
         WHERE 
             "company_id" = ${company_id}
-            AND "trxType" = 'IV'
             AND "total_amount" > 0
             AND "invoiceDate" BETWEEN ${formattedStartPeriod} AND ${formattedEndPeriod}
         GROUP BY 
@@ -475,7 +474,6 @@ export class salesPersonPerformaAnalyticsService {
     // Build WHERE clause dengan Prisma.sql
     const whereConditions: string[] = [
       `"company_id" = $1`,
-      `"trxType" = 'IV'`,
       `"invoiceDate" BETWEEN $2::timestamp AND $3::timestamp`, // Cast ke timestamp
     ];
     const whereParams: any[] = [
@@ -648,7 +646,6 @@ export class salesPersonPerformaAnalyticsService {
         // Query data tahun sebelumnya, dengan filter salesPersonName jika ada
         const previousWhereConditions: string[] = [
           `"company_id" = $1`,
-          `"trxType" = 'IV'`,
           `"trxStatus" = '1'`,
           `"invoiceDate" BETWEEN $2::timestamp AND $3::timestamp`, // Cast ke timestamp
         ];
@@ -812,7 +809,6 @@ export class salesPersonPerformaAnalyticsService {
       company_id,
       sls_InvoiceHd: {
         company_id,
-        trxType: 'IV',
         salesPersonName: {
           equals: salesPersonName,
           mode: 'insensitive',
