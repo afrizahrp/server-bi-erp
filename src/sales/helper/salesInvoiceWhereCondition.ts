@@ -16,7 +16,6 @@ export function salesInvoiceWhereCondition(
 
   const whereCondition: Record<string, any> = {
     company_id,
-    total_amount: { gt: 10000 },
     ...additionalConditions,
   };
 
