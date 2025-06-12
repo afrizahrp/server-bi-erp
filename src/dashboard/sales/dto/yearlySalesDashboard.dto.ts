@@ -50,4 +50,10 @@ export class yearlySalesDashboardDto {
     message: 'Maximum 3 months can be selected',
   })
   months?: string[];
+
+  @IsOptional()
+  @IsIn([0, 1], {
+    message: 'includeHoSales must be 0 or 1',
+  })
+  includeHoSales?: number;
 }

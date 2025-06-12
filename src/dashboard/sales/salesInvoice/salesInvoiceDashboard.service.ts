@@ -29,7 +29,7 @@ export class salesInvoiceDashboardService {
     subModule_id: string,
     dto: yearlySalesDashboardDto,
   ) {
-    const { years, months } = dto;
+    const { years, months, includeHoSales } = dto;
 
     // Validasi years
     if (!years || !Array.isArray(years) || years.length === 0) {
@@ -97,6 +97,7 @@ export class salesInvoiceDashboardService {
         "company_id" = ${company_id}
         AND EXTRACT(YEAR FROM "invoiceDate") = ANY(${allYears})
         ${monthNumbers.length > 0 ? Prisma.sql`AND EXTRACT(MONTH FROM "invoiceDate") IN (${Prisma.join(monthNumbers)})` : Prisma.empty}
+        ${includeHoSales === 1 ? Prisma.empty : Prisma.sql`AND "customer_id" != 'CO-000308'`}
       GROUP BY 
         EXTRACT(YEAR FROM "invoiceDate")
       ORDER BY 

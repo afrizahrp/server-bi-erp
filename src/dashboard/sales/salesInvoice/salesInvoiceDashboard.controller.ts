@@ -25,6 +25,7 @@ export class salesInvoiceDashboardController {
     @Param('subModule_id') subModule_id: string,
     @Query('years') years: string | string[],
     @Query('months') months?: string | string[], // Bisa string atau array
+    @Query('includeHoSales') includeHoSales?: string,
   ) {
     try {
       // Konversi years ke array
@@ -37,6 +38,18 @@ export class salesInvoiceDashboardController {
           : [months]
         : undefined;
 
+      // Validasi dan konversi includeHoSales
+      let includeHoSalesValue: number | undefined;
+      if (includeHoSales !== undefined) {
+        const parsedValue = parseInt(includeHoSales, 10);
+        if (isNaN(parsedValue) || ![0, 1].includes(parsedValue)) {
+          throw new BadRequestException('includeHoSales must be 0 or 1');
+        }
+        includeHoSalesValue = parsedValue;
+      } else {
+        includeHoSalesValue = 0; // Default ke 0 jika tidak ada
+      }
+
       // Logging untuk debug
       this.logger.log(`Received years: ${JSON.stringify(yearsArray)}`);
       if (monthsArray) {
@@ -47,11 +60,17 @@ export class salesInvoiceDashboardController {
         }
       }
 
+      this.logger.log(`Received includeHoSales: ${includeHoSalesValue}`);
+
       return await this.salesDashboardService.getYearlySalesInvoice(
         company_id,
         module_id,
         subModule_id,
-        { years: yearsArray, months: monthsArray },
+        {
+          years: yearsArray,
+          months: monthsArray,
+          includeHoSales: includeHoSalesValue,
+        },
       );
     } catch (error) {
       this.logger.error(`Error processing request: ${error.message}`);
