@@ -783,12 +783,12 @@ export class salesInvoiceAnalyticsService {
       throw new NotFoundException(`Company ID ${company_id} not found`);
     }
 
-    // Hitung rentang tanggal, termasuk tahun sebelumnya untuk growthPercentage Januari
+    // Hitung rentang tanggal, termasuk tahun sebelumnya untuk growthPercentage
     const startYear = startDate.getFullYear();
     const formattedStartPeriod = format(
-      startOfMonth(new Date(startYear - 1, 0, 1)),
+      startOfMonth(new Date(startYear - 1, startDate.getMonth(), 1)),
       'yyyy-MM-dd',
-    ); // Mulai dari Jan tahun sebelumnya
+    ); // Mulai dari bulan yang sama tahun sebelumnya
     const formattedEndPeriod = format(endOfMonth(endDate), 'yyyy-MM-dd');
 
     // Buat where clause untuk query Prisma
@@ -884,30 +884,25 @@ export class salesInvoiceAnalyticsService {
       yearlyData[year][poTypeName].totalInvoice += amount;
     }
 
-    // Hitung growth percentage
+    // Hitung growth percentage berdasarkan bulan yang sama di tahun sebelumnya
     for (const year in yearlyData) {
       for (const poTypeName in yearlyData[year]) {
         const data = yearlyData[year][poTypeName];
-        monthMap.forEach((month, idx) => {
+        monthMap.forEach((month) => {
           const currentAmount = data.months[month].amount;
           let previousAmount = 0;
 
-          if (idx === 0) {
-            // Untuk Januari, ambil Januari tahun sebelumnya
-            const prevYear = (parseInt(year) - 1).toString();
-            if (yearlyData[prevYear]?.[poTypeName]) {
-              previousAmount =
-                yearlyData[prevYear][poTypeName].months['Jan'].amount;
-            }
-          } else {
-            // Untuk bulan lain, ambil bulan sebelumnya di tahun yang sama
-            previousAmount = data.months[monthMap[idx - 1]].amount;
+          // Ambil amount dari bulan yang sama di tahun sebelumnya
+          const prevYear = (parseInt(year) - 1).toString();
+          if (yearlyData[prevYear]?.[poTypeName]) {
+            previousAmount =
+              yearlyData[prevYear][poTypeName].months[month].amount;
           }
 
           if (previousAmount > 0 && currentAmount > 0) {
             const growth =
               ((currentAmount - previousAmount) / previousAmount) * 100;
-            data.months[month].growthPercentage = parseFloat(growth.toFixed(1));
+            data.months[month].growthPercentage = parseFloat(growth.toFixed(2));
           } else if (currentAmount > 0) {
             data.months[month].growthPercentage = 0;
           } else {
