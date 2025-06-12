@@ -748,6 +748,7 @@ export class salesInvoiceAnalyticsService {
 
     return response;
   }
+
   async getMonthlySalesInvoiceByPoType(
     company_id: string,
     module_id: string,
@@ -782,8 +783,12 @@ export class salesInvoiceAnalyticsService {
       throw new NotFoundException(`Company ID ${company_id} not found`);
     }
 
-    // Hitung rentang tanggal
-    const formattedStartPeriod = format(startOfMonth(startDate), 'yyyy-MM-dd');
+    // Hitung rentang tanggal, termasuk tahun sebelumnya untuk growthPercentage Januari
+    const startYear = startDate.getFullYear();
+    const formattedStartPeriod = format(
+      startOfMonth(new Date(startYear - 1, 0, 1)),
+      'yyyy-MM-dd',
+    ); // Mulai dari Jan tahun sebelumnya
     const formattedEndPeriod = format(endOfMonth(endDate), 'yyyy-MM-dd');
 
     // Buat where clause untuk query Prisma
@@ -799,7 +804,7 @@ export class salesInvoiceAnalyticsService {
     if (poType) {
       const poTypes = Array.isArray(poType) ? poType : [poType];
       where.sls_InvoicePoType = {
-        name: { in: poTypes },
+        name: { in: poTypes, mode: 'insensitive' },
       };
     }
 
@@ -826,11 +831,28 @@ export class salesInvoiceAnalyticsService {
           period: string;
           poType: string;
           totalInvoice: number;
-          months: Record<string, number>;
+          months: Record<string, { amount: number; growthPercentage?: number }>;
         }
       >
     > = {};
 
+    // Inisialisasi monthMap
+    const monthMap = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    // Agregasi data
     for (const item of invoices) {
       const year = item.invoiceDate.getFullYear().toString();
       const monthIdx = item.invoiceDate.getMonth();
@@ -850,26 +872,63 @@ export class salesInvoiceAnalyticsService {
           totalInvoice: 0,
           months: monthMap.reduce(
             (acc, month) => {
-              acc[month] = 0;
+              acc[month] = { amount: 0 };
               return acc;
             },
-            {} as Record<string, number>,
+            {} as Record<string, { amount: number; growthPercentage?: number }>,
           ),
         };
       }
 
-      yearlyData[year][poTypeName].months[monthKey] += amount;
+      yearlyData[year][poTypeName].months[monthKey].amount += amount;
       yearlyData[year][poTypeName].totalInvoice += amount;
     }
+
+    // Hitung growth percentage
+    for (const year in yearlyData) {
+      for (const poTypeName in yearlyData[year]) {
+        const data = yearlyData[year][poTypeName];
+        monthMap.forEach((month, idx) => {
+          const currentAmount = data.months[month].amount;
+          let previousAmount = 0;
+
+          if (idx === 0) {
+            // Untuk Januari, ambil Januari tahun sebelumnya
+            const prevYear = (parseInt(year) - 1).toString();
+            if (yearlyData[prevYear]?.[poTypeName]) {
+              previousAmount =
+                yearlyData[prevYear][poTypeName].months['Jan'].amount;
+            }
+          } else {
+            // Untuk bulan lain, ambil bulan sebelumnya di tahun yang sama
+            previousAmount = data.months[monthMap[idx - 1]].amount;
+          }
+
+          if (previousAmount > 0 && currentAmount > 0) {
+            const growth =
+              ((currentAmount - previousAmount) / previousAmount) * 100;
+            data.months[month].growthPercentage = parseFloat(growth.toFixed(1));
+          } else if (currentAmount > 0) {
+            data.months[month].growthPercentage = 0;
+          } else {
+            data.months[month].growthPercentage = undefined;
+          }
+        });
+      }
+    }
+
+    // Filter data hanya untuk periode yang diminta
+    const filteredData = Object.values(yearlyData)
+      .flatMap((yearData) => Object.values(yearData))
+      .filter((entry) => parseInt(entry.period) >= startYear)
+      .sort((a, b) => a.period.localeCompare(b.period));
 
     // Bentuk response
     const response: any = {
       company_id,
       module_id,
       subModule_id,
-      data: Object.values(yearlyData)
-        .flatMap((yearData) => Object.values(yearData))
-        .sort((a, b) => a.period.localeCompare(b.period)),
+      data: filteredData,
     };
 
     return response;
