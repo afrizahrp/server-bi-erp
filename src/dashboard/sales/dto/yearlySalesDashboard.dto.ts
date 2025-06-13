@@ -51,9 +51,9 @@ export class yearlySalesDashboardDto {
   })
   months?: string[];
 
-  @IsOptional()
-  @IsIn([0, 1], {
-    message: 'includeHoSales must be 0 or 1',
-  })
-  includeHoSales?: number;
+  // @IsOptional()
+  // @IsIn([0, 1], {
+  //   message: 'includeHoSales must be 0 or 1',
+  // })
+  // includeHoSales?: number;
 }

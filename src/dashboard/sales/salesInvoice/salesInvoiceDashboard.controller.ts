@@ -25,7 +25,7 @@ export class salesInvoiceDashboardController {
     @Param('subModule_id') subModule_id: string,
     @Query('years') years: string | string[],
     @Query('months') months?: string | string[], // Bisa string atau array
-    @Query('includeHoSales') includeHoSales?: string,
+    // @Query('includeHoSales') includeHoSales?: string,
   ) {
     try {
       // Konversi years ke array
@@ -39,16 +39,16 @@ export class salesInvoiceDashboardController {
         : undefined;
 
       // Validasi dan konversi includeHoSales
-      let includeHoSalesValue: number | undefined;
-      if (includeHoSales !== undefined) {
-        const parsedValue = parseInt(includeHoSales, 10);
-        if (isNaN(parsedValue) || ![0, 1].includes(parsedValue)) {
-          throw new BadRequestException('includeHoSales must be 0 or 1');
-        }
-        includeHoSalesValue = parsedValue;
-      } else {
-        includeHoSalesValue = 0; // Default ke 0 jika tidak ada
-      }
+      // let includeHoSalesValue: number | undefined;
+      // if (includeHoSales !== undefined) {
+      //   const parsedValue = parseInt(includeHoSales, 10);
+      //   if (isNaN(parsedValue) || ![0, 1].includes(parsedValue)) {
+      //     throw new BadRequestException('includeHoSales must be 0 or 1');
+      //   }
+      //   includeHoSalesValue = parsedValue;
+      // } else {
+      //   includeHoSalesValue = 0; // Default ke 0 jika tidak ada
+      // }
 
       // Logging untuk debug
       this.logger.log(`Received years: ${JSON.stringify(yearsArray)}`);
@@ -60,7 +60,7 @@ export class salesInvoiceDashboardController {
         }
       }
 
-      this.logger.log(`Received includeHoSales: ${includeHoSalesValue}`);
+      // this.logger.log(`Received includeHoSales: ${includeHoSalesValue}`);
 
       return await this.salesDashboardService.getYearlySalesInvoice(
         company_id,
@@ -69,7 +69,7 @@ export class salesInvoiceDashboardController {
         {
           years: yearsArray,
           months: monthsArray,
-          includeHoSales: includeHoSalesValue,
+          // includeHoSales: includeHoSalesValue,
         },
       );
     } catch (error) {
