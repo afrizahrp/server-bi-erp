@@ -27,7 +27,7 @@ export class salesPersonPerformaDashboardService {
     subModule_id: string,
     dto: yearlySalesDashboardDto,
   ) {
-    const { years } = dto;
+    const { years, months } = dto; // Konsisten dengan DTO
 
     // Validasi years
     if (!years || !Array.isArray(years) || years.length === 0) {
@@ -45,6 +45,21 @@ export class salesPersonPerformaDashboardService {
       throw new BadRequestException(
         `Invalid years: ${invalidYears.join(', ')}. Must be in YYYY format (e.g., 2023)`,
       );
+    }
+
+    // Validasi months (opsional)
+    let monthNumbers: number[] = [];
+    if (months && months.length > 0) {
+      monthNumbers = months.map((m) => {
+        const monthName = m.charAt(0).toUpperCase() + m.slice(1).toLowerCase();
+        const monthIndex = monthMap.indexOf(monthName);
+        if (monthIndex === -1) {
+          throw new BadRequestException(
+            `Invalid month: ${m}. Must be a valid month name (e.g., Jan, Feb, etc.)`,
+          );
+        }
+        return monthIndex + 1; // Konversi ke nomor bulan (1-12)
+      });
     }
 
     // Validasi company_id
@@ -69,26 +84,40 @@ export class salesPersonPerformaDashboardService {
         total_amount: number;
         invoice_count: number;
       }[]
-    >`
-      SELECT 
-        "salesPersonName",
-        EXTRACT(YEAR FROM "invoiceDate") AS "year",
-        CAST(SUM("total_amount") AS DECIMAL) AS "total_amount",
-        COUNT(*) AS "invoice_count"
-      FROM 
-        "sls_InvoiceHd"
-      WHERE 
-        "company_id" = ${company_id}
-        AND "total_amount" > 0
-        AND EXTRACT(YEAR FROM "invoiceDate") = ANY(${allYears}::integer[])
+    >(Prisma.sql`
+    SELECT 
+      "salesPersonName",
+      EXTRACT(YEAR FROM "invoiceDate") AS "year",
+      CAST(SUM("total_amount") AS DECIMAL) AS "total_amount",
+      COUNT(*) AS "invoice_count"
+    FROM 
+      "sls_InvoiceHd"
+    WHERE 
+      "company_id" = ${company_id}
+      AND "total_amount" > 0
+      AND EXTRACT(YEAR FROM "invoiceDate") = ANY(${allYears}::integer[])
+      ${monthNumbers.length > 0 ? Prisma.sql`AND EXTRACT(MONTH FROM "invoiceDate") IN (${Prisma.join(monthNumbers)})` : Prisma.empty}
+    GROUP BY 
+      "salesPersonName", EXTRACT(YEAR FROM "invoiceDate")
+    HAVING 
+      CAST(SUM("total_amount") AS DECIMAL) >= 3600000000
+    ORDER BY 
+      "year", "total_amount" DESC;
+  `);
 
-      GROUP BY 
-        "salesPersonName", EXTRACT(YEAR FROM "invoiceDate")
-      HAVING 
-        CAST(SUM("total_amount") AS DECIMAL) >= 3600000000
-      ORDER BY 
-        "year", "total_amount" DESC;
-    `;
+    // Logging untuk debug
+    this.logger.log(
+      `Query result: ${JSON.stringify(
+        salespersonInvoiceResult.map((item) => ({
+          salesPersonName: item.salesPersonName,
+          year: item.year,
+          total_amount: item.total_amount.toString(),
+          invoice_count: Number(item.invoice_count),
+        })),
+        null,
+        2,
+      )}`,
+    );
 
     // Proses data
     const yearlyData: Record<
@@ -109,7 +138,7 @@ export class salesPersonPerformaDashboardService {
         yearlyData[year] = {};
       }
       yearlyData[year][salesPerson] = {
-        salesPersonName: salesPerson.toLocaleUpperCase().trim(),
+        salesPersonName: salesPerson.toUpperCase().trim(),
         amount,
         quantity,
       };
@@ -119,7 +148,13 @@ export class salesPersonPerformaDashboardService {
     const salespersonData = uniqueYears
       .map((year) => {
         const sales = yearlyData[year];
-        if (!sales) return null;
+        if (!sales) {
+          return {
+            period: year,
+            totalInvoice: 0,
+            sales: [],
+          };
+        }
 
         const salesArray = Object.values(sales).map((entry) => {
           const previousYear = (parseInt(year) - 1).toString();
@@ -157,6 +192,11 @@ export class salesPersonPerformaDashboardService {
       })
       .filter((entry) => entry !== null)
       .sort((a, b) => a.period.localeCompare(b.period));
+
+    // Logging untuk debug
+    this.logger.log(
+      `Filtered sales data: ${JSON.stringify(salespersonData, null, 2)}`,
+    );
 
     // Format respons
     return {

@@ -15,20 +15,30 @@ export class salesPersonPerformaDashboardController {
   ) {}
 
   @Public()
-  @Get('getYearlySalespersonInvoice') // Tambahkan path spesifik
+  @Get('getYearlySalespersonInvoice')
   async getYearlySalespersonInvoice(
     @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
-    @Query('years') years: string | string[], // Query bisa string atau array
+    @Query('years') years: string | string[],
+    @Query('months') months?: string | string[], // Konsisten dengan DTO
   ) {
     const yearsArray = Array.isArray(years) ? years : [years];
+
+    const monthsArray = months
+      ? Array.isArray(months)
+        ? months
+        : [months]
+      : undefined;
 
     return this.salesPersonPerformaDashboardService.getYearlySalespersonInvoice(
       company_id,
       module_id,
       subModule_id,
-      { years: yearsArray },
+      {
+        years: yearsArray,
+        months: monthsArray, // Konsisten dengan DTO
+      },
     );
   }
 
