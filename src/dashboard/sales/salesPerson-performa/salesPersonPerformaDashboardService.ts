@@ -27,16 +27,16 @@ export class salesPersonPerformaDashboardService {
     subModule_id: string,
     dto: yearlySalesDashboardDto,
   ) {
-    const { years, months } = dto; // Konsisten dengan DTO
+    const { years, months } = dto;
 
-    // Validasi years
+    this.logger.log(`Received DTO: ${JSON.stringify(dto)}`);
+
     if (!years || !Array.isArray(years) || years.length === 0) {
       throw new BadRequestException(
         'years array is required and cannot be empty',
       );
     }
 
-    // Validasi format tahun dan hapus duplikat
     const uniqueYears = [...new Set(years)];
     const invalidYears = uniqueYears.filter(
       (year) => !/^\d{4}$/.test(year) || isNaN(parseInt(year)),
@@ -47,9 +47,11 @@ export class salesPersonPerformaDashboardService {
       );
     }
 
-    // Validasi months (opsional)
     let monthNumbers: number[] = [];
     if (months && months.length > 0) {
+      if (months.length > 6) {
+        throw new BadRequestException('Maximum 6 months can be selected');
+      }
       monthNumbers = months.map((m) => {
         const monthName = m.charAt(0).toUpperCase() + m.slice(1).toLowerCase();
         const monthIndex = monthMap.indexOf(monthName);
@@ -58,11 +60,12 @@ export class salesPersonPerformaDashboardService {
             `Invalid month: ${m}. Must be a valid month name (e.g., Jan, Feb, etc.)`,
           );
         }
-        return monthIndex + 1; // Konversi ke nomor bulan (1-12)
+        return monthIndex + 1;
       });
     }
 
-    // Validasi company_id
+    this.logger.log(`Month numbers: ${JSON.stringify(monthNumbers)}`);
+
     const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
       where: { company_id },
     });
@@ -70,23 +73,23 @@ export class salesPersonPerformaDashboardService {
       throw new NotFoundException(`Company ID ${company_id} not found`);
     }
 
-    // Tentukan tahun sebelumnya untuk growth percentage
     const previousYears = uniqueYears
       .map((year) => (parseInt(year) - 1).toString())
       .filter((year) => !uniqueYears.includes(year));
     const allYears = [...uniqueYears, ...previousYears].map(Number);
 
-    // Query untuk Salesperson Invoice Per Tahun
+    this.logger.log(`All years: ${JSON.stringify(allYears)}`);
+
     const salespersonInvoiceResult = await this.prisma.$queryRaw<
       {
-        salesPersonName: string;
+        salesPersonName: string | null;
         year: number;
         total_amount: number;
         invoice_count: number;
       }[]
     >(Prisma.sql`
     SELECT 
-      "salesPersonName",
+      COALESCE("salesPersonName", 'UNKNOWN') AS "salesPersonName",
       EXTRACT(YEAR FROM "invoiceDate") AS "year",
       CAST(SUM("total_amount") AS DECIMAL) AS "total_amount",
       COUNT(*) AS "invoice_count"
@@ -98,16 +101,16 @@ export class salesPersonPerformaDashboardService {
       AND EXTRACT(YEAR FROM "invoiceDate") = ANY(${allYears}::integer[])
       ${monthNumbers.length > 0 ? Prisma.sql`AND EXTRACT(MONTH FROM "invoiceDate") IN (${Prisma.join(monthNumbers)})` : Prisma.empty}
     GROUP BY 
-      "salesPersonName", EXTRACT(YEAR FROM "invoiceDate")
+      COALESCE("salesPersonName", 'UNKNOWN'), EXTRACT(YEAR FROM "invoiceDate")
     HAVING 
       CAST(SUM("total_amount") AS DECIMAL) >= 3600000000
+      
     ORDER BY 
       "year", "total_amount" DESC;
   `);
 
-    // Logging untuk debug
     this.logger.log(
-      `Query result: ${JSON.stringify(
+      `Raw query result: ${JSON.stringify(
         salespersonInvoiceResult.map((item) => ({
           salesPersonName: item.salesPersonName,
           year: item.year,
@@ -119,7 +122,6 @@ export class salesPersonPerformaDashboardService {
       )}`,
     );
 
-    // Proses data
     const yearlyData: Record<
       string,
       Record<
@@ -130,7 +132,7 @@ export class salesPersonPerformaDashboardService {
 
     salespersonInvoiceResult.forEach((item) => {
       const year = item.year.toString();
-      const salesPerson = item.salesPersonName || 'Unknown';
+      const salesPerson = item.salesPersonName || 'UNKNOWN';
       const amount = Math.round(Number(item.total_amount));
       const quantity = Number(item.invoice_count);
 
@@ -144,7 +146,10 @@ export class salesPersonPerformaDashboardService {
       };
     });
 
-    // Hitung growth percentage berdasarkan total_amount
+    this.logger.log(
+      `Processed yearly data: ${JSON.stringify(yearlyData, null, 2)}`,
+    );
+
     const salespersonData = uniqueYears
       .map((year) => {
         const sales = yearlyData[year];
@@ -160,18 +165,13 @@ export class salesPersonPerformaDashboardService {
           const previousYear = (parseInt(year) - 1).toString();
           const previousData =
             yearlyData[previousYear]?.[entry.salesPersonName];
-          let growthPercentage: number | null = 0; // Default ke 0
+          let growthPercentage: number = 0;
 
           if (previousData && previousData.amount > 0) {
             growthPercentage =
               ((entry.amount - previousData.amount) / previousData.amount) *
               100;
-            growthPercentage = Math.round(growthPercentage * 10) / 10; // 1 desimal
-          } else if (
-            entry.amount > 0 &&
-            year === Math.min(...uniqueYears.map(Number)).toString()
-          ) {
-            growthPercentage = 0; // Tahun pertama yang dipilih
+            growthPercentage = Math.round(growthPercentage * 10) / 10;
           }
 
           return {
@@ -187,18 +187,16 @@ export class salesPersonPerformaDashboardService {
           totalInvoice: Math.round(
             salesArray.reduce((sum, s) => sum + s.amount, 0),
           ),
-          sales: salesArray.sort((a, b) => b.amount - a.amount).slice(0, 5), // Top 5
+          sales: salesArray.sort((a, b) => b.amount - a.amount),
         };
       })
       .filter((entry) => entry !== null)
       .sort((a, b) => a.period.localeCompare(b.period));
 
-    // Logging untuk debug
     this.logger.log(
       `Filtered sales data: ${JSON.stringify(salespersonData, null, 2)}`,
     );
 
-    // Format respons
     return {
       company_id,
       module_id,
