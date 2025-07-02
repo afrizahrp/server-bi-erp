@@ -48,8 +48,8 @@ model sys_Role {
 
 model sys_User {
   id                 Int                    @id @default(autoincrement()) @db.SmallInt
-  name               String                 @unique @db.VarChar(50)
-  email              String                 @db.VarChar(100)
+  name               String                 @db.VarChar(50)
+  email              String                 @unique @db.VarChar(100)
   isAdmin            Boolean                @default(false)
   iStatus            MasterRecordStatusEnum @default(Active)
   image              String?                @db.VarChar(255)

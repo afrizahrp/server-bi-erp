@@ -15,6 +15,8 @@ import refreshConfig from './config/refresh.config';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RolesGuard } from './guards/roles/role-guard';
+import googleOauthConfig from './config/google-oauth.config';
+import { GoogleStrategy } from './strategies/google.strategy';
 dotenv.config();
 
 @Module({
@@ -22,6 +24,7 @@ dotenv.config();
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(jwtConfig),
     ConfigModule.forFeature(refreshConfig),
+    ConfigModule.forFeature(googleOauthConfig),
   ],
   controllers: [AuthController],
   providers: [
@@ -31,6 +34,7 @@ dotenv.config();
     LocalStrategy,
     JwtStrategy,
     RefreshStrategy,
+    GoogleStrategy,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

@@ -33,10 +33,18 @@ export class sys_UserService {
     });
   }
 
-  async findByName(name: string) {
-    return this.prisma.sys_User.findUnique({
+  // async findByName(name: string) {
+  //   return this.prisma.sys_User.findUnique({
+  //     where: {
+  //       name,
+  //     },
+  //   });
+  // }
+
+  async findByEmail(email: string) {
+    return await this.prisma.sys_User.findUnique({
       where: {
-        name,
+        email,
       },
     });
   }

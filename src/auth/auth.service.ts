@@ -23,16 +23,22 @@ export class AuthService {
     private refreshTokenConfig: ConfigType<typeof refreshConfig>,
   ) {}
 
-  async registerUser(sys_CreateUserDto: Sys_CreateUserDto) {
-    const user = await this.sys_userService.findByName(sys_CreateUserDto.name);
-    if (user) {
-      throw new ConflictException('User already exists');
-    }
-    return this.sys_userService.create(sys_CreateUserDto);
+  // async registerUser(sys_CreateUserDto: Sys_CreateUserDto) {
+  //   const user = await this.sys_userService.findByName(sys_CreateUserDto.name);
+  //   if (user) {
+  //     throw new ConflictException('User already exists');
+  //   }
+  //   return this.sys_userService.create(sys_CreateUserDto);
+  // }
+
+  async registerUser(createUserDto: Sys_CreateUserDto) {
+    const user = await this.sys_userService.findByEmail(createUserDto.email);
+    if (user) throw new ConflictException('User already exists!');
+    return this.sys_userService.create(createUserDto);
   }
 
-  async validateLocalUser(name: string, password: string) {
-    const user = await this.sys_userService.findByName(name);
+  async validateLocalUser(email: string, password: string) {
+    const user = await this.sys_userService.findByEmail(email);
 
     if (!user) {
       throw new UnauthorizedException('User has not been registered');
@@ -188,6 +194,12 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  async validateGoogleUser(googleUser: Sys_CreateUserDto) {
+    const user = await this.sys_userService.findByEmail(googleUser.email);
+    if (user) return user;
+    return await this.sys_userService.create(googleUser);
   }
 
   async signOut(id: number) {
