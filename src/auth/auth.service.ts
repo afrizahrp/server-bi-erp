@@ -115,6 +115,9 @@ export class AuthService {
             }))
           : undefined,
       },
+      id: validatedUser.id,
+      name: validatedUser.name,
+      role_id: selectedCompany?.role_id || null,
       accessToken: tokens?.accessToken || null,
       refreshToken: tokens?.refreshToken || null,
       message: selectedCompany

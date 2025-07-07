@@ -18,6 +18,8 @@ import { GoogleAuthGuard } from './guards/google-auth/google-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 import { RefreshAuthGuard } from './guards/refresh-auth/refresh-auth.guard';
+import { Response } from 'express';
+
 import { Public } from './decorators/public.decorator';
 import { Roles } from './decorators/roles.decorator';
 import { RolesGuard } from './guards/roles/role-guard';
@@ -89,7 +91,7 @@ export class AuthController {
       req.user.role,
     );
     res.redirect(
-      `http://localhost:3000/api/auth/google/callback?userId=${response.id}&name=${response.name}&accessToken=${response.accessToken}&refreshToken=${response.refreshToken}&role=${response.role}`,
+      `http://localhost:3000/api/auth/google/callback?userId=${response.id}&name=${response.name}&accessToken=${response.accessToken}&refreshToken=${response.refreshToken}&role=${response.role_id}`,
     );
   }
 
