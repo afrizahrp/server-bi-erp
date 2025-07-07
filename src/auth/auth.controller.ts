@@ -4,13 +4,17 @@ import {
   Get,
   Post,
   Req,
+  Res,
   Request,
+  SetMetadata,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { Sys_CreateUserDto } from 'src/sys/sys_user/dto/sys_CreateUser.dto';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth/local-auth.guard';
+import { GoogleAuthGuard } from './guards/google-auth/google-auth.guard';
+
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 import { RefreshAuthGuard } from './guards/refresh-auth/refresh-auth.guard';
@@ -67,6 +71,26 @@ export class AuthController {
   @Post('refresh')
   refreshTokens(@Request() req) {
     return this.authService.refreshToken(req.user.id, req.user.role_id);
+  }
+
+  @Public()
+  @UseGuards(GoogleAuthGuard)
+  @Get('google/login')
+  googleLogin() {}
+
+  @Public()
+  @UseGuards(GoogleAuthGuard)
+  @Get('google/callback')
+  async googleCallback(@Request() req, @Res() res: Response) {
+    // console.log('Google User', req.user);
+    const response = await this.authService.login(
+      req.user.id,
+      req.user.name,
+      req.user.role,
+    );
+    res.redirect(
+      `http://localhost:3000/api/auth/google/callback?userId=${response.id}&name=${response.name}&accessToken=${response.accessToken}&refreshToken=${response.refreshToken}&role=${response.role}`,
+    );
   }
 
   @Post('logout')
