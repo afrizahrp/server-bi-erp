@@ -58,8 +58,8 @@ export class AuthService {
     };
   }
 
-  async login(name: string, password: string, company_id?: string) {
-    const validatedUser = await this.validateLocalUser(name, password);
+  async login(email: string, password: string, company_id?: string) {
+    const validatedUser = await this.validateLocalUser(email, password);
 
     const userCompanies = await this.prisma.sys_UserCompanyRole.findMany({
       where: { user_id: validatedUser.id },
@@ -197,6 +197,14 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  async getUserCompanyRole(userId: number) {
+    const userCompanyRole = await this.prisma.sys_UserCompanyRole.findFirst({
+      where: { user_id: userId },
+      include: { role: true },
+    });
+    return userCompanyRole;
   }
 
   async validateGoogleUser(googleUser: Sys_CreateUserDto) {

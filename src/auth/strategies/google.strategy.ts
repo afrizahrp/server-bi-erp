@@ -31,12 +31,23 @@ export class GoogleStrategy extends PassportStrategy(Strategy) {
     const user = await this.authService.validateGoogleUser({
       email: profile.emails[0].value,
       name: profile.displayName,
+      role_id: profile.id, // Use profile.id as role_id
       password: '',
       iStatus: MasterRecordStatusEnum.Active, // Default status
       isAdmin: false, // Default to non-admin
     });
 
-    done(null, user);
+    done(null, {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      iStatus: user.iStatus,
+      isAdmin: user.isAdmin,
+      hashedRefreshToken: user.hashedRefreshToken,
+    });
+
+    // done(null, user);
     // return user;
     // request.user
   }

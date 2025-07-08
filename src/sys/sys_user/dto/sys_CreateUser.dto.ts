@@ -32,4 +32,8 @@ export class Sys_CreateUserDto {
   @IsString()
   @IsOptional()
   hashedRefreshToken?: string;
+
+  @IsString()
+  @IsOptional()
+  role_id?: string;
 }
