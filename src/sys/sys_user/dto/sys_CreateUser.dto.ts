@@ -23,6 +23,7 @@ export class Sys_CreateUserDto {
   image?: string;
 
   @IsEnum(MasterRecordStatusEnum)
+  @IsOptional()
   iStatus: MasterRecordStatusEnum;
 
   @IsBoolean()
