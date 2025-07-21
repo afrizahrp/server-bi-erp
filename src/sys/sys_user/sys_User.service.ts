@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { Sys_CreateUserDto } from './dto/sys_CreateUser.dto';
+import { Sys_CreateGoogleUserDto } from './dto/sys_CreateGoogleUser.dto';
 import { hash } from 'argon2';
 
 @Injectable()
@@ -29,6 +30,18 @@ export class sys_UserService {
         iStatus: 'Active',
         isAdmin,
         hashedRefreshToken,
+      },
+    });
+  }
+
+  async createGoogleUser(sys_CreateGoogleUserDto: Sys_CreateGoogleUserDto) {
+    const { name, email, password } = sys_CreateGoogleUserDto;
+
+    return await this.prisma.sys_User.create({
+      data: {
+        name,
+        email,
+        password: '',
       },
     });
   }

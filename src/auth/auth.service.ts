@@ -12,6 +12,7 @@ import { PrismaService } from 'src/prisma.service';
 import { ConfigType } from '@nestjs/config';
 import refreshConfig from './config/refresh.config';
 import { AuthJwtPayload } from './types/auth-jwtPayload';
+import { Sys_CreateGoogleUserDto } from 'src/sys/sys_user/dto/sys_CreateGoogleUser.dto';
 
 @Injectable()
 export class AuthService {
@@ -127,6 +128,23 @@ export class AuthService {
     };
   }
 
+  async loginGoogle(userId: number, name: string, role_id: string) {
+    // role_id = 'ADMIN';
+    const { accessToken, refreshToken } = await this.generateTokens(
+      userId,
+      'ADMIN',
+    );
+    const hashedRT = await hash(refreshToken);
+    await this.sys_userService.updateHashedRefreshToken(userId, hashedRT);
+    return {
+      id: userId,
+      name: name,
+      role_id: role_id,
+      accessToken,
+      refreshToken,
+    };
+  }
+
   async generateTokens(id: number, role_id: string) {
     const payload: AuthJwtPayload = { sub: id, role_id };
     const [accessToken, refreshToken] = await Promise.all([
@@ -208,10 +226,10 @@ export class AuthService {
     return userCompanyRole;
   }
 
-  async validateGoogleUser(googleUser: Sys_CreateUserDto) {
+  async validateGoogleUser(googleUser: Sys_CreateGoogleUserDto) {
     const user = await this.sys_userService.findByEmail(googleUser.email);
     if (user) return user;
-    return await this.sys_userService.create(googleUser);
+    return await this.sys_userService.createGoogleUser(googleUser);
   }
 
   async signOut(id: number) {

@@ -89,6 +89,7 @@ export class AuthController {
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
   async googleCallback(@Request() req, @Res() res: Response) {
+    // async googleCallback(@Request() req) {
     console.log('Google User', req.user);
     const user = req.user;
     if (!user) {
@@ -96,20 +97,28 @@ export class AuthController {
     }
 
     // Ambil role_id dari sys_UserCompanyRole
+
     const userCompanyRole = await this.authService.getUserCompanyRole(user.id);
+
     if (!userCompanyRole) {
       throw new UnauthorizedException('User has no company access');
     }
 
     // Generate tokens
-    const tokens = await this.authService.generateTokens(
-      user.id,
-      userCompanyRole.role_id,
+    // const tokens = await this.authService.generateTokens(
+    //   user.id,
+    //   userCompanyRole.role_id,
+    // );
+
+    const response = await this.authService.loginGoogle(
+      req.user.id,
+      req.user.name,
+      'ADMIN',
     );
 
     // Redirect ke frontend
     res.redirect(
-      `http://localhost:3000/auth/google/callback?userId=${user.id}&name=${user.name}&accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&role=${userCompanyRole.role_id}`,
+      `http://localhost:3000/auth/google/callback?userId=${response.id}&name=${response.name}&accessToken=${response.accessToken}&refreshToken=${response.refreshToken}&role_id=${response.role_id}`,
     );
   }
 
