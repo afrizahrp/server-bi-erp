@@ -35,13 +35,14 @@ export class sys_UserService {
   }
 
   async createGoogleUser(sys_CreateGoogleUserDto: Sys_CreateGoogleUserDto) {
-    const { name, email, password } = sys_CreateGoogleUserDto;
-
+    const { name, email, password, image } = sys_CreateGoogleUserDto; // Tambahkan image
+    const hashedPassword = await hash(password || ''); // Password kosong untuk Google auth
     return await this.prisma.sys_User.create({
       data: {
         name,
         email,
-        password: '',
+        password: hashedPassword,
+        image: image || '', // Simpan image dari Google
       },
     });
   }

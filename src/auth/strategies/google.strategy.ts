@@ -4,7 +4,6 @@ import { Strategy, VerifyCallback } from 'passport-google-oauth20';
 import googleOauthConfig from '../config/google-oauth.config';
 import { ConfigType } from '@nestjs/config';
 import { AuthService } from '../auth.service';
-import { MasterRecordStatusEnum } from '@prisma/client';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy) {
@@ -18,8 +17,18 @@ export class GoogleStrategy extends PassportStrategy(Strategy) {
       clientSecret: googleConfig.clientSecret,
       callbackURL: googleConfig.callbackURL,
       scope: ['email', 'profile'],
-      passReqToCallback: false, // Explicitly set to false to use StrategyOptions
     });
+  }
+
+  // auth/google.strategy.ts
+  authorizationParams(): Record<string, string> {
+    const params = {
+      prompt: 'select_account',
+      access_type: 'offline',
+      login_hint: '', // Kosongkan login hint untuk memaksa prompt
+    };
+    console.log('Authorization Params:', params);
+    return params;
   }
 
   async validate(
@@ -31,21 +40,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy) {
     const user = await this.authService.validateGoogleUser({
       email: profile.emails[0].value,
       name: profile.displayName,
+      image: profile.photos?.[0]?.value || '', // Tambahkan image dari Google profile
       password: '',
     });
 
-    // done(null, {
-    //   id: user.id,
-    //   name: user.name,
-    //   email: user.email,
-    //   image: user.image,
-    //   iStatus: user.iStatus,
-    //   isAdmin: user.isAdmin,
-    //   hashedRefreshToken: user.hashedRefreshToken,
-    // });
-
     done(null, user);
-    // return user;
+    // return user
     // request.user
   }
 }

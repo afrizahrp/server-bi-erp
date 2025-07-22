@@ -128,17 +128,26 @@ export class AuthService {
     };
   }
 
+  // auth/auth.service.ts
   async loginGoogle(userId: number, name: string, role_id: string) {
-    // role_id = 'ADMIN';
+    // Ambil data pengguna dari database berdasarkan userId
+    const user = await this.sys_userService.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
     const { accessToken, refreshToken } = await this.generateTokens(
       userId,
       'ADMIN',
     );
     const hashedRT = await hash(refreshToken);
     await this.sys_userService.updateHashedRefreshToken(userId, hashedRT);
+
     return {
       id: userId,
-      name: name,
+      name: user.name || name, // Gunakan name dari database jika tersedia
+      email: user.email || '', // Ambil email dari database
+      image: user.image || '', // Ambil image dari database
       role_id: role_id,
       accessToken,
       refreshToken,

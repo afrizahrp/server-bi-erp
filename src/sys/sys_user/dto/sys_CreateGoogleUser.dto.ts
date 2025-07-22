@@ -11,9 +11,9 @@ export class Sys_CreateGoogleUserDto {
   @IsString()
   password: string;
 
-  //   @IsString()
-  //   @IsOptional()
-  //   image?: string;
+  @IsString()
+  @IsOptional()
+  image?: string;
 
   //   @IsEnum(MasterRecordStatusEnum)
   //   @IsOptional()

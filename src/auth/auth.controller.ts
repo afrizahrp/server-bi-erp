@@ -90,25 +90,20 @@ export class AuthController {
   @Get('google/callback')
   async googleCallback(@Request() req, @Res() res: Response) {
     // async googleCallback(@Request() req) {
-    console.log('Google User', req.user);
+    // console.log('Google User', req.user);
+
+    console.log('Initiating Google login, request:', req.url); // Tambahkan log
+
     const user = req.user;
     if (!user) {
       throw new UnauthorizedException('Google authentication failed');
     }
 
-    // Ambil role_id dari sys_UserCompanyRole
+    // const userCompanyRole = await this.authService.getUserCompanyRole(user.id);
 
-    const userCompanyRole = await this.authService.getUserCompanyRole(user.id);
-
-    if (!userCompanyRole) {
-      throw new UnauthorizedException('User has no company access');
-    }
-
-    // Generate tokens
-    // const tokens = await this.authService.generateTokens(
-    //   user.id,
-    //   userCompanyRole.role_id,
-    // );
+    // if (!userCompanyRole) {
+    //   throw new UnauthorizedException('User has no company access');
+    // }
 
     const response = await this.authService.loginGoogle(
       req.user.id,
@@ -118,7 +113,7 @@ export class AuthController {
 
     // Redirect ke frontend
     res.redirect(
-      `http://localhost:3000/auth/google/callback?userId=${response.id}&name=${response.name}&accessToken=${response.accessToken}&refreshToken=${response.refreshToken}&role_id=${response.role_id}`,
+      `http://localhost:3000/auth/callback?userId=${response.id}&name=${encodeURIComponent(response.name)}&email=${encodeURIComponent(req.user.email || '')}&image=${encodeURIComponent(req.user.image || '')}&accessToken=${response.accessToken}&refreshToken=${response.refreshToken}&role_id=${response.role_id}}`,
     );
   }
 
