@@ -27,7 +27,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy) {
       access_type: 'offline',
       login_hint: '', // Kosongkan login hint untuk memaksa prompt
     };
-    console.log('Authorization Params:', params);
+    // console.log('Authorization Params:', params);
     return params;
   }
 

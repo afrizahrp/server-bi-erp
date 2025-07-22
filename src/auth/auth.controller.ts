@@ -92,7 +92,7 @@ export class AuthController {
     // async googleCallback(@Request() req) {
     // console.log('Google User', req.user);
 
-    console.log('Initiating Google login, request:', req.url); // Tambahkan log
+    // console.log('Initiating Google login, request:', req.url); // Tambahkan log
 
     const user = req.user;
     if (!user) {
