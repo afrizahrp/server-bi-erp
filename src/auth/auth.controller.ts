@@ -85,6 +85,12 @@ export class AuthController {
   @Get('google/login')
   googleLogin() {}
 
+  @Get('google/logout')
+  googleLogout(@Res() res: Response) {
+    const logoutUrl = 'https://accounts.google.com/logout';
+    res.redirect(logoutUrl);
+  }
+
   @Public()
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
@@ -113,7 +119,7 @@ export class AuthController {
 
     // Redirect ke frontend
     res.redirect(
-      `http://localhost:3000/auth/callback?userId=${response.id}&name=${encodeURIComponent(response.name)}&email=${encodeURIComponent(req.user.email || '')}&image=${encodeURIComponent(req.user.image || '')}&accessToken=${response.accessToken}&refreshToken=${response.refreshToken}&role_id=${response.role_id}}`,
+      `http://localhost:3000/auth/google/callback?userId=${response.id}&name=${encodeURIComponent(response.name)}&email=${encodeURIComponent(req.user.email || '')}&image=${encodeURIComponent(req.user.image || '')}&accessToken=${response.accessToken}&refreshToken=${response.refreshToken}&role_id=${response.role_id}}`,
     );
   }
 

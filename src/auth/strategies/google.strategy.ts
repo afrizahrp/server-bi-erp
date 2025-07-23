@@ -16,16 +16,23 @@ export class GoogleStrategy extends PassportStrategy(Strategy) {
       clientID: googleConfig.clientID,
       clientSecret: googleConfig.clientSecret,
       callbackURL: googleConfig.callbackURL,
-      scope: ['email', 'profile'],
+      scope: [
+        'openid',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile',
+      ],
+
+      // scope: ['email', 'profile'],
     });
   }
 
   // auth/google.strategy.ts
   authorizationParams(): Record<string, string> {
     const params = {
-      prompt: 'select_account',
+      prompt: 'select_account consent', // Memaksa prompt dan ulang persetujuan
       access_type: 'offline',
       login_hint: '', // Kosongkan login hint untuk memaksa prompt
+      include_granted_scopes: 'true', // Pastikan semua scope diminta
     };
     // console.log('Authorization Params:', params);
     return params;
