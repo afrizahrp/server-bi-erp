@@ -3,21 +3,32 @@ import { applyPeriodToWhereCondition } from 'src/utils/date/applyMonthYearPeriod
 import { SalesInvoiceFilter } from 'src/sales/helper/salesInvoiceFilter';
 
 export function salesInvoiceWhereCondition(
-  company_id: string,
   filter: SalesInvoiceFilter,
   options: {
     requiredFilters?: Partial<Record<keyof SalesInvoiceFilter, boolean>>;
     additionalConditions?: Record<string, any>;
   } = {},
 ): Record<string, any> {
-  const { paidStatus, poType, salesPersonName, startPeriod, endPeriod } =
-    filter;
+  const {
+    company_id,
+    paidStatus,
+    poType,
+    salesPersonName,
+    startPeriod,
+    endPeriod,
+  } = filter;
   const { requiredFilters = {}, additionalConditions = {} } = options;
 
   const whereCondition: Record<string, any> = {
-    company_id,
     ...additionalConditions,
   };
+
+  // Filter by company_id
+  if (requiredFilters.company_id && company_id) {
+    whereCondition.company_id = Array.isArray(company_id)
+      ? { in: company_id, mode: 'insensitive' }
+      : { equals: company_id, mode: 'insensitive' };
+  }
 
   // Filter by paidStatus
   if (requiredFilters.paidStatus && paidStatus) {

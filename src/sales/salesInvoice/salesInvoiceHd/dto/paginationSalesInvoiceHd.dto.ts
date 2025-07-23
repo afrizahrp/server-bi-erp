@@ -33,6 +33,15 @@ export class paginationSalesInvoiceHdDto {
   )
   @IsString({ each: true })
   @IsOptional()
+  company_id?: string[];
+
+  @Transform(({ value }) =>
+    Array.isArray(value)
+      ? value
+      : value?.split(',').map((v: string) => v.trim()),
+  )
+  @IsString({ each: true })
+  @IsOptional()
   salesPersonName?: string[];
 
   @IsString()

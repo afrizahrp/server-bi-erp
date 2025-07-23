@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { paginationSalesInvoiceHdDto } from './dto/paginationSalesInvoiceHd.dto';
 import { responseSalesInvoiceHdDto } from './dto/responseSalesInvoiceHd';
@@ -13,7 +17,6 @@ export class salesInvoiceHdService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(
-    company_id: string,
     module_id: string,
     paginationDto: paginationSalesInvoiceHdDto,
     // userId: number, // Tambahkan userId untuk memfilter berdasarkan pengguna
@@ -27,6 +30,7 @@ export class salesInvoiceHdService {
       limit = 20,
       searchBy,
       searchTerm,
+      company_id, // Include company_id from paginationDto
       paidStatus,
       poType,
       salesPersonName,
@@ -55,6 +59,7 @@ export class salesInvoiceHdService {
     const offset = (Number(page) - 1) * safeLimit;
 
     const filter: SalesInvoiceFilter = {
+      company_id,
       paidStatus,
       poType,
       salesPersonName,
@@ -62,8 +67,9 @@ export class salesInvoiceHdService {
       endPeriod,
     };
 
-    const whereCondition = salesInvoiceWhereCondition(company_id, filter, {
+    const whereCondition = salesInvoiceWhereCondition(filter, {
       requiredFilters: {
+        company_id: true,
         paidStatus: true,
         poType: true,
         salesPersonName: true,
@@ -121,7 +127,6 @@ export class salesInvoiceHdService {
   }
 
   async filterByPaidStatus(
-    company_id: string,
     module_id: string,
     paginationDto: paginationSalesInvoiceHdDto,
   ): Promise<{
@@ -131,6 +136,7 @@ export class salesInvoiceHdService {
     const {
       page = 1,
       limit = 20,
+      company_id, // Include company_id from paginationDto
       paidStatus,
       poType,
       salesPersonName,
@@ -142,6 +148,7 @@ export class salesInvoiceHdService {
     const offset = (Number(page) - 1) * safeLimit;
 
     const filter: SalesInvoiceFilter = {
+      company_id,
       paidStatus,
       poType,
       salesPersonName,
@@ -149,8 +156,9 @@ export class salesInvoiceHdService {
       endPeriod,
     };
 
-    const whereCondition = salesInvoiceWhereCondition(company_id, filter, {
+    const whereCondition = salesInvoiceWhereCondition(filter, {
       requiredFilters: {
+        company_id: true,
         paidStatus: false,
         poType: true,
         salesPersonName: true,
@@ -204,7 +212,6 @@ export class salesInvoiceHdService {
   }
 
   async filterBySalesPersonName(
-    company_id: string,
     module_id: string,
     paginationDto: paginationSalesInvoiceHdDto,
   ): Promise<{
@@ -214,6 +221,7 @@ export class salesInvoiceHdService {
     const {
       page = 1,
       limit = 20,
+      company_id, // Include company_id from paginationDto
       paidStatus,
       poType,
       salesPersonName,
@@ -225,6 +233,7 @@ export class salesInvoiceHdService {
     const offset = (Number(page) - 1) * safeLimit;
 
     const filter: SalesInvoiceFilter = {
+      company_id, // Include company_id from paginationDto
       paidStatus,
       poType,
       salesPersonName,
@@ -232,15 +241,16 @@ export class salesInvoiceHdService {
       endPeriod,
     };
 
-    const whereCondition = salesInvoiceWhereCondition(company_id, filter, {
+    const whereCondition = salesInvoiceWhereCondition(filter, {
       requiredFilters: {
+        company_id: true, // Require company_id filter
         paidStatus: true,
         poType: true,
         salesPersonName: false,
       },
     });
 
-    // Query untuk agregasi tanpa skip, take, atau orderBy
+    // Query for aggregation
     const salesPersonData = await this.prisma.sls_InvoiceHd.groupBy({
       by: ['salesPersonName'],
       where: whereCondition,
@@ -262,11 +272,13 @@ export class salesInvoiceHdService {
     // Hitung total records
     const totalRecords = salesPersonData.length;
 
-    return { data: formattedData, totalRecords };
+    return {
+      data: formattedData,
+      totalRecords,
+    };
   }
 
   async filterByPoType(
-    company_id: string,
     module_id: string,
     paginationDto: paginationSalesInvoiceHdDto,
   ): Promise<{
@@ -276,6 +288,7 @@ export class salesInvoiceHdService {
     const {
       page = 1,
       limit = 20,
+      company_id, // Include company_id from paginationDto
       paidStatus,
       poType,
       salesPersonName,
@@ -287,6 +300,7 @@ export class salesInvoiceHdService {
     const offset = (Number(page) - 1) * safeLimit;
 
     const filter: SalesInvoiceFilter = {
+      company_id, // Include company_id from paginationDto
       paidStatus,
       poType,
       salesPersonName,
@@ -294,8 +308,9 @@ export class salesInvoiceHdService {
       endPeriod,
     };
 
-    const whereCondition = salesInvoiceWhereCondition(company_id, filter, {
+    const whereCondition = salesInvoiceWhereCondition(filter, {
       requiredFilters: {
+        company_id: true,
         paidStatus: true,
         poType: true,
         salesPersonName: true,
@@ -347,17 +362,24 @@ export class salesInvoiceHdService {
   }
 
   async findOne(
+    module_id: string,
     company_id: string,
     invoice_id: string,
   ): Promise<responseSalesInvoiceHdWithItemdDto> {
     const invoice = await this.prisma.sls_InvoiceHd.findUnique({
-      where: { company_id_invoice_id: { company_id, invoice_id } },
+      where: {
+        company_id_invoice_id: {
+          company_id,
+          invoice_id,
+        },
+      },
       include: {
         sls_InvoiceDt: true,
         salesPerson: true,
         sys_PaidStatus: true,
         sls_InvoicePoType: true,
         customer: true,
+        sls_InvoiceType: true,
       },
     });
 
@@ -373,14 +395,14 @@ export class salesInvoiceHdService {
       product_id: dt.product_id.trim(),
       productName: dt.productName?.trim(),
       uom_id: dt.uom_id.trim(),
-      unitPrice: dt.unitPrice ? Number(dt.unitPrice) : 0,
-      qty: dt.qty ? Number(dt.qty) : 0,
-      sellingPrice: dt.sellingPrice ? Number(dt.sellingPrice) : 0,
-      base_amount: dt.base_amount ? Number(dt.base_amount) : 0,
-      discount_amount: dt.discount_amount ? Number(dt.discount_amount) : 0,
-      delivery_amount: dt.delivery_amount ? Number(dt.delivery_amount) : 0,
-      tax_amount: dt.tax_amount ? Number(dt.tax_amount) : 0,
-      total_amount: dt.total_amount ? Number(dt.total_amount) : 0,
+      unitPrice: Number(dt.unitPrice) || 0,
+      qty: Number(dt.qty) || 0,
+      sellingPrice: Number(dt.sellingPrice) || 0,
+      base_amount: Number(dt.base_amount) || 0,
+      discount_amount: Number(dt.discount_amount) || 0,
+      delivery_amount: Number(dt.delivery_amount) || 0,
+      tax_amount: Number(dt.tax_amount) || 0,
+      total_amount: Number(dt.total_amount) || 0,
     }));
 
     return {
