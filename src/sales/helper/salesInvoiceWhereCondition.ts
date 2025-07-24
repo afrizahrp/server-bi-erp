@@ -1,6 +1,7 @@
 import { getMonthYearPeriodRange } from 'src/utils/date/getMonthYearPeriodRange';
 import { applyPeriodToWhereCondition } from 'src/utils/date/applyMonthYearPeriodRange';
 import { SalesInvoiceFilter } from 'src/sales/helper/salesInvoiceFilter';
+import { BadRequestException } from '@nestjs/common';
 
 export function salesInvoiceWhereCondition(
   filter: SalesInvoiceFilter,
@@ -24,10 +25,29 @@ export function salesInvoiceWhereCondition(
   };
 
   // Filter by company_id
+  // if (requiredFilters.company_id && company_id) {
+  //   whereCondition.company_id = Array.isArray(company_id)
+  //     ? { in: company_id, mode: 'insensitive' }
+  //     : { equals: company_id, mode: 'insensitive' };
+  // }
+
   if (requiredFilters.company_id && company_id) {
-    whereCondition.company_id = Array.isArray(company_id)
-      ? { in: company_id, mode: 'insensitive' }
-      : { equals: company_id, mode: 'insensitive' };
+    const normalizedCompanyIds = Array.isArray(company_id)
+      ? company_id
+          .filter((id): id is string => typeof id === 'string' && id !== null)
+          .map((id) => id.trim())
+      : typeof company_id === 'string' && company_id
+        ? [company_id.trim()]
+        : [];
+    if (normalizedCompanyIds.length === 0) {
+      throw new BadRequestException(
+        'At least one valid company_id is required',
+      );
+    }
+    whereCondition.company_id = {
+      in: normalizedCompanyIds,
+      mode: 'insensitive',
+    };
   }
 
   // Filter by paidStatus
