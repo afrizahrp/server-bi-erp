@@ -1,99 +1,112 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+Sales Dashboard API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A RESTful API built with NestJS to power a multi-company sales dashboard. This backend provides secure, scalable endpoints for managing sales data, enabling real-time analytics and multi-tenant support for businesses.
+🎯 Project Overview
+The Sales Dashboard API was developed to support a Next.js-based sales dashboard by providing efficient data management for multiple companies. It addresses the challenge of fragmented sales reporting by offering:
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Multi-tenant architecture: Isolated data for each company.
+Real-time data access: Fast, secure endpoints for sales metrics.
+Scalable design: Ready for microservices integration with RabbitMQ and Kubernetes.
+Secure authentication (planned): JWT-based access control.
 
-## Description
+This project showcases my expertise in backend development with NestJS, Node.js, and modern DevOps tools, complementing my skills in Golang and Next.js.
+🛠️ Technologies Used
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Framework: NestJS (Node.js, TypeScript)
+Database: PostgreSQL for data storage
+Message Queue (planned): RabbitMQ for async event handling
+DevOps (planned): Docker for containerization, Kubernetes for orchestration
+Testing: Jest for unit and e2e tests
+Frontend Integration: Compatible with Next.js sales dashboard
 
-## Project setup
+🚀 Getting Started
+Prerequisites
 
-```bash
-$ npm install
-```
+Node.js (v18 or higher)
+npm or yarn
+PostgreSQL (v14 or higher)
+Git
 
-## Compile and run the project
+Installation
 
-```bash
-# development
-$ npm run start
+Clone the repository:git clone https://github.com/your-username/sales-dashboard-api.git
+cd sales-dashboard-api
 
-# watch mode
-$ npm run start:dev
+Install dependencies:npm install
 
-# production mode
-$ npm run start:prod
-```
+# or
 
-## Run tests
+yarn install
 
-```bash
-# unit tests
-$ npm run test
+Set up environment variables in .env:DATABASE_URL=postgresql://user:password@localhost:5432/sales_db
+PORT=3000
 
-# e2e tests
-$ npm run test:e2e
+Run database migrations (if applicable):npm run migration:run
 
-# test coverage
-$ npm run test:cov
-```
+Start the development server:npm run start:dev
 
-## Deployment
+Access the API at http://localhost:3000/api.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+API Endpoints
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+GET /sales: Retrieve sales data for a specific tenant.
+POST /sales: Create a new sales record.
+GET /metrics: Fetch aggregated sales metrics (e.g., revenue, trends).
+(See API documentation for full details, planned.)
 
-```bash
-$ npm install -g mau
-$ mau deploy
-```
+📸 Screenshots
+Sample JSON response for sales metrics.
+Planned microservices architecture with RabbitMQ and K8s.
+🌟 Features
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Multi-tenant data isolation: Securely manage sales data for multiple companies.
+RESTful endpoints: Fast and reliable API for frontend integration.
+Scalable architecture: Designed for high-traffic applications.
+Event-driven design (planned): Async processing with RabbitMQ.
+Containerized deployment (planned): Docker and Kubernetes support.
 
-## Resources
+🧪 Running Tests
 
-Check out a few resources that may come in handy when working with NestJS:
+# Unit tests
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+npm run test
 
-## Support
+# End-to-end tests
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+npm run test:e2e
 
-## Stay in touch
+# Test coverage
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+npm run test:cov
 
-## License
+📖 Learn More
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Explore the code in this GitHub repository.
+Check out my other projects: Microservices with Golang & K8s.
+Read about NestJS for technical details.
+
+🚧 Future Improvements
+
+Implement JWT authentication for secure access.
+Add RabbitMQ for real-time event handling (e.g., sales notifications).
+Containerize with Docker and deploy to Kubernetes.
+Generate Swagger/OpenAPI documentation for endpoints.
+Enhance test coverage with more edge cases.
+
+🤝 Contributing
+Feedback and contributions are welcome! Please:
+
+Open an issue for bugs or suggestions.
+Submit a pull request with improvements.
+
+📬 Contact
+I’m a backend developer passionate about scalable solutions with NestJS, Node.js, Golang, and DevOps. Connect with me:
+
+LinkedIn: https://www.linkedin.com/in/afriza-harahap
+Email: afriza.harahap@gmail.com
+
+Interested in remote backend projects? Let’s discuss!
+📝 License
+This project is licensed under the MIT License.
+
+Built with 💻 by Afriza Harahap
