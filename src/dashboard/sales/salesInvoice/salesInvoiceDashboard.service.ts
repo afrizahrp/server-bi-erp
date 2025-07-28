@@ -6,15 +6,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { yearlySalesDashboardDto } from '../dto/yearlySalesDashboard.dto';
-import {
-  format,
-  parse,
-  startOfYear,
-  endOfYear,
-  startOfMonth,
-  endOfMonth,
-} from 'date-fns';
 import { Prisma } from '@prisma/client';
+
 import { monthMap } from 'src/utils/date/getMonthName';
 
 @Injectable()
@@ -24,7 +17,6 @@ export class salesInvoiceDashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getYearlySalesInvoice(
-    company_id: string,
     module_id: string,
     subModule_id: string,
     dto: yearlySalesDashboardDto,
@@ -66,11 +58,28 @@ export class salesInvoiceDashboardService {
     }
 
     // Validasi company_id
-    const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
-      where: { company_id },
+    // Validasi company_id (array)
+    const companyIds = Array.isArray(dto.company_id)
+      ? dto.company_id
+      : dto.company_id
+        ? [dto.company_id]
+        : [];
+
+    if (companyIds.length === 0) {
+      throw new BadRequestException('At least one company_id is required');
+    }
+
+    // Pastikan semua company_id ada di database
+    const companies = await this.prisma.sls_InvoiceHd.findMany({
+      where: { company_id: { in: companyIds } },
+      select: { company_id: true },
     });
-    if (!companyExists) {
-      throw new NotFoundException(`Company ID ${company_id} not found`);
+    const foundCompanyIds = companies.map((c) => c.company_id);
+    const notFound = companyIds.filter((id) => !foundCompanyIds.includes(id));
+    if (notFound.length > 0) {
+      throw new NotFoundException(
+        `Company ID(s) not found: ${notFound.join(', ')}`,
+      );
     }
 
     // Tentukan tahun sebelumnya untuk growth percentage
@@ -94,7 +103,7 @@ export class salesInvoiceDashboardService {
       FROM 
         "sls_InvoiceHd"
       WHERE 
-        "company_id" = ${company_id}
+        "company_id" IN ${companyIds}
         AND EXTRACT(YEAR FROM "invoiceDate") = ANY(${allYears})
         ${monthNumbers.length > 0 ? Prisma.sql`AND EXTRACT(MONTH FROM "invoiceDate") IN (${Prisma.join(monthNumbers)})` : Prisma.empty}
       GROUP BY 
@@ -183,103 +192,9 @@ export class salesInvoiceDashboardService {
 
     // Format respons
     return {
-      company_id,
       module_id,
       subModule_id,
       data: filteredSalesData,
     };
-  }
-
-  async getYearlySalesInvoiceByPoType(
-    company_id: string,
-    module_id: string,
-    subModule_id: string,
-    dto: yearlySalesDashboardDto,
-  ) {
-    const { years } = dto;
-    // Validasi years
-    if (!years || years.length === 0) {
-      throw new BadRequestException('Years are required');
-    }
-
-    // Validasi company_id
-    const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
-      where: { company_id },
-    });
-    if (!companyExists) {
-      throw new NotFoundException(`Company ID ${company_id} not found`);
-    }
-
-    // Buat where clause untuk query Prisma
-    const where: any = {
-      company_id,
-      invoiceDate: {
-        gte: new Date(`${Math.min(...years.map(Number))}-01-01`),
-        lte: new Date(`${Math.max(...years.map(Number))}-12-31`),
-      },
-    };
-
-    // Query dengan findMany untuk mengambil data beserta relasi poType
-    const invoices = await this.prisma.sls_InvoiceHd.findMany({
-      where,
-      select: {
-        invoiceDate: true,
-        total_amount: true,
-        sls_InvoicePoType: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    });
-
-    // Mapping data ke format yang diinginkan
-    const yearlyData: Record<
-      string,
-      {
-        period: string;
-        poType: string;
-        totalInvoice: number;
-      }[]
-    > = {};
-
-    for (const item of invoices) {
-      const year = item.invoiceDate.getFullYear().toString();
-      const poTypeName = item.sls_InvoicePoType?.name || 'Unknown';
-      const amount = item.total_amount
-        ? Math.round(parseFloat(item.total_amount.toString()))
-        : 0;
-
-      if (!yearlyData[year]) {
-        yearlyData[year] = [];
-      }
-
-      const poTypeData = yearlyData[year].find(
-        (data) => data.poType === poTypeName,
-      );
-
-      if (poTypeData) {
-        poTypeData.totalInvoice += amount;
-      } else {
-        yearlyData[year].push({
-          period: year,
-          poType: poTypeName,
-          totalInvoice: amount,
-        });
-      }
-    }
-
-    // Bentuk response
-    const response: any = {
-      company_id,
-      module_id,
-      subModule_id,
-      data: Object.entries(yearlyData).map(([year, poTypes]) => ({
-        period: year,
-        poTypes: poTypes.sort((a, b) => b.totalInvoice - a.totalInvoice), // Urutkan berdasarkan totalInvoice
-      })),
-    };
-
-    return response;
   }
 }

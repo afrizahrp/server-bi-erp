@@ -1,15 +1,16 @@
 import {
-  BadRequestException,
   Controller,
   Get,
-  Param,
   Query,
+  Param,
+  BadRequestException,
 } from '@nestjs/common';
 import { Public } from 'src/auth/decorators/public.decorator';
-import { Logger } from '@nestjs/common';
 import { salesInvoiceDashboardService } from './salesInvoiceDashboard.service';
+import { yearlySalesDashboardDto } from '../dto/yearlySalesDashboard.dto';
+import { Logger } from '@nestjs/common';
 
-@Controller(':company_id/:module_id/:subModule_id/get-dashboard')
+@Controller(':module_id/:subModule_id/get-dashboard')
 export class salesInvoiceDashboardController {
   private readonly logger = new Logger(salesInvoiceDashboardController.name);
 
@@ -20,79 +21,51 @@ export class salesInvoiceDashboardController {
   @Public()
   @Get('getYearlySalesInvoice')
   async getYearlySalesInvoice(
-    @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
-    @Query('years') years: string | string[],
-    @Query('months') months?: string | string[], // Bisa string atau array
-    // @Query('includeHoSales') includeHoSales?: string,
+    @Query() query: Record<string, any>,
   ) {
+    this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
+
+    // Helper untuk memastikan field menjadi array string
+    function toArray(val: unknown): string[] {
+      if (Array.isArray(val)) return val.map(String);
+      if (val === undefined || val === null) return [];
+      return [String(val)];
+    }
+
+    // Konversi field yang bisa array
+    const dto: yearlySalesDashboardDto = {
+      company_id: toArray(query.company_id),
+      years: toArray(query.years),
+      months: query.months ? toArray(query.months) : undefined,
+      salesPersonName: query.salesPersonName
+        ? toArray(query.salesPersonName)
+        : undefined,
+      sortBy: query.sortBy,
+    };
+
+    // Validasi manual jika perlu (opsional, jika pakai ValidationPipe global, ini tidak perlu)
+    if (!dto.company_id.length) {
+      throw new BadRequestException('At least one company_id is required');
+    }
+    if (!dto.years.length) {
+      throw new BadRequestException('At least one year is required');
+    }
+
     try {
-      // Konversi years ke array
-      const yearsArray = Array.isArray(years) ? years : [years];
-
-      // Konversi months ke array (jika ada)
-      const monthsArray = months
-        ? Array.isArray(months)
-          ? months
-          : [months]
-        : undefined;
-
-      // Validasi dan konversi includeHoSales
-      // let includeHoSalesValue: number | undefined;
-      // if (includeHoSales !== undefined) {
-      //   const parsedValue = parseInt(includeHoSales, 10);
-      //   if (isNaN(parsedValue) || ![0, 1].includes(parsedValue)) {
-      //     throw new BadRequestException('includeHoSales must be 0 or 1');
-      //   }
-      //   includeHoSalesValue = parsedValue;
-      // } else {
-      //   includeHoSalesValue = 0; // Default ke 0 jika tidak ada
-      // }
-
-      // Logging untuk debug
-      this.logger.log(`Received years: ${JSON.stringify(yearsArray)}`);
-      if (monthsArray) {
-        this.logger.log(`Received months: ${JSON.stringify(monthsArray)}`);
-        // Validasi manual sebagai cadangan (opsional)
-        if (monthsArray.length > 6) {
-          throw new BadRequestException('Maximum 3 months can be selected');
-        }
-      }
-
-      // this.logger.log(`Received includeHoSales: ${includeHoSalesValue}`);
-
       return await this.salesDashboardService.getYearlySalesInvoice(
-        company_id,
         module_id,
         subModule_id,
-        {
-          years: yearsArray,
-          months: monthsArray,
-          // includeHoSales: includeHoSalesValue,
-        },
+        dto,
       );
     } catch (error) {
-      this.logger.error(`Error processing request: ${error.message}`);
-      throw new BadRequestException(error.message);
+      const errorMessage =
+        typeof error === 'object' && error !== null && 'message' in error
+          ? (error as { message?: string }).message || 'Unknown error'
+          : 'Unknown error';
+      this.logger.error(`Error processing request: ${errorMessage}`);
+      throw new BadRequestException(errorMessage);
     }
-  }
-
-  @Public()
-  @Get('getYearlySalesInvoiceByPoType')
-  async getYearlySalesInvoiceByPoType(
-    @Param('company_id') company_id: string,
-    @Param('module_id') module_id: string,
-    @Param('subModule_id') subModule_id: string,
-    @Query('years') years: string | string[], // Query bisa string atau array
-  ) {
-    const yearsArray = Array.isArray(years) ? years : [years];
-
-    return this.salesDashboardService.getYearlySalesInvoiceByPoType(
-      company_id,
-      module_id,
-      subModule_id,
-      { years: yearsArray },
-    );
   }
 }
