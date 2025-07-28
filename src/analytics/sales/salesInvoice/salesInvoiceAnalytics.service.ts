@@ -16,8 +16,6 @@ import {
 } from 'date-fns';
 
 import { monthMap } from 'src/utils/date/getMonthName';
-import { salesInvoiceWhereCondition } from 'src/sales/helper/salesInvoiceWhereCondition';
-import { SalesInvoiceFilter } from 'src/sales/helper/salesInvoiceFilter';
 
 @Injectable()
 export class salesInvoiceAnalyticsService {
@@ -27,23 +25,25 @@ export class salesInvoiceAnalyticsService {
 
   // / Function to get dashboard data by period with paidStatus,and salesPersonName filters
   // MONTHLY SALES ANALYTICS
-
   async getMonthlySalesInvoice(
+    company_id: string[], // Explicitly define as string[]
     module_id: string,
     subModule_id: string,
     dto: salesAnalyticsDto,
   ) {
-    const {
-      company_id,
-      startPeriod,
-      endPeriod,
-      paidStatus,
-      poType,
-      salesPersonName,
-    } = dto;
+    const { startPeriod, endPeriod, paidStatus, poType, salesPersonName } = dto;
 
-    // Validasi startPeriod dan endPeriod
+    // Validate company_id
+    if (!company_id || !Array.isArray(company_id) || company_id.length === 0) {
+      this.logger.error('company_id array is required and cannot be empty');
+      throw new BadRequestException(
+        'company_id array is required and cannot be empty',
+      );
+    }
+
+    // Validate startPeriod and endPeriod
     if (!startPeriod || !endPeriod) {
+      this.logger.error('startPeriod and endPeriod are required');
       throw new BadRequestException('startPeriod and endPeriod are required');
     }
 
@@ -55,163 +55,131 @@ export class salesInvoiceAnalyticsService {
         throw new BadRequestException('endPeriod must be after startPeriod');
       }
     } catch (error) {
+      this.logger.error(
+        `Invalid period format: startPeriod=${startPeriod}, endPeriod=${endPeriod}`,
+      );
       throw new BadRequestException(
         'startPeriod and endPeriod must be in MMMYYYY format (e.g., Jan2023)',
       );
     }
 
-    // Normalisasi company_id ke array
-    let companyIds: string[];
-    if (!company_id) {
-      companyIds = [];
-    } else if (typeof company_id === 'string') {
-      companyIds = [company_id];
-    } else if (Array.isArray(company_id)) {
-      companyIds = company_id
-        .filter((id): id is string => typeof id === 'string' && id !== null)
-        .map((id) => id.trim());
-    } else {
-      companyIds = [];
-    }
-
-    if (companyIds.length === 0) {
-      throw new BadRequestException(
-        'At least one valid company_id is required',
-      );
-    }
-
-    // Validasi company_id
-    console.log('Validating company_ids:', companyIds);
-    for (const id of companyIds) {
-      const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
-        where: { company_id: { equals: id, mode: 'insensitive' } },
-      });
-      if (!companyExists) {
-        console.log(`Company ID not found: ${id}`);
-        throw new NotFoundException(`Company ID ${id} not found`);
+    // Validate paidStatus
+    if (paidStatus && paidStatus.length > 0) {
+      const paidStatuses = Array.isArray(paidStatus)
+        ? paidStatus
+        : [paidStatus];
+      for (const status of paidStatuses) {
+        const paidStatusExists = await this.prisma.sys_PaidStatus.findFirst({
+          where: {
+            company_id: { in: company_id }, // Support multiple company_ids
+            name: { equals: status, mode: 'insensitive' },
+          },
+        });
+        if (!paidStatusExists) {
+          this.logger.warn(`Invalid paidStatus: ${status}`);
+          throw new BadRequestException(`Invalid paidStatus: ${status}`);
+        }
       }
     }
 
-    // Gunakan salesInvoiceWhereCondition untuk filtering
-    const filter: SalesInvoiceFilter = {
-      company_id: companyIds,
-      paidStatus,
-      poType,
-      salesPersonName,
-      startPeriod,
-      endPeriod,
+    // Validate poType
+    if (poType && poType.length > 0) {
+      const poTypes = Array.isArray(poType) ? poType : [poType];
+      for (const type of poTypes) {
+        const poTypeExists = await this.prisma.sls_InvoicePoType.findFirst({
+          where: {
+            company_id: { in: company_id }, // Support multiple company_ids
+            name: { equals: type, mode: 'insensitive' },
+          },
+        });
+        if (!poTypeExists) {
+          this.logger.warn(`Invalid poType: ${type}`);
+          throw new BadRequestException(`Invalid poType: ${type}`);
+        }
+      }
+    }
+
+    // Validate salesPersonName
+    if (salesPersonName && salesPersonName.length > 0) {
+      const salesPersonNames = Array.isArray(salesPersonName)
+        ? salesPersonName
+        : [salesPersonName];
+      for (const name of salesPersonNames) {
+        const salesPersonExists = await this.prisma.sls_InvoiceHd.findFirst({
+          where: {
+            company_id: { in: company_id }, // Support multiple company_ids
+            salesPersonName: { equals: name, mode: 'insensitive' },
+            invoiceDate: {
+              gte: new Date(startOfMonth(startDate)),
+              lte: new Date(endOfMonth(endDate)),
+            },
+          },
+        });
+        if (!salesPersonExists) {
+          this.logger.warn(`Invalid salesPersonName: ${name}`);
+          throw new BadRequestException(
+            `Invalid salesPersonName: ${name} for the given period`,
+          );
+        }
+      }
+    }
+
+    // Build the where clause
+    const where: any = {
+      company_id: { in: company_id }, // Support multiple company_ids
+      invoiceDate: {
+        gte: new Date(format(startOfMonth(startDate), 'yyyy-MM-dd')),
+        lte: new Date(format(endOfMonth(endDate), 'yyyy-MM-dd')),
+      },
     };
 
-    const where = salesInvoiceWhereCondition(filter, {
-      requiredFilters: {
-        company_id: true,
-        paidStatus: !!paidStatus,
-        poType: !!poType,
-        salesPersonName: !!salesPersonName,
-      },
-    });
+    if (paidStatus && paidStatus.length > 0) {
+      const paidStatuses = Array.isArray(paidStatus)
+        ? paidStatus
+        : [paidStatus];
+      where.sys_PaidStatus = {
+        name: { in: paidStatuses, mode: 'insensitive' },
+      };
+    }
 
-    console.log('Where condition:', JSON.stringify(where, null, 2));
+    if (poType && poType.length > 0) {
+      const poTypes = Array.isArray(poType) ? poType : [poType];
+      where.sls_InvoicePoType = { name: { in: poTypes, mode: 'insensitive' } };
+    }
 
+    if (salesPersonName && salesPersonName.length > 0) {
+      const salesPersonNames = Array.isArray(salesPersonName)
+        ? salesPersonName
+        : [salesPersonName];
+      where.salesPersonName = { in: salesPersonNames, mode: 'insensitive' };
+    }
+
+    // Query the database
     const result = await this.prisma.sls_InvoiceHd.groupBy({
       by:
         salesPersonName && salesPersonName.length > 0
-          ? ['company_id', 'salesPersonName', 'invoiceDate']
-          : ['company_id', 'invoiceDate'],
+          ? ['salesPersonName', 'invoiceDate']
+          : ['invoiceDate'],
       where,
       _sum: { total_amount: true },
     });
 
-    console.log('Query result:', JSON.stringify(result, null, 2));
-
     const response: any = {
+      company_id,
       module_id,
       subModule_id,
       data: [],
     };
 
-    // Pengelompokan bulanan
+    // Process results for monthly data
     if (salesPersonName && salesPersonName.length > 0) {
       const monthlyData: Record<
         string,
         Record<
           string,
-          Record<
-            string,
-            {
-              company_id: string;
-              period: string;
-              salesPersonName: string;
-              totalInvoice: number;
-              months: Record<string, number>;
-            }
-          >
-        >
-      > = {};
-
-      result.forEach((item) => {
-        const year = item.invoiceDate.getFullYear().toString();
-        const monthIdx = item.invoiceDate.getMonth();
-        const monthKey = monthMap[monthIdx];
-        const salesPerson = item.salesPersonName || 'Unknown';
-        const companyId = item.company_id;
-        const amount = Math.round(Number(item._sum.total_amount) || 0);
-
-        if (!monthlyData[companyId]) {
-          monthlyData[companyId] = {};
-        }
-        if (!monthlyData[companyId][year]) {
-          monthlyData[companyId][year] = {};
-        }
-        if (!monthlyData[companyId][year][salesPerson]) {
-          monthlyData[companyId][year][salesPerson] = {
-            company_id: companyId,
-            period: year,
-            salesPersonName: salesPerson,
-            totalInvoice: 0,
-            months: {},
-          };
-        }
-
-        monthlyData[companyId][year][salesPerson].months[monthKey] =
-          (monthlyData[companyId][year][salesPerson].months[monthKey] || 0) +
-          amount;
-        monthlyData[companyId][year][salesPerson].totalInvoice += amount;
-      });
-
-      response.data = Object.values(monthlyData).flatMap((companyData) =>
-        Object.values(companyData).flatMap((yearData) =>
-          Object.values(yearData).map((entry) => ({
-            company_id: entry.company_id,
-            period: entry.period,
-            salesPersonName: entry.salesPersonName,
-            totalInvoice: Math.round(entry.totalInvoice),
-            months: monthMap.reduce(
-              (acc, month) => {
-                acc[month] = Math.round(entry.months[month] || 0);
-                return acc;
-              },
-              {} as Record<string, number>,
-            ),
-          })),
-        ),
-      );
-
-      response.data.sort((a: any, b: any) =>
-        a.company_id === b.company_id
-          ? a.period === b.period
-            ? a.salesPersonName.localeCompare(b.salesPersonName)
-            : a.period.localeCompare(b.period)
-          : a.company_id.localeCompare(b.company_id),
-      );
-    } else {
-      const monthlyData: Record<
-        string,
-        Record<
-          string,
           {
-            company_id: string;
             period: string;
+            salesPersonName: string;
             totalInvoice: number;
             months: Record<string, number>;
           }
@@ -222,30 +190,32 @@ export class salesInvoiceAnalyticsService {
         const year = item.invoiceDate.getFullYear().toString();
         const monthIdx = item.invoiceDate.getMonth();
         const monthKey = monthMap[monthIdx];
-        const companyId = item.company_id;
-        const amount = Math.round(Number(item._sum.total_amount) || 0);
+        const salesPerson = item.salesPersonName || 'Unknown';
+        const amount = Math.round(
+          parseFloat((item._sum.total_amount || 0).toString()),
+        );
 
-        if (!monthlyData[companyId]) {
-          monthlyData[companyId] = {};
+        if (!monthlyData[year]) {
+          monthlyData[year] = {};
         }
-        if (!monthlyData[companyId][year]) {
-          monthlyData[companyId][year] = {
-            company_id: companyId,
+        if (!monthlyData[year][salesPerson]) {
+          monthlyData[year][salesPerson] = {
             period: year,
+            salesPersonName: salesPerson,
             totalInvoice: 0,
             months: {},
           };
         }
 
-        monthlyData[companyId][year].months[monthKey] =
-          (monthlyData[companyId][year].months[monthKey] || 0) + amount;
-        monthlyData[companyId][year].totalInvoice += amount;
+        monthlyData[year][salesPerson].months[monthKey] =
+          (monthlyData[year][salesPerson].months[monthKey] || 0) + amount;
+        monthlyData[year][salesPerson].totalInvoice += amount;
       });
 
-      response.data = Object.values(monthlyData).flatMap((companyData) =>
-        Object.values(companyData).map((entry) => ({
-          company_id: entry.company_id,
+      response.data = Object.values(monthlyData).flatMap((yearData) =>
+        Object.values(yearData).map((entry) => ({
           period: entry.period,
+          salesPersonName: entry.salesPersonName,
           totalInvoice: Math.round(entry.totalInvoice),
           months: monthMap.reduce(
             (acc, month) => {
@@ -258,17 +228,53 @@ export class salesInvoiceAnalyticsService {
       );
 
       response.data.sort((a: any, b: any) =>
-        a.company_id === b.company_id
-          ? a.period.localeCompare(b.period)
-          : a.company_id.localeCompare(b.company_id),
+        a.period === b.period
+          ? a.salesPersonName.localeCompare(b.salesPersonName)
+          : a.period.localeCompare(b.period),
       );
+    } else {
+      const monthlyData: Record<
+        string,
+        { period: string; totalInvoice: number; months: Record<string, number> }
+      > = {};
+
+      result.forEach((item) => {
+        const year = item.invoiceDate.getFullYear().toString();
+        const monthIdx = item.invoiceDate.getMonth();
+        const monthKey = monthMap[monthIdx];
+        const amount = Math.round(
+          parseFloat((item._sum.total_amount || 0).toString()),
+        );
+
+        if (!monthlyData[year]) {
+          monthlyData[year] = { period: year, totalInvoice: 0, months: {} };
+        }
+
+        monthlyData[year].months[monthKey] =
+          (monthlyData[year].months[monthKey] || 0) + amount;
+        monthlyData[year].totalInvoice += amount;
+      });
+
+      response.data = Object.values(monthlyData).map((entry) => ({
+        period: entry.period,
+        totalInvoice: Math.round(entry.totalInvoice),
+        months: monthMap.reduce(
+          (acc, month) => {
+            acc[month] = Math.round(entry.months[month] || 0);
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
+      }));
+
+      response.data.sort((a: any, b: any) => a.period.localeCompare(b.period));
     }
 
     return response;
   }
 
   async getMonthlyComparisonSalesInvoice(
-    company_id: string,
+    company_id: string[], // Ubah ke string[]
     module_id: string,
     subModule_id: string,
     dto: salesAnalyticsDto,
@@ -277,6 +283,7 @@ export class salesInvoiceAnalyticsService {
 
     // Validasi startPeriod dan endPeriod
     if (!startPeriod || !endPeriod) {
+      this.logger.error('startPeriod and endPeriod are required');
       throw new BadRequestException('startPeriod and endPeriod are required');
     }
 
@@ -288,27 +295,32 @@ export class salesInvoiceAnalyticsService {
         throw new BadRequestException('endPeriod must be after startPeriod');
       }
     } catch (error) {
-      // this.logger.error(
-      //   `Invalid period format: startPeriod=${startPeriod}, endPeriod=${endPeriod}`,
-      // );
+      this.logger.error(
+        `Invalid period format: startPeriod=${startPeriod}, endPeriod=${endPeriod}`,
+      );
       throw new BadRequestException(
         'startPeriod and endPeriod must be in MMMYYYY format (e.g., Jan2023)',
       );
     }
 
     // Validasi company_id
-    const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
-      where: { company_id },
-    });
-    if (!companyExists) {
-      // this.logger.warn(`Company ID not found: ${company_id}`);
-      throw new NotFoundException(`Company ID ${company_id} not found`);
+    if (!company_id || !Array.isArray(company_id) || company_id.length === 0) {
+      this.logger.error('company_id array is required and cannot be empty');
+      throw new BadRequestException(
+        'company_id array is required and cannot be empty',
+      );
     }
 
-    // Log filter input
-    // this.logger.debug(
-    //   `Filter input: paidStatus=${JSON.stringify(paidStatus)}, poType=${JSON.stringify(poType)}, salesPersonName=${JSON.stringify(salesPersonName)}`,
-    // );
+    // Cek apakah semua company_id valid
+    for (const id of company_id) {
+      const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
+        where: { company_id: id },
+      });
+      if (!companyExists) {
+        this.logger.warn(`Company ID not found: ${id}`);
+        throw new NotFoundException(`Company ID ${id} not found`);
+      }
+    }
 
     // Validasi filter paidStatus
     if (paidStatus && paidStatus.length > 0) {
@@ -318,12 +330,12 @@ export class salesInvoiceAnalyticsService {
       for (const status of paidStatuses) {
         const paidStatusExists = await this.prisma.sys_PaidStatus.findFirst({
           where: {
-            company_id,
+            company_id: { in: company_id }, // Dukung multiple company_id
             name: { equals: status, mode: 'insensitive' },
           },
         });
         if (!paidStatusExists) {
-          // this.logger.warn(`Invalid paidStatus: ${status}`);
+          this.logger.warn(`Invalid paidStatus: ${status}`);
           throw new BadRequestException(`Invalid paidStatus: ${status}`);
         }
       }
@@ -335,12 +347,12 @@ export class salesInvoiceAnalyticsService {
       for (const type of poTypes) {
         const poTypeExists = await this.prisma.sls_InvoicePoType.findFirst({
           where: {
-            company_id,
+            company_id: { in: company_id }, // Dukung multiple company_id
             name: { equals: type, mode: 'insensitive' },
           },
         });
         if (!poTypeExists) {
-          // this.logger.warn(`Invalid poType: ${type}`);
+          this.logger.warn(`Invalid poType: ${type}`);
           throw new BadRequestException(`Invalid poType: ${type}`);
         }
       }
@@ -354,7 +366,7 @@ export class salesInvoiceAnalyticsService {
       for (const name of salesPersonNames) {
         const salesPersonExists = await this.prisma.sls_InvoiceHd.findFirst({
           where: {
-            company_id,
+            company_id: { in: company_id }, // Dukung multiple company_id
             salesPersonName: { equals: name, mode: 'insensitive' },
             invoiceDate: {
               gte: new Date(startOfMonth(startDate)),
@@ -363,7 +375,7 @@ export class salesInvoiceAnalyticsService {
           },
         });
         if (!salesPersonExists) {
-          // this.logger.warn(`Invalid salesPersonName: ${name}`);
+          this.logger.warn(`Invalid salesPersonName: ${name}`);
           throw new BadRequestException(
             `Invalid salesPersonName: ${name} for the given period`,
           );
@@ -377,7 +389,7 @@ export class salesInvoiceAnalyticsService {
 
     // Buat where clause untuk query Prisma
     const where: any = {
-      company_id,
+      company_id: { in: company_id }, // Dukung multiple company_id
       invoiceDate: {
         gte: new Date(formattedStartPeriod),
         lte: new Date(formattedEndPeriod),
@@ -421,20 +433,20 @@ export class salesInvoiceAnalyticsService {
       data: [],
     };
 
-    const monthMap = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
+    // const monthMap = [
+    //   'Jan',
+    //   'Feb',
+    //   'Mar',
+    //   'Apr',
+    //   'May',
+    //   'Jun',
+    //   'Jul',
+    //   'Aug',
+    //   'Sep',
+    //   'Oct',
+    //   'Nov',
+    //   'Dec',
+    // ];
 
     if (salesPersonName && salesPersonName.length > 0) {
       const monthlyData: Record<
@@ -457,7 +469,7 @@ export class salesInvoiceAnalyticsService {
         const salesPerson = item.salesPersonName || 'Unknown';
         const amount = Math.round(
           parseFloat((item._sum.total_amount || 0).toString()),
-        ); // Bulatkan
+        );
 
         if (!monthlyData[year]) {
           monthlyData[year] = {};
@@ -471,7 +483,6 @@ export class salesInvoiceAnalyticsService {
           };
         }
 
-        // Jumlahkan nilai untuk bulan yang sama
         monthlyData[year][salesPerson].months[monthKey] =
           (monthlyData[year][salesPerson].months[monthKey] || 0) + amount;
         monthlyData[year][salesPerson].totalInvoice += amount;
@@ -481,10 +492,10 @@ export class salesInvoiceAnalyticsService {
         Object.values(yearData).map((entry) => ({
           period: entry.period,
           salesPersonName: entry.salesPersonName,
-          totalInvoice: Math.round(entry.totalInvoice), // Bulatkan
+          totalInvoice: Math.round(entry.totalInvoice),
           months: monthMap.reduce(
             (acc, month) => {
-              acc[month] = Math.round(entry.months[month] || 0); // Bulatkan
+              acc[month] = Math.round(entry.months[month] || 0);
               return acc;
             },
             {} as Record<string, number>,
@@ -510,23 +521,21 @@ export class salesInvoiceAnalyticsService {
         }
       > = {};
 
-      // Proses data untuk periode saat ini
       result.forEach((item) => {
         const year = item.invoiceDate.getFullYear().toString();
         const monthIdx = item.invoiceDate.getMonth();
         const monthKey = monthMap[monthIdx];
         const amount = Math.round(
           parseFloat((item._sum.total_amount || 0).toString()),
-        ); // Bulatkan
+        );
 
         if (!monthlyData[year]) {
           monthlyData[year] = { period: year, totalInvoice: 0, months: {} };
         }
 
-        // Jumlahkan nilai untuk bulan yang sama
         monthlyData[year].months[monthKey] = {
           amount: (monthlyData[year].months[monthKey]?.amount || 0) + amount,
-          growthPercentage: null, // Akan diisi setelah menghitung
+          growthPercentage: null,
         };
         monthlyData[year].totalInvoice += amount;
       });
@@ -547,11 +556,10 @@ export class salesInvoiceAnalyticsService {
             'yyyy-MM-dd',
           );
 
-          // Query untuk data tahun sebelumnya
           const previousResult = await this.prisma.sls_InvoiceHd.groupBy({
             by: ['invoiceDate'],
             where: {
-              company_id,
+              company_id: { in: company_id }, // Dukung multiple company_id
               invoiceDate: {
                 gte: new Date(previousYearStart),
                 lte: new Date(previousYearEnd),
@@ -582,7 +590,6 @@ export class salesInvoiceAnalyticsService {
             _sum: { total_amount: true },
           });
 
-          // Hitung total_amount untuk bulan yang sama di tahun sebelumnya
           const previousAmount = previousResult.reduce(
             (sum, item) =>
               sum +
@@ -592,16 +599,15 @@ export class salesInvoiceAnalyticsService {
 
           const currentAmount = months[monthKey].amount;
 
-          // Hitung growthPercentage
           let growthPercentage: number | null = null;
           if (previousAmount > 0) {
             growthPercentage =
               ((currentAmount - previousAmount) / previousAmount) * 100;
-            growthPercentage = Number(growthPercentage.toFixed(1)); // Bulatkan ke 1 desimal
+            growthPercentage = Number(growthPercentage.toFixed(1));
           } else if (currentAmount > 0) {
-            growthPercentage = 100; // Pertumbuhan "infinite" jika previousAmount = 0 dan currentAmount > 0
+            growthPercentage = 100;
           } else {
-            growthPercentage = 0; // Tidak ada pertumbuhan jika keduanya 0
+            growthPercentage = 0;
           }
 
           months[monthKey].growthPercentage = growthPercentage;
@@ -610,7 +616,7 @@ export class salesInvoiceAnalyticsService {
 
       response.data = Object.values(monthlyData).map((entry) => ({
         period: entry.period,
-        totalInvoice: Math.round(entry.totalInvoice), // Bulatkan
+        totalInvoice: Math.round(entry.totalInvoice),
         months: monthMap.reduce(
           (acc, month) => {
             acc[month] = {
@@ -734,7 +740,7 @@ export class salesInvoiceAnalyticsService {
   }
 
   async getMonthlySalesInvoiceByPoType(
-    company_id: string,
+    company_id: string[], // Ubah ke string[]
     module_id: string,
     subModule_id: string,
     dto: salesAnalyticsDto,
@@ -743,6 +749,7 @@ export class salesInvoiceAnalyticsService {
 
     // Validasi startPeriod dan endPeriod
     if (!startPeriod || !endPeriod) {
+      this.logger.error('startPeriod and endPeriod are required');
       throw new BadRequestException('startPeriod and endPeriod are required');
     }
 
@@ -754,17 +761,31 @@ export class salesInvoiceAnalyticsService {
         throw new BadRequestException('endPeriod must be after startPeriod');
       }
     } catch (error) {
+      this.logger.error(
+        `Invalid period format: startPeriod=${startPeriod}, endPeriod=${endPeriod}`,
+      );
       throw new BadRequestException(
         'startPeriod and endPeriod must be in MMMYYYY format (e.g., Jan2023)',
       );
     }
 
     // Validasi company_id
-    const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
-      where: { company_id },
-    });
-    if (!companyExists) {
-      throw new NotFoundException(`Company ID ${company_id} not found`);
+    if (!company_id || !Array.isArray(company_id) || company_id.length === 0) {
+      this.logger.error('company_id array is required and cannot be empty');
+      throw new BadRequestException(
+        'company_id array is required and cannot be empty',
+      );
+    }
+
+    // Cek apakah semua company_id valid
+    for (const id of company_id) {
+      const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
+        where: { company_id: id },
+      });
+      if (!companyExists) {
+        this.logger.warn(`Company ID not found: ${id}`);
+        throw new NotFoundException(`Company ID ${id} not found`);
+      }
     }
 
     // Hitung rentang tanggal, termasuk tahun sebelumnya untuk growthPercentage
@@ -772,12 +793,12 @@ export class salesInvoiceAnalyticsService {
     const formattedStartPeriod = format(
       startOfMonth(new Date(startYear - 1, startDate.getMonth(), 1)),
       'yyyy-MM-dd',
-    ); // Mulai dari bulan yang sama tahun sebelumnya
+    );
     const formattedEndPeriod = format(endOfMonth(endDate), 'yyyy-MM-dd');
 
     // Buat where clause untuk query Prisma
     const where: any = {
-      company_id,
+      company_id: { in: company_id }, // Dukung multiple company_id
       invoiceDate: {
         gte: new Date(formattedStartPeriod),
         lte: new Date(formattedEndPeriod),
@@ -787,6 +808,19 @@ export class salesInvoiceAnalyticsService {
     // Tambahkan filter poType jika ada
     if (poType) {
       const poTypes = Array.isArray(poType) ? poType : [poType];
+      // Validasi poType
+      for (const type of poTypes) {
+        const poTypeExists = await this.prisma.sls_InvoicePoType.findFirst({
+          where: {
+            company_id: { in: company_id },
+            name: { equals: type, mode: 'insensitive' },
+          },
+        });
+        if (!poTypeExists) {
+          this.logger.warn(`Invalid poType: ${type}`);
+          throw new BadRequestException(`Invalid poType: ${type}`);
+        }
+      }
       where.sls_InvoicePoType = {
         name: { in: poTypes, mode: 'insensitive' },
       };
@@ -819,22 +853,6 @@ export class salesInvoiceAnalyticsService {
         }
       >
     > = {};
-
-    // Inisialisasi monthMap
-    const monthMap = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
 
     // Agregasi data
     for (const item of invoices) {

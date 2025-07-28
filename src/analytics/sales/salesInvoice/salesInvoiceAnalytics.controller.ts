@@ -20,79 +20,79 @@ export class salesInvoiceAnalyticsController {
     private readonly salesInvoiceAnalyticsService: salesInvoiceAnalyticsService,
   ) {}
 
-  // @Public()
-  // @Get('getMonthlySalesInvoice')
-  // async getMonthlySalesInvoice(
-  //   @Param('company_id') company_id: string,
-  //   @Param('module_id') module_id: string,
-  //   @Param('subModule_id') subModule_id: string,
-  //   @Query() query: salesAnalyticsDto,
-  // ) {
-  //   // console.log('Query params received:', JSON.stringify(query)); // Tambah log
-
-  //   return this.salesInvoiceAnalyticsService.getMonthlySalesInvoice(
-  //     company_id,
-  //     module_id,
-  //     subModule_id,
-  //     query,
-  //   );
-  // }
-
   @Public()
   @Get('getMonthlySalesInvoice')
-  async getMonthlySalesInvoice(
-    @Param('subModule_id') subModule_id: string,
-    @Query() query: salesAnalyticsDto,
-  ) {
-    const { company_id, startPeriod, endPeriod } = query;
+  async getMonthlySalesInvoice(@Query() query: salesAnalyticsDto) {
+    this.logger.log('Query params received:', JSON.stringify(query));
 
-    // Validasi company_id
-    if (!company_id || company_id.length === 0) {
+    // Since company_id is expected as an array in the service, ensure it's passed correctly
+    const { company_id, startPeriod, endPeriod, ...rest } = query;
+
+    // Handle company_id and compny_id (if it's a typo, map it to company_id)
+    const companyIds = Array.isArray(company_id)
+      ? company_id
+      : company_id
+        ? [company_id]
+        : [];
+
+    // If compny_id is present (due to typo in URL), include it
+    if (rest['compny_id']) {
+      const compnyId = Array.isArray(rest['compny_id'])
+        ? rest['compny_id']
+        : [rest['compny_id']];
+      companyIds.push(...compnyId);
+    }
+
+    if (companyIds.length === 0) {
       throw new BadRequestException('At least one company_id is required');
     }
 
-    const module_id = 'SLS';
-
     return this.salesInvoiceAnalyticsService.getMonthlySalesInvoice(
-      module_id,
-      subModule_id,
-      query,
-    );
-  }
-
-  @Public()
-  @Get('getMonthlyComparisonSalesInvoice')
-  async getMonthlyComparisonSalesInvoice(
-    @Param('company_id') company_id: string,
-    @Param('module_id') module_id: string,
-    @Param('subModule_id') subModule_id: string,
-    @Query() query: salesAnalyticsDto,
-  ) {
-    // console.log('Query params received:', JSON.stringify(query)); // Tambah log
-
-    return this.salesInvoiceAnalyticsService.getMonthlyComparisonSalesInvoice(
-      company_id,
-      module_id,
-      subModule_id,
-      query,
+      companyIds, // Pass as array
+      'ANT', // Hardcode module_id or get from config
+      'sls', // Hardcode subModule_id or get from config
+      {
+        company_id: companyIds,
+        startPeriod,
+        endPeriod,
+        ...rest,
+      },
     );
   }
 
   @Public()
   @Get('getMonthlySalesInvoiceByPoType')
   async getMonthlySalesInvoiceByPoType(
-    @Param('company_id') company_id: string,
     @Param('module_id') module_id: string,
     @Param('subModule_id') subModule_id: string,
     @Query() query: salesAnalyticsDto,
   ) {
-    // console.log('Query params received:', JSON.stringify(query)); // Tambah log
+    this.logger.log('Query params received:', JSON.stringify(query));
+
+    const { company_id, startPeriod, endPeriod, poType, ...rest } = query;
+
+    // Pastikan company_id adalah array
+    const companyIds = Array.isArray(company_id)
+      ? company_id
+      : company_id
+        ? [company_id]
+        : [];
+
+    if (companyIds.length === 0) {
+      throw new BadRequestException('At least one company_id is required');
+    }
 
     return this.salesInvoiceAnalyticsService.getMonthlySalesInvoiceByPoType(
-      company_id,
+      companyIds, // Kirim sebagai array
       module_id,
       subModule_id,
-      query,
+      {
+        company_id: companyIds,
+        startPeriod,
+        endPeriod,
+        poType,
+        ...rest,
+      },
     );
   }
 }

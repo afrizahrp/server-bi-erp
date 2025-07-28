@@ -3,7 +3,7 @@ import { IsString, IsOptional, Min, IsNumber, IsIn } from 'class-validator';
 export class salesAnalyticsDto {
   @IsString({ each: true }) // Validasi tiap elemen di array
   @IsOptional()
-  company_id?: string[];
+  company_id?: string[] | string;
 
   @IsString()
   @IsOptional()
