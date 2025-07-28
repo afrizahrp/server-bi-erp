@@ -29,9 +29,27 @@ export class salesInvoiceDashboardController {
 
     // Helper untuk memastikan field menjadi array string
     function toArray(val: unknown): string[] {
-      if (Array.isArray(val)) return val.map(String);
+      if (Array.isArray(val))
+        return val.map((v) => {
+          if (['string', 'number', 'boolean'].includes(typeof v)) {
+            return String(v);
+          }
+          throw new BadRequestException(
+            'Field array harus berupa string, angka, atau array string/angka.',
+          );
+        });
       if (val === undefined || val === null) return [];
-      return [String(val)];
+      if (typeof val === 'object') {
+        throw new BadRequestException(
+          'Field array tidak boleh berupa objek. Harap kirimkan string, angka, atau array string/angka.',
+        );
+      }
+      if (['string', 'number', 'boolean'].includes(typeof val)) {
+        return [String(val)];
+      }
+      throw new BadRequestException(
+        'Field array harus berupa string, angka, atau array string/angka.',
+      );
     }
 
     // Konversi field yang bisa array
@@ -42,7 +60,7 @@ export class salesInvoiceDashboardController {
       salesPersonName: query.salesPersonName
         ? toArray(query.salesPersonName)
         : undefined,
-      sortBy: query.sortBy,
+      sortBy: typeof query.sortBy === 'string' ? query.sortBy : undefined,
     };
 
     // Validasi manual jika perlu (opsional, jika pakai ValidationPipe global, ini tidak perlu)

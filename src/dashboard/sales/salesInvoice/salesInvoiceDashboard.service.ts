@@ -71,11 +71,13 @@ export class salesInvoiceDashboardService {
 
     // Pastikan semua company_id ada di database
     const companies = await this.prisma.sls_InvoiceHd.findMany({
-      where: { company_id: { in: companyIds } },
+      where: { company_id: { in: companyIds.map((id) => id.trim()) } },
       select: { company_id: true },
     });
-    const foundCompanyIds = companies.map((c) => c.company_id);
-    const notFound = companyIds.filter((id) => !foundCompanyIds.includes(id));
+    const foundCompanyIds = companies.map((c) => c.company_id.trim());
+    const notFound = companyIds
+      .map((id) => id.trim())
+      .filter((id) => !foundCompanyIds.includes(id));
     if (notFound.length > 0) {
       throw new NotFoundException(
         `Company ID(s) not found: ${notFound.join(', ')}`,
@@ -103,8 +105,8 @@ export class salesInvoiceDashboardService {
       FROM 
         "sls_InvoiceHd"
       WHERE 
-        "company_id" IN ${companyIds}
-        AND EXTRACT(YEAR FROM "invoiceDate") = ANY(${allYears})
+        "company_id" IN (${Prisma.join(companyIds)})
+        AND EXTRACT(YEAR FROM "invoiceDate") IN (${Prisma.join(allYears)})
         ${monthNumbers.length > 0 ? Prisma.sql`AND EXTRACT(MONTH FROM "invoiceDate") IN (${Prisma.join(monthNumbers)})` : Prisma.empty}
       GROUP BY 
         EXTRACT(YEAR FROM "invoiceDate")
