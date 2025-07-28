@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { Prisma } from '@prisma/client';
-import { format, parse, startOfMonth, endOfMonth } from 'date-fns';
 import { monthMap } from 'src/utils/date/getMonthName';
 import { yearlySalesDashboardDto } from '../dto/yearlySalesDashboard.dto';
 
@@ -21,7 +20,6 @@ export class salesPersonPerformaDashboardService {
   // YEARLY SALES PERSON INVOICE ANALYTICS
   // TOP N SALES PERSON BY YEAR WITH GROWTH PERCENTAGE AND YEARLY SALES >= 3.6 Miliar
   async getYearlySalespersonInvoice(
-    company_id: string[], // Ubah ke array
     module_id: string,
     subModule_id: string,
     dto: yearlySalesDashboardDto,
@@ -29,12 +27,31 @@ export class salesPersonPerformaDashboardService {
     const { years, months } = dto;
 
     this.logger.log(`Received DTO: ${JSON.stringify(dto)}`);
-    this.logger.log(`Received company_id: ${JSON.stringify(company_id)}`);
+    this.logger.log(`Received company_id: ${JSON.stringify(dto.company_id)}`);
 
     // Validasi company_id
-    if (!company_id || !Array.isArray(company_id) || company_id.length === 0) {
-      throw new BadRequestException(
-        'company_id array is required and cannot be empty',
+    const companyIds = Array.isArray(dto.company_id)
+      ? dto.company_id
+      : dto.company_id
+        ? [dto.company_id]
+        : [];
+
+    if (companyIds.length === 0) {
+      throw new BadRequestException('At least one company_id is required');
+    }
+
+    // Pastikan semua company_id ada di database
+    const companies = await this.prisma.sls_InvoiceHd.findMany({
+      where: { company_id: { in: companyIds.map((id) => id.trim()) } },
+      select: { company_id: true },
+    });
+    const foundCompanyIds = companies.map((c) => c.company_id.trim());
+    const notFound = companyIds
+      .map((id) => id.trim())
+      .filter((id) => !foundCompanyIds.includes(id));
+    if (notFound.length > 0) {
+      throw new NotFoundException(
+        `Company ID(s) not found: ${notFound.join(', ')}`,
       );
     }
 
@@ -76,18 +93,6 @@ export class salesPersonPerformaDashboardService {
     this.logger.log(`Month numbers: ${JSON.stringify(monthNumbers)}`);
 
     // Validasi company_id exists
-    const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
-      where: {
-        company_id: {
-          in: company_id,
-        },
-      },
-    });
-    if (!companyExists) {
-      throw new NotFoundException(
-        `No data found for company IDs: ${company_id.join(', ')}`,
-      );
-    }
 
     // Tentukan tahun sebelumnya untuk growth percentage
     const previousYears = uniqueYears
@@ -102,7 +107,6 @@ export class salesPersonPerformaDashboardService {
       {
         salesPersonName: string | null;
         year: number;
-        company_id: string;
         total_amount: number;
         invoice_count: number;
       }[]
@@ -110,22 +114,21 @@ export class salesPersonPerformaDashboardService {
       SELECT 
         COALESCE("salesPersonName", 'UNKNOWN') AS "salesPersonName",
         EXTRACT(YEAR FROM "invoiceDate") AS "year",
-        "company_id",
         CAST(SUM("total_amount") AS DECIMAL) AS "total_amount",
         COUNT(*) AS "invoice_count"
       FROM 
         "sls_InvoiceHd"
       WHERE 
-        "company_id" IN (${Prisma.join(company_id)})
+        "company_id" IN (${Prisma.join(companyIds)})
         AND "total_amount" > 0
         AND EXTRACT(YEAR FROM "invoiceDate") = ANY(${allYears}::integer[])
         ${monthNumbers.length > 0 ? Prisma.sql`AND EXTRACT(MONTH FROM "invoiceDate") IN (${Prisma.join(monthNumbers)})` : Prisma.empty}
       GROUP BY 
-        COALESCE("salesPersonName", 'UNKNOWN'), EXTRACT(YEAR FROM "invoiceDate"), "company_id"
+        COALESCE("salesPersonName", 'UNKNOWN'), EXTRACT(YEAR FROM "invoiceDate")
       HAVING 
         CAST(SUM("total_amount") AS DECIMAL) >= 3600000000
       ORDER BY 
-        "year", "company_id", "total_amount" DESC;
+        "year", "total_amount" DESC;
     `);
 
     this.logger.log(
@@ -133,7 +136,6 @@ export class salesPersonPerformaDashboardService {
         salespersonInvoiceResult.map((item) => ({
           salesPersonName: item.salesPersonName,
           year: item.year,
-          company_id: item.company_id,
           total_amount: item.total_amount.toString(),
           invoice_count: Number(item.invoice_count),
         })),
@@ -143,46 +145,44 @@ export class salesPersonPerformaDashboardService {
     );
 
     // Proses data
+    // Gabungkan per tahun dan per salesPersonName
     const yearlyData: Record<
       string,
       Record<
         string,
-        Record<
-          string,
-          {
-            salesPersonName: string;
-            amount: number;
-            quantity: number;
-            company_id: string[];
-          }
-        >
+        {
+          salesPersonName: string;
+          amount: number;
+          quantity: number;
+          company_ids: Set<string>;
+        }
       >
     > = {};
 
     salespersonInvoiceResult.forEach((item) => {
       const year = item.year.toString();
-      const salesPerson = item.salesPersonName || 'UNKNOWN';
+      const salesPerson = (item.salesPersonName || 'UNKNOWN')
+        .toUpperCase()
+        .trim();
       const amount = Math.round(Number(item.total_amount));
       const quantity = Number(item.invoice_count);
-      const companyId = item.company_id;
+      // Tidak ada company_id di hasil query, jadi tidak perlu
 
       if (!yearlyData[year]) {
         yearlyData[year] = {};
       }
       if (!yearlyData[year][salesPerson]) {
-        yearlyData[year][salesPerson] = {};
+        yearlyData[year][salesPerson] = {
+          salesPersonName: salesPerson,
+          amount: 0,
+          quantity: 0,
+          company_ids: new Set<string>(),
+        };
       }
-      yearlyData[year][salesPerson][companyId] = {
-        salesPersonName: salesPerson.toUpperCase().trim(),
-        amount,
-        quantity,
-        company_id: [companyId],
-      };
+      yearlyData[year][salesPerson].amount += amount;
+      yearlyData[year][salesPerson].quantity += quantity;
+      // company_id sudah tidak ada di hasil query, jadi tidak perlu add
     });
-
-    this.logger.log(
-      `Processed yearly data: ${JSON.stringify(yearlyData, null, 2)}`,
-    );
 
     // Format data untuk respons
     const salespersonData = uniqueYears
@@ -196,30 +196,26 @@ export class salesPersonPerformaDashboardService {
           };
         }
 
-        const salesArray = Object.entries(sales).flatMap(
-          ([salesPerson, companies]) =>
-            Object.entries(companies).map(([companyId, entry]) => {
-              const previousYear = (parseInt(year) - 1).toString();
-              const previousData =
-                yearlyData[previousYear]?.[salesPerson]?.[companyId];
-              let growthPercentage: number = 0;
+        const salesArray = Object.values(sales).map((entry) => {
+          const previousYear = (parseInt(year) - 1).toString();
+          const previousData =
+            yearlyData[previousYear]?.[entry.salesPersonName];
+          let growthPercentage: number = 0;
 
-              if (previousData && previousData.amount > 0) {
-                growthPercentage =
-                  ((entry.amount - previousData.amount) / previousData.amount) *
-                  100;
-                growthPercentage = Math.round(growthPercentage * 10) / 10;
-              }
+          if (previousData && previousData.amount > 0) {
+            growthPercentage =
+              ((entry.amount - previousData.amount) / previousData.amount) *
+              100;
+            growthPercentage = Math.round(growthPercentage * 10) / 10;
+          }
 
-              return {
-                company_id: entry.company_id,
-                salesPersonName: entry.salesPersonName,
-                amount: entry.amount,
-                quantity: entry.quantity,
-                growthPercentage,
-              };
-            }),
-        );
+          return {
+            salesPersonName: entry.salesPersonName,
+            amount: entry.amount,
+            quantity: entry.quantity,
+            growthPercentage,
+          };
+        });
 
         return {
           period: year,
@@ -237,7 +233,7 @@ export class salesPersonPerformaDashboardService {
     );
 
     return {
-      company_id, // Kembalikan array company_id
+      company_id: dto.company_id, // Kembalikan array company_id
       module_id,
       subModule_id,
       data: salespersonData,
