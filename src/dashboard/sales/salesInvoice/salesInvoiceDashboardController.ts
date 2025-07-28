@@ -1,15 +1,14 @@
 import {
   Controller,
+  Logger,
   Get,
-  Query,
   Param,
+  Query,
   BadRequestException,
 } from '@nestjs/common';
 import { Public } from 'src/auth/decorators/public.decorator';
-import { salesInvoiceDashboardService } from './salesInvoiceDashboard.service';
 import { yearlySalesDashboardDto } from '../dto/yearlySalesDashboard.dto';
-import { Logger } from '@nestjs/common';
-import { toArray } from 'src/utils/toArray';
+import { salesInvoiceDashboardService } from './salesInvoiceDashboard.service';
 
 @Controller(':module_id/:subModule_id/get-dashboard')
 export class salesInvoiceDashboardController {
@@ -27,6 +26,31 @@ export class salesInvoiceDashboardController {
     @Query() query: Record<string, any>,
   ) {
     this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
+
+    // Helper untuk memastikan field menjadi array string
+    function toArray(val: unknown): string[] {
+      if (Array.isArray(val))
+        return val.map((v) => {
+          if (['string', 'number', 'boolean'].includes(typeof v)) {
+            return String(v);
+          }
+          throw new BadRequestException(
+            'Field array harus berupa string, angka, atau array string/angka.',
+          );
+        });
+      if (val === undefined || val === null) return [];
+      if (typeof val === 'object') {
+        throw new BadRequestException(
+          'Field array tidak boleh berupa objek. Harap kirimkan string, angka, atau array string/angka.',
+        );
+      }
+      if (['string', 'number', 'boolean'].includes(typeof val)) {
+        return [String(val)];
+      }
+      throw new BadRequestException(
+        'Field array harus berupa string, angka, atau array string/angka.',
+      );
+    }
 
     // Konversi field yang bisa array
     const dto: yearlySalesDashboardDto = {
