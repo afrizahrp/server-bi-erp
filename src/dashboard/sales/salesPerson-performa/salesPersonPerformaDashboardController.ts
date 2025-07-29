@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { salesPersonPerformaDashboardService } from './salesPersonPerformaDashboardService';
-import { yearlySalesDashboardDto } from '../dto/yearlySalesDashboard.dto';
 import { Logger } from '@nestjs/common';
 import { toArray } from 'src/utils/toArray';
 
@@ -21,6 +20,24 @@ export class salesPersonPerformaDashboardController {
     private readonly salesPersonPerformaDashboardService: salesPersonPerformaDashboardService,
   ) {}
 
+  private parseCompanyIds(companyId: unknown): string[] {
+    if (Array.isArray(companyId)) {
+      return companyId.map((id) => String(id));
+    }
+    if (companyId === undefined || companyId === null) return [];
+    if (typeof companyId === 'string') {
+      // Handle string yang dipisahkan koma (e.g., "BIS,BIP")
+      return companyId
+        .split(',')
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0);
+    }
+    if (typeof companyId === 'number' || typeof companyId === 'boolean') {
+      return [String(companyId)];
+    }
+    throw new BadRequestException('Invalid company_id format');
+  }
+
   @Public()
   @Get('getYearlySalespersonInvoice')
   async getYearlySalespersonInvoice(
@@ -30,8 +47,11 @@ export class salesPersonPerformaDashboardController {
   ) {
     this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
 
+    // Parse company_ids
+    const companyIds = this.parseCompanyIds(query.company_id);
+    this.logger.debug(`Parsed company_ids: ${JSON.stringify(companyIds)}`);
+
     // Konversi field yang bisa array
-    const companyIds = toArray(query.company_id);
     const yearsArray = toArray(query.years);
     const monthsArray = query.months ? toArray(query.months) : undefined;
     const sortBy = typeof query.sortBy === 'string' ? query.sortBy : undefined;

@@ -15,6 +15,10 @@ export class salesPersonPerformaDashboardService {
     salesPersonPerformaDashboardService.name,
   );
 
+  // Sales target constants
+  private readonly SINGLE_COMPANY_SALES_TARGET = 5000000000; // 5 Miliar
+  private readonly MULTIPLE_COMPANIES_SALES_TARGET = 10000000000; // 10 Miliar
+
   constructor(private readonly prisma: PrismaService) {}
 
   // YEARLY SALES PERSON INVOICE ANALYTICS
@@ -28,13 +32,25 @@ export class salesPersonPerformaDashboardService {
 
     this.logger.log(`Received DTO: ${JSON.stringify(dto)}`);
     this.logger.log(`Received company_id: ${JSON.stringify(dto.company_id)}`);
+    this.logger.log(`Type of company_id: ${typeof dto.company_id}`);
 
     // Validasi company_id
-    const companyIds = Array.isArray(dto.company_id)
-      ? dto.company_id
-      : dto.company_id
-        ? [dto.company_id]
-        : [];
+    let companyIds: string[] = [];
+
+    if (dto.company_id) {
+      if (Array.isArray(dto.company_id)) {
+        companyIds = dto.company_id;
+      } else if (typeof dto.company_id === 'string') {
+        // Handle string yang dipisahkan koma (e.g., "BIS,BIP")
+        const companyIdString = dto.company_id as string;
+        companyIds = companyIdString
+          .split(',')
+          .map((id: string) => id.trim())
+          .filter((id: string) => id.length > 0);
+      }
+    }
+
+    this.logger.log(`Parsed companyIds: ${JSON.stringify(companyIds)}`);
 
     if (companyIds.length === 0) {
       throw new BadRequestException('At least one company_id is required');
@@ -102,6 +118,11 @@ export class salesPersonPerformaDashboardService {
 
     this.logger.log(`All years: ${JSON.stringify(allYears)}`);
 
+    const salesTarget =
+      companyIds.length > 1
+        ? this.MULTIPLE_COMPANIES_SALES_TARGET
+        : this.SINGLE_COMPANY_SALES_TARGET;
+
     // Query untuk salesperson invoice
     const salespersonInvoiceResult = await this.prisma.$queryRaw<
       {
@@ -126,7 +147,7 @@ export class salesPersonPerformaDashboardService {
       GROUP BY 
         COALESCE("salesPersonName", 'UNKNOWN'), EXTRACT(YEAR FROM "invoiceDate")
       HAVING 
-        CAST(SUM("total_amount") AS DECIMAL) >= 3600000000
+        CAST(SUM("total_amount") AS DECIMAL) >= ${salesTarget}
       ORDER BY 
         "year", "total_amount" DESC;
     `);
@@ -304,6 +325,9 @@ export class salesPersonPerformaDashboardService {
       .filter((year) => !uniqueYears.includes(year));
     const allYears = [...uniqueYears, ...previousYears].map(Number);
 
+    // Set sales target untuk single company
+    const salesTarget = this.SINGLE_COMPANY_SALES_TARGET;
+
     // Query menggunakan $queryRaw
     const query = Prisma.sql`
     SELECT 
@@ -321,7 +345,7 @@ export class salesPersonPerformaDashboardService {
     GROUP BY 
       "salesPersonName", EXTRACT(YEAR FROM "invoiceDate")
     HAVING 
-      CAST(SUM("total_amount") AS DECIMAL) >= 3600000000
+      CAST(SUM("total_amount") AS DECIMAL) >= ${salesTarget}
     ORDER BY 
       EXTRACT(YEAR FROM "invoiceDate"), SUM("total_amount") DESC;
   `;

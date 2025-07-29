@@ -19,6 +19,24 @@ export class salesInvoiceDashboardController {
     private readonly salesDashboardService: salesInvoiceDashboardService,
   ) {}
 
+  private parseCompanyIds(companyId: unknown): string[] {
+    if (Array.isArray(companyId)) {
+      return companyId.map((id) => String(id));
+    }
+    if (companyId === undefined || companyId === null) return [];
+    if (typeof companyId === 'string') {
+      // Handle string yang dipisahkan koma (e.g., "BIS,BIP")
+      return companyId
+        .split(',')
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0);
+    }
+    if (typeof companyId === 'number' || typeof companyId === 'boolean') {
+      return [String(companyId)];
+    }
+    throw new BadRequestException('Invalid company_id format');
+  }
+
   @Public()
   @Get('getYearlySalesInvoice')
   async getYearlySalesInvoice(
@@ -28,9 +46,15 @@ export class salesInvoiceDashboardController {
   ) {
     this.logger.debug(`Query params received: ${JSON.stringify(query)}`);
 
+    // Parse company_ids
+    const parsedCompanyIds = this.parseCompanyIds(query.company_id);
+    this.logger.debug(
+      `Parsed company_ids: ${JSON.stringify(parsedCompanyIds)}`,
+    );
+
     // Konversi field yang bisa array
     const dto: yearlySalesDashboardDto = {
-      company_id: toArray(query.company_id),
+      company_id: parsedCompanyIds,
       years: toArray(query.years),
       months: query.months ? toArray(query.months) : undefined,
       salesPersonName: query.salesPersonName
