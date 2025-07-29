@@ -274,7 +274,6 @@ export class salesInvoiceAnalyticsService {
   }
 
   async getMonthlyComparisonSalesInvoice(
-    company_id: string[], // Ubah ke string[]
     module_id: string,
     subModule_id: string,
     dto: salesAnalyticsDto,
@@ -304,22 +303,30 @@ export class salesInvoiceAnalyticsService {
     }
 
     // Validasi company_id
-    if (!company_id || !Array.isArray(company_id) || company_id.length === 0) {
-      this.logger.error('company_id array is required and cannot be empty');
-      throw new BadRequestException(
-        'company_id array is required and cannot be empty',
-      );
+    // Validasi company_id (array)
+    const companyIds = Array.isArray(dto.company_id)
+      ? dto.company_id
+      : dto.company_id
+        ? [dto.company_id]
+        : [];
+
+    if (companyIds.length === 0) {
+      throw new BadRequestException('At least one company_id is required');
     }
 
-    // Cek apakah semua company_id valid
-    for (const id of company_id) {
-      const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
-        where: { company_id: id },
-      });
-      if (!companyExists) {
-        this.logger.warn(`Company ID not found: ${id}`);
-        throw new NotFoundException(`Company ID ${id} not found`);
-      }
+    // Pastikan semua company_id ada di database
+    const companies = await this.prisma.sls_InvoiceHd.findMany({
+      where: { company_id: { in: companyIds.map((id) => id.trim()) } },
+      select: { company_id: true },
+    });
+    const foundCompanyIds = companies.map((c) => c.company_id.trim());
+    const notFound = companyIds
+      .map((id) => id.trim())
+      .filter((id) => !foundCompanyIds.includes(id));
+    if (notFound.length > 0) {
+      throw new NotFoundException(
+        `Company ID(s) not found: ${notFound.join(', ')}`,
+      );
     }
 
     // Validasi filter paidStatus
@@ -330,7 +337,7 @@ export class salesInvoiceAnalyticsService {
       for (const status of paidStatuses) {
         const paidStatusExists = await this.prisma.sys_PaidStatus.findFirst({
           where: {
-            company_id: { in: company_id }, // Dukung multiple company_id
+            company_id: { in: companyIds }, // Dukung multiple company_id
             name: { equals: status, mode: 'insensitive' },
           },
         });
@@ -347,7 +354,7 @@ export class salesInvoiceAnalyticsService {
       for (const type of poTypes) {
         const poTypeExists = await this.prisma.sls_InvoicePoType.findFirst({
           where: {
-            company_id: { in: company_id }, // Dukung multiple company_id
+            company_id: { in: companyIds }, // Dukung multiple company_id
             name: { equals: type, mode: 'insensitive' },
           },
         });
@@ -366,7 +373,7 @@ export class salesInvoiceAnalyticsService {
       for (const name of salesPersonNames) {
         const salesPersonExists = await this.prisma.sls_InvoiceHd.findFirst({
           where: {
-            company_id: { in: company_id }, // Dukung multiple company_id
+            company_id: { in: companyIds }, // Dukung multiple company_id
             salesPersonName: { equals: name, mode: 'insensitive' },
             invoiceDate: {
               gte: new Date(startOfMonth(startDate)),
@@ -389,7 +396,7 @@ export class salesInvoiceAnalyticsService {
 
     // Buat where clause untuk query Prisma
     const where: any = {
-      company_id: { in: company_id }, // Dukung multiple company_id
+      company_id: { in: companyIds }, // Dukung multiple company_id
       invoiceDate: {
         gte: new Date(formattedStartPeriod),
         lte: new Date(formattedEndPeriod),
@@ -427,26 +434,10 @@ export class salesInvoiceAnalyticsService {
     });
 
     const response: any = {
-      company_id,
       module_id,
       subModule_id,
       data: [],
     };
-
-    // const monthMap = [
-    //   'Jan',
-    //   'Feb',
-    //   'Mar',
-    //   'Apr',
-    //   'May',
-    //   'Jun',
-    //   'Jul',
-    //   'Aug',
-    //   'Sep',
-    //   'Oct',
-    //   'Nov',
-    //   'Dec',
-    // ];
 
     if (salesPersonName && salesPersonName.length > 0) {
       const monthlyData: Record<
@@ -559,7 +550,7 @@ export class salesInvoiceAnalyticsService {
           const previousResult = await this.prisma.sls_InvoiceHd.groupBy({
             by: ['invoiceDate'],
             where: {
-              company_id: { in: company_id }, // Dukung multiple company_id
+              company_id: { in: companyIds }, // Dukung multiple company_id
               invoiceDate: {
                 gte: new Date(previousYearStart),
                 lte: new Date(previousYearEnd),

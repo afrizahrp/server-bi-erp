@@ -10,6 +10,8 @@ import {
 import { Public } from 'src/auth/decorators/public.decorator';
 import { salesInvoiceAnalyticsService } from './salesInvoiceAnalytics.service';
 import { salesAnalyticsDto } from '../dto/salesAnalytics.dto';
+import { toArray } from 'src/utils/toArray';
+
 import { Logger } from '@nestjs/common';
 
 @Controller(':module_id/:subModule_id/get-analytics')
@@ -19,6 +21,24 @@ export class salesInvoiceAnalyticsController {
   constructor(
     private readonly salesInvoiceAnalyticsService: salesInvoiceAnalyticsService,
   ) {}
+
+  private parseCompanyIds(companyId: unknown): string[] {
+    if (Array.isArray(companyId)) {
+      return companyId.map((id) => String(id));
+    }
+    if (companyId === undefined || companyId === null) return [];
+    if (typeof companyId === 'string') {
+      // Handle string yang dipisahkan koma (e.g., "BIS,BIP")
+      return companyId
+        .split(',')
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0);
+    }
+    if (typeof companyId === 'number' || typeof companyId === 'boolean') {
+      return [String(companyId)];
+    }
+    throw new BadRequestException('Invalid company_id format');
+  }
 
   @Public()
   @Get('getMonthlySalesInvoice')
@@ -57,6 +77,38 @@ export class salesInvoiceAnalyticsController {
         endPeriod,
         ...rest,
       },
+    );
+  }
+
+  @Public()
+  @Get('getMonthlyComparisonSalesInvoice')
+  async getMonthlyComparisonSalesInvoice(
+    @Param('module_id') module_id: string,
+    @Param('subModule_id') subModule_id: string,
+    @Query() query: Record<string, any>,
+  ) {
+    // console.log('Query params received:', JSON.stringify(query)); // Tambah log
+    const parsedCompanyIds = this.parseCompanyIds(query.company_id);
+
+    const dto: salesAnalyticsDto = {
+      company_id: parsedCompanyIds,
+      startPeriod: query.startPeriod,
+      endPeriod: query.endPeriod,
+      yearPeriod: query.yearPeriod,
+      monthPeriod: query.monthPeriod,
+      paidStatus: query.paidStatus ? toArray(query.paidStatus) : undefined,
+      poType: query.poType ? toArray(query.poType) : undefined,
+      salesPersonName: query.salesPersonName
+        ? toArray(query.salesPersonName)
+        : undefined,
+      topN: query.topN ? Number(query.topN) : undefined,
+      sortBy: query.sortBy,
+    };
+
+    return this.salesInvoiceAnalyticsService.getMonthlyComparisonSalesInvoice(
+      module_id,
+      subModule_id,
+      dto,
     );
   }
 
