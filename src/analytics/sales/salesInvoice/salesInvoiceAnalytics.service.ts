@@ -303,7 +303,6 @@ export class salesInvoiceAnalyticsService {
     }
 
     // Validasi company_id
-    // Validasi company_id (array)
     const companyIds = Array.isArray(dto.company_id)
       ? dto.company_id
       : dto.company_id
@@ -337,7 +336,7 @@ export class salesInvoiceAnalyticsService {
       for (const status of paidStatuses) {
         const paidStatusExists = await this.prisma.sys_PaidStatus.findFirst({
           where: {
-            company_id: { in: companyIds }, // Dukung multiple company_id
+            company_id: { in: companyIds },
             name: { equals: status, mode: 'insensitive' },
           },
         });
@@ -354,7 +353,7 @@ export class salesInvoiceAnalyticsService {
       for (const type of poTypes) {
         const poTypeExists = await this.prisma.sls_InvoicePoType.findFirst({
           where: {
-            company_id: { in: companyIds }, // Dukung multiple company_id
+            company_id: { in: companyIds },
             name: { equals: type, mode: 'insensitive' },
           },
         });
@@ -373,7 +372,7 @@ export class salesInvoiceAnalyticsService {
       for (const name of salesPersonNames) {
         const salesPersonExists = await this.prisma.sls_InvoiceHd.findFirst({
           where: {
-            company_id: { in: companyIds }, // Dukung multiple company_id
+            company_id: { in: companyIds },
             salesPersonName: { equals: name, mode: 'insensitive' },
             invoiceDate: {
               gte: new Date(startOfMonth(startDate)),
@@ -396,7 +395,7 @@ export class salesInvoiceAnalyticsService {
 
     // Buat where clause untuk query Prisma
     const where: any = {
-      company_id: { in: companyIds }, // Dukung multiple company_id
+      company_id: { in: companyIds },
       invoiceDate: {
         gte: new Date(formattedStartPeriod),
         lte: new Date(formattedEndPeriod),
@@ -433,6 +432,21 @@ export class salesInvoiceAnalyticsService {
       _sum: { total_amount: true },
     });
 
+    const monthMap = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
     const response: any = {
       module_id,
       subModule_id,
@@ -448,7 +462,10 @@ export class salesInvoiceAnalyticsService {
             period: string;
             salesPersonName: string;
             totalInvoice: number;
-            months: Record<string, number>;
+            months: Record<
+              string,
+              { amount: number; growthPercentage: number | null }
+            >;
           }
         >
       > = {};
@@ -474,10 +491,92 @@ export class salesInvoiceAnalyticsService {
           };
         }
 
-        monthlyData[year][salesPerson].months[monthKey] =
-          (monthlyData[year][salesPerson].months[monthKey] || 0) + amount;
+        monthlyData[year][salesPerson].months[monthKey] = {
+          amount:
+            (monthlyData[year][salesPerson].months[monthKey]?.amount || 0) +
+            amount,
+          growthPercentage: null,
+        };
         monthlyData[year][salesPerson].totalInvoice += amount;
       });
+
+      // Hitung growthPercentage untuk setiap salesperson dan bulan
+      for (const year in monthlyData) {
+        const previousYear = (parseInt(year) - 1).toString();
+        for (const salesPerson in monthlyData[year]) {
+          const months = monthlyData[year][salesPerson].months;
+          for (const monthKey of Object.keys(months)) {
+            const monthIdx = monthMap.indexOf(monthKey);
+            const previousYearStart = format(
+              startOfMonth(new Date(parseInt(previousYear), monthIdx)),
+              'yyyy-MM-dd',
+            );
+            const previousYearEnd = format(
+              endOfMonth(new Date(parseInt(previousYear), monthIdx)),
+              'yyyy-MM-dd',
+            );
+
+            const previousResult = await this.prisma.sls_InvoiceHd.groupBy({
+              by: ['invoiceDate'],
+              where: {
+                company_id: { in: companyIds },
+                salesPersonName: { equals: salesPerson, mode: 'insensitive' },
+                invoiceDate: {
+                  gte: new Date(previousYearStart),
+                  lte: new Date(previousYearEnd),
+                },
+                ...(paidStatus && paidStatus.length > 0
+                  ? {
+                      sys_PaidStatus: {
+                        name: {
+                          in: Array.isArray(paidStatus)
+                            ? paidStatus
+                            : [paidStatus],
+                          mode: 'insensitive',
+                        },
+                      },
+                    }
+                  : {}),
+                ...(poType && poType.length > 0
+                  ? {
+                      sls_InvoicePoType: {
+                        name: {
+                          in: Array.isArray(poType) ? poType : [poType],
+                          mode: 'insensitive',
+                        },
+                      },
+                    }
+                  : {}),
+              },
+              _sum: { total_amount: true },
+            });
+
+            const previousAmount = previousResult.reduce(
+              (sum, item) =>
+                sum +
+                Math.round(
+                  parseFloat((item._sum.total_amount || 0).toString()),
+                ),
+              0,
+            );
+
+            const currentAmount = months[monthKey].amount;
+
+            let growthPercentage: number | null = null;
+            if (previousAmount > 0) {
+              growthPercentage =
+                ((currentAmount - previousAmount) / previousAmount) * 100;
+              growthPercentage = Number(growthPercentage.toFixed(1));
+            } else if (currentAmount > 0) {
+              growthPercentage = 100;
+            } else {
+              growthPercentage = 0;
+            }
+
+            months[monthKey].growthPercentage = growthPercentage;
+          }
+        }
+      }
 
       response.data = Object.values(monthlyData).flatMap((yearData) =>
         Object.values(yearData).map((entry) => ({
@@ -486,10 +585,16 @@ export class salesInvoiceAnalyticsService {
           totalInvoice: Math.round(entry.totalInvoice),
           months: monthMap.reduce(
             (acc, month) => {
-              acc[month] = Math.round(entry.months[month] || 0);
+              acc[month] = {
+                amount: Math.round(entry.months[month]?.amount || 0),
+                growthPercentage: entry.months[month]?.growthPercentage || 0,
+              };
               return acc;
             },
-            {} as Record<string, number>,
+            {} as Record<
+              string,
+              { amount: number; growthPercentage: number | null }
+            >,
           ),
         })),
       );
@@ -550,7 +655,7 @@ export class salesInvoiceAnalyticsService {
           const previousResult = await this.prisma.sls_InvoiceHd.groupBy({
             by: ['invoiceDate'],
             where: {
-              company_id: { in: companyIds }, // Dukung multiple company_id
+              company_id: { in: companyIds },
               invoiceDate: {
                 gte: new Date(previousYearStart),
                 lte: new Date(previousYearEnd),
