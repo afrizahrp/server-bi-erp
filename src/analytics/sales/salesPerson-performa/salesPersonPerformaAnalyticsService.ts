@@ -554,40 +554,22 @@ export class salesPersonPerformaAnalyticsService {
       );
     }
 
-    // Cek apakah semua company_id valid
-    for (const id of company_id) {
-      const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
-        where: { company_id: id },
-      });
-      if (!companyExists) {
-        this.logger.warn(`Company ID not found: ${id}`);
-        throw new NotFoundException(`Company ID ${id} not found`);
-      }
-    }
+    // OPTIMASI: Validasi company_id dengan single query
+    const companyExists = await this.prisma.sls_InvoiceHd.findFirst({
+      where: {
+        company_id: { in: company_id },
+        total_amount: { gt: 0 },
+      },
+      select: { company_id: true },
+    });
 
-    // Validasi salesPersonName jika ada
-    if (salesPersonName && salesPersonName.length > 0) {
-      const salesPersonNames = Array.isArray(salesPersonName)
-        ? salesPersonName
-        : [salesPersonName];
-      for (const name of salesPersonNames) {
-        const salesPersonExists = await this.prisma.sls_InvoiceHd.findFirst({
-          where: {
-            company_id: { in: company_id },
-            salesPersonName: { equals: name, mode: 'insensitive' },
-            invoiceDate: {
-              gte: new Date(startOfMonth(startDate)),
-              lte: new Date(endOfMonth(endDate)),
-            },
-          },
-        });
-        if (!salesPersonExists) {
-          this.logger.warn(`Invalid salesPersonName: ${name}`);
-          throw new BadRequestException(
-            `Invalid salesPersonName: ${name} for the given period`,
-          );
-        }
-      }
+    if (!companyExists) {
+      this.logger.warn(
+        `No valid company found for IDs: ${company_id.join(', ')}`,
+      );
+      throw new NotFoundException(
+        `No valid company found for the provided company IDs`,
+      );
     }
 
     // Format tanggal sebagai string
@@ -598,45 +580,41 @@ export class salesPersonPerformaAnalyticsService {
       formattedEndPeriod,
     });
 
-    // Query data untuk periode saat ini - SESUAIKAN DENGAN QUERY SQL USER
-    this.logger.debug('Executing query for current period...');
+    // OPTIMASI: Gunakan query yang lebih efisien dengan groupBy langsung
+    this.logger.debug('Executing optimized query for current period...');
 
-    // Query untuk mendapatkan data per bulan - SESUAIKAN DENGAN SQL
-    // Karena Prisma tidak mendukung EXTRACT(MONTH), kita perlu query semua data dan group manual
-    const result = await this.prisma.sls_InvoiceHd.findMany({
+    // Query untuk data periode saat ini dengan groupBy langsung
+    const currentResult = await this.prisma.sls_InvoiceHd.groupBy({
+      by: ['salesPersonName', 'invoiceDate'],
       where: {
         company_id: { in: company_id },
         invoiceDate: {
           gte: new Date(formattedStartPeriod),
           lte: new Date(formattedEndPeriod),
         },
+        total_amount: { gt: 0 },
         ...(salesPersonName && salesPersonName.length > 0
           ? {
               salesPersonName: {
                 in: Array.isArray(salesPersonName)
                   ? salesPersonName
                   : [salesPersonName],
-                mode: 'insensitive',
+                mode: 'insensitive' as const,
               },
             }
           : {}),
       },
-      select: {
-        invoiceDate: true,
-        total_amount: true,
-        salesPersonName: true,
-      },
-      orderBy: { invoiceDate: 'asc' },
+      _sum: { total_amount: true },
     });
 
     this.logger.debug(
-      'Query Result:',
-      result.length > 0
-        ? JSON.stringify(result.slice(0, 5), null, 2)
+      'Current Period Query Result:',
+      currentResult.length > 0
+        ? `${currentResult.length} records found`
         : 'No data found',
     );
 
-    if (result.length === 0) {
+    if (currentResult.length === 0) {
       this.logger.debug('No data found for the specified period.');
       return {
         company_id,
@@ -645,6 +623,47 @@ export class salesPersonPerformaAnalyticsService {
         data: [],
       };
     }
+
+    // OPTIMASI: Query data tahun sebelumnya dalam satu kali query
+    const previousYear = (startDate.getFullYear() - 1).toString();
+    const previousYearStart = format(
+      startOfYear(new Date(parseInt(previousYear), 0, 1)),
+      'yyyy-MM-dd',
+    );
+    const previousYearEnd = format(
+      endOfYear(new Date(parseInt(previousYear), 11, 31)),
+      'yyyy-MM-dd',
+    );
+
+    const previousResult = await this.prisma.sls_InvoiceHd.groupBy({
+      by: ['salesPersonName', 'invoiceDate'],
+      where: {
+        company_id: { in: company_id },
+        invoiceDate: {
+          gte: new Date(previousYearStart),
+          lte: new Date(previousYearEnd),
+        },
+        total_amount: { gt: 0 },
+        ...(salesPersonName && salesPersonName.length > 0
+          ? {
+              salesPersonName: {
+                in: Array.isArray(salesPersonName)
+                  ? salesPersonName
+                  : [salesPersonName],
+                mode: 'insensitive' as const,
+              },
+            }
+          : {}),
+      },
+      _sum: { total_amount: true },
+    });
+
+    this.logger.debug(
+      'Previous Year Query Result:',
+      previousResult.length > 0
+        ? `${previousResult.length} records found`
+        : 'No previous year data found',
+    );
 
     const response: any = {
       company_id,
@@ -678,54 +697,52 @@ export class salesPersonPerformaAnalyticsService {
       monthlyData[year] = { period: year, totalInvoice: 0, months: {} };
     }
 
-    // Proses data per tanggal dan kelompokkan per bulan - SESUAIKAN DENGAN SQL
+    // OPTIMASI: Proses data per bulan dengan perhitungan yang lebih efisien
     const monthlyTotals: Record<string, Record<string, number>> = {};
+    const previousMonthlyTotals: Record<string, Record<string, number>> = {};
 
-    result.forEach((item, index) => {
-      if (index < 5) {
-        this.logger.debug(
-          `Processing item ${index}:`,
-          JSON.stringify(item, null, 2),
-        );
-      }
-
-      const invoiceDate = item.invoiceDate;
-      const monthIdx = invoiceDate.getMonth();
+    // Proses data periode saat ini
+    currentResult.forEach((item) => {
+      const monthIdx = item.invoiceDate.getMonth();
       const monthKey = monthMap[monthIdx];
-
-      if (!monthKey) {
-        this.logger.error(`Invalid month index: ${monthIdx}`);
-        return;
-      }
-
+      const salesPerson = item.salesPersonName || 'Unknown';
       const amount = Math.round(
-        parseFloat((item.total_amount || 0).toString()),
+        parseFloat((item._sum?.total_amount || 0).toString()),
       );
 
-      if (isNaN(amount)) {
-        this.logger.warn(
-          `Invalid amount for date ${invoiceDate}: ${item.total_amount}`,
-        );
-        return;
-      }
-
-      // Akumulasi per bulan per salesperson - SESUAIKAN DENGAN SQL GROUP BY EXTRACT(MONTH)
       if (!monthlyTotals[monthKey]) {
         monthlyTotals[monthKey] = {};
       }
-
-      const salesPerson = item.salesPersonName || 'Unknown';
       if (!monthlyTotals[monthKey][salesPerson]) {
         monthlyTotals[monthKey][salesPerson] = 0;
       }
       monthlyTotals[monthKey][salesPerson] += amount;
     });
 
-    this.logger.debug('Monthly totals:', monthlyTotals);
+    // Proses data tahun sebelumnya
+    previousResult.forEach((item) => {
+      const monthIdx = item.invoiceDate.getMonth();
+      const monthKey = monthMap[monthIdx];
+      const salesPerson = item.salesPersonName || 'Unknown';
+      const amount = Math.round(
+        parseFloat((item._sum?.total_amount || 0).toString()),
+      );
 
-    // Distribusikan data per bulan ke response
+      if (!previousMonthlyTotals[monthKey]) {
+        previousMonthlyTotals[monthKey] = {};
+      }
+      if (!previousMonthlyTotals[monthKey][salesPerson]) {
+        previousMonthlyTotals[monthKey][salesPerson] = 0;
+      }
+      previousMonthlyTotals[monthKey][salesPerson] += amount;
+    });
+
+    this.logger.debug('Monthly totals processed');
+
+    // Distribusikan data per bulan ke response dengan growth calculation
     Object.keys(monthlyTotals).forEach((monthKey) => {
       const monthData = monthlyTotals[monthKey];
+      const previousMonthData = previousMonthlyTotals[monthKey] || {};
 
       if (!monthlyData[year].months[monthKey]) {
         monthlyData[year].months[monthKey] = [];
@@ -733,89 +750,29 @@ export class salesPersonPerformaAnalyticsService {
 
       // Tambahkan entry untuk setiap salesperson di bulan ini
       Object.keys(monthData).forEach((salesPerson) => {
-        const amount = monthData[salesPerson];
+        const currentAmount = monthData[salesPerson];
+        const previousAmount = previousMonthData[salesPerson] || 0;
+
+        let growthPercentage: number | null = null;
+        if (previousAmount > 0) {
+          growthPercentage =
+            ((currentAmount - previousAmount) / previousAmount) * 100;
+          growthPercentage = Number(growthPercentage.toFixed(1));
+        } else if (currentAmount > 0) {
+          growthPercentage = 100;
+        } else {
+          growthPercentage = 0;
+        }
 
         monthlyData[year].months[monthKey].push({
           salesPersonName: salesPerson.toUpperCase(),
-          amount: amount,
-          growthPercentage: null,
+          amount: currentAmount,
+          growthPercentage,
         });
 
-        monthlyData[year].totalInvoice += amount;
+        monthlyData[year].totalInvoice += currentAmount;
       });
     });
-
-    // SEDERHANAKAN GROWTH CALCULATION - HAPUS QUERY TAMBAHAN YANG LAMBAT
-    this.logger.debug('Skipping growth calculation for performance...');
-
-    // TAMBAHKAN GROWTH CALCULATION
-    this.logger.debug('Calculating growth percentage...');
-
-    // Hitung growth percentage untuk setiap salesperson per bulan
-    for (const year in monthlyData) {
-      const previousYear = (parseInt(year) - 1).toString();
-
-      for (const monthKey of Object.keys(monthlyData[year].months)) {
-        const monthIdx = monthMap.indexOf(monthKey);
-        const previousYearStart = format(
-          startOfMonth(new Date(parseInt(previousYear), monthIdx)),
-          'yyyy-MM-dd',
-        );
-        const previousYearEnd = format(
-          endOfMonth(new Date(parseInt(previousYear), monthIdx)),
-          'yyyy-MM-dd',
-        );
-
-        // Hitung growth percentage untuk setiap salesperson di bulan ini
-        for (const salesEntry of monthlyData[year].months[monthKey]) {
-          const currentSalesPerson = salesEntry.salesPersonName;
-          const currentAmount = salesEntry.amount;
-
-          // Query data tahun sebelumnya untuk salesperson spesifik ini
-          const previousResultForSalesPerson =
-            await this.prisma.sls_InvoiceHd.findMany({
-              where: {
-                company_id: { in: company_id },
-                invoiceDate: {
-                  gte: new Date(previousYearStart),
-                  lte: new Date(previousYearEnd),
-                },
-                salesPersonName: {
-                  equals: currentSalesPerson,
-                  mode: 'insensitive',
-                },
-              },
-              select: {
-                total_amount: true,
-              },
-            });
-
-          // Hitung total amount tahun sebelumnya untuk salesperson ini di bulan ini
-          const previousTotalAmountForSalesPerson =
-            previousResultForSalesPerson.reduce((sum, item) => {
-              return (
-                sum +
-                Math.round(parseFloat((item.total_amount || 0).toString()))
-              );
-            }, 0);
-
-          let growthPercentage: number | null = null;
-          if (previousTotalAmountForSalesPerson > 0) {
-            growthPercentage =
-              ((currentAmount - previousTotalAmountForSalesPerson) /
-                previousTotalAmountForSalesPerson) *
-              100;
-            growthPercentage = Number(growthPercentage.toFixed(1));
-          } else if (currentAmount > 0) {
-            growthPercentage = 100;
-          } else {
-            growthPercentage = 0;
-          }
-
-          salesEntry.growthPercentage = growthPercentage;
-        }
-      }
-    }
 
     response.data = Object.values(monthlyData).map((entry) => {
       this.logger.debug(
