@@ -131,7 +131,7 @@ export class salesPersonPerformaAnalyticsService {
       },
       _sum: { total_amount: true },
       having: {
-        total_amount: { _sum: { gte: 300000000 } },
+        total_amount: { _sum: { gte: 500000000 } },
       },
       orderBy: [{ invoiceDate: 'asc' }, { _sum: { total_amount: 'desc' } }],
     });
@@ -143,7 +143,7 @@ export class salesPersonPerformaAnalyticsService {
 
     if (result.length === 0) {
       this.logger.debug(
-        'No salespeople with total_amount >= 300 million found.',
+        'No salespeople with total_amount >= 5b00 million found.',
       );
       return {
         company_id,
@@ -197,9 +197,9 @@ export class salesPersonPerformaAnalyticsService {
         return;
       }
 
-      if (amount < 300000000) {
+      if (amount < 500000000) {
         this.logger.debug(
-          `Skipping ${salesPerson} for ${monthKey} ${year}: ${amount} < 300 million`,
+          `Skipping ${salesPerson} for ${monthKey} ${year}: ${amount} < 500 million`,
         );
         return;
       }
